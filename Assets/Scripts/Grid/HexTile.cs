@@ -4,6 +4,8 @@ public class HexTile : MonoBehaviour
 {
     public Vector3Int cubeCoords;
     public SignalNode placedNode;
+    public TowerNode placedTower;
+    public Unit placedUnit;
 
     public void Initialize(Vector3Int coords)
     {
@@ -13,6 +15,11 @@ public class HexTile : MonoBehaviour
 
     public bool IsOccupied()
     {
-        return placedNode != null;
+        return placedNode != null || placedUnit != null;
+    }
+
+    public bool HasTower()
+    {
+        return placedTower != null;
     }
 }

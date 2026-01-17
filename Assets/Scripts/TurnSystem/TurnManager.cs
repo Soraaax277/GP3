@@ -11,6 +11,8 @@ public class TurnManager : MonoBehaviour
     private List<PlayerData> players;
     private int currentPlayerIndex;
 
+    private List<Unit> allUnits = new List<Unit>();
+
     private void Awake()
     {
         Instance = this;
@@ -29,6 +31,9 @@ public class TurnManager : MonoBehaviour
     {
         currentPlayer = players[currentPlayerIndex];
         Debug.Log($"Turn {currentTurn} - {currentPlayer.playerName}'s turn");
+
+        foreach (Unit unit in allUnits)
+            unit.OnTurnStart(currentPlayer);
     }
 
     public void EndTurn()
@@ -42,5 +47,11 @@ public class TurnManager : MonoBehaviour
         }
 
         StartTurn();
+    }
+
+    public void RegisterUnit(Unit unit)
+    {
+        if (!allUnits.Contains(unit))
+            allUnits.Add(unit);
     }
 }

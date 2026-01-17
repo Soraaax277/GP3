@@ -1,8 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class GridManager : MonoBehaviour
 {
+    public bool IsReady { get; private set; }
     public static GridManager Instance;
 
     [Header("Grid Settings")]
@@ -20,6 +21,7 @@ public class GridManager : MonoBehaviour
     {
         Instance = this;
     }
+
 
     private void Start()
     {
@@ -51,6 +53,7 @@ public class GridManager : MonoBehaviour
             }
         }
 
+        IsReady = true;
         Debug.Log($"Generated {tiles.Count} hex tiles");
     }
 
