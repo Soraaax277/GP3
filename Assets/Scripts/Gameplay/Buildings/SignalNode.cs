@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class SignalNode : MonoBehaviour
 {
@@ -22,6 +23,8 @@ public class SignalNode : MonoBehaviour
 
         if (!player.isAI)
             CreateRangeIndicator();
+
+        ApplyInfluence();
     }
 
     void CreateRangeIndicator()
@@ -29,18 +32,20 @@ public class SignalNode : MonoBehaviour
         rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
 
         Vector3 indicatorPos = tile.transform.position;
-        indicatorPos.y = 1f; 
+        indicatorPos.y = 1f;
         rangeIndicator.transform.position = indicatorPos;
 
-        float scaleMultiplier = 5f; 
-        rangeIndicator.transform.localScale = new Vector3(range * 2f * scaleMultiplier, 0.01f, range * 2f * scaleMultiplier);
+        float visualRadius = influenceRadius * GridManager.Instance.hexSize;
+
+        rangeIndicator.transform.localScale =
+            new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
 
         Renderer rend = rangeIndicator.GetComponent<Renderer>();
         rend.material = new Material(Shader.Find("Sprites/Default"));
-        rend.material.color = new Color(0f, 0.5f, 1f, 0.25f); 
+        rend.material.color = new Color(0f, 0.5f, 1f, 0.25f);
 
-        Destroy(rangeIndicator.GetComponent<Collider>()); 
-        rangeIndicator.SetActive(false); 
+        Destroy(rangeIndicator.GetComponent<Collider>());
+        rangeIndicator.SetActive(false);
     }
 
     public float GetVisualRadius()
@@ -57,6 +62,12 @@ public class SignalNode : MonoBehaviour
             rangeIndicator.SetActive(true);
     }
 
+    void OnMouseExit()
+    {
+        if (rangeIndicator != null)
+            rangeIndicator.SetActive(false);
+    }
+
     void OnMouseDown()
     {
         Debug.Log("Business clicked!");
@@ -66,13 +77,6 @@ public class SignalNode : MonoBehaviour
 
         BuildUIManager.Instance.OpenBuildMenu(this);
         UnitPurchaseUI.Instance.Open(this);
-    }
-
-
-    void OnMouseExit()
-    {
-        if (rangeIndicator != null)
-            rangeIndicator.SetActive(false);
     }
 
     public bool IsTileWithinInfluence(HexTile target)
@@ -88,4 +92,14 @@ public class SignalNode : MonoBehaviour
               + Mathf.Abs(a.z - b.z)) / 2;
     }
 
+    void ApplyInfluence()
+    {
+        var tilesInRange = GridManager.Instance.GetTilesInRange(tile, influenceRadius);
+
+        foreach (HexTile t in tilesInRange)
+        {
+            t.influence += t.baseInfluence;
+            Debug.Log($"{t.name} gained +{t.baseInfluence} influence from SignalNode");
+        }
+    }
 }

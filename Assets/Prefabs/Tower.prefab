@@ -128,3 +128,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerNode
   tile: {fileID: 0}
   range: 3
+  influencePower: 5

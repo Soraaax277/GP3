@@ -104,6 +104,7 @@ public abstract class Unit : MonoBehaviour
         ConsumeAction();
 
         SetSelected(false);
+        PlayerInput.Instance.ClearHighlights();
     }
 
     public bool CanMoveTo(HexTile tile, int allowedRange)

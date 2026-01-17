@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 public class GridManager : MonoBehaviour
 {
+    private static readonly Vector3Int[] CubeDirections =
+{
+    new Vector3Int( 1, -1,  0),
+    new Vector3Int( 1,  0, -1),
+    new Vector3Int( 0,  1, -1),
+    new Vector3Int(-1,  1,  0),
+    new Vector3Int(-1,  0,  1),
+    new Vector3Int( 0, -1,  1),
+};
     public bool IsReady { get; private set; }
     public static GridManager Instance;
 
@@ -57,6 +66,22 @@ public class GridManager : MonoBehaviour
         Debug.Log($"Generated {tiles.Count} hex tiles");
     }
 
+    public List<HexTile> GetNeighbors(HexTile tile)
+    {
+        List<HexTile> neighbors = new List<HexTile>();
+
+        foreach (Vector3Int dir in CubeDirections)
+        {
+            Vector3Int neighborCoords = tile.cubeCoords + dir;
+
+            if (tiles.TryGetValue(neighborCoords, out HexTile neighbor))
+            {
+                neighbors.Add(neighbor);
+            }
+        }
+
+        return neighbors;
+    }
     Vector3 HexToWorld(int q, int r)
     {
         float width = hexSize * 2f;
@@ -94,12 +119,40 @@ public class GridManager : MonoBehaviour
     {
         List<HexTile> result = new List<HexTile>();
 
-        foreach (var kvp in tiles)
+        for (int dx = -range; dx <= range; dx++)
         {
-            HexTile tile = kvp.Value;
-            if (CubeDistance(centerTile.cubeCoords, tile.cubeCoords) <= range)
+            for (int dy = Mathf.Max(-range, -dx - range); dy <= Mathf.Min(range, -dx + range); dy++)
             {
-                result.Add(tile);
+                int dz = -dx - dy;
+                Vector3Int coords = centerTile.cubeCoords + new Vector3Int(dx, dy, dz);
+
+                if (tiles.TryGetValue(coords, out HexTile tile))
+                    result.Add(tile);
+            }
+        }
+
+        return result;
+    }
+
+    public List<HexTile> GetTilesByCount(HexTile start, int count)
+    {
+        List<HexTile> result = new List<HexTile>();
+        Queue<HexTile> frontier = new Queue<HexTile>();
+        HashSet<HexTile> visited = new HashSet<HexTile>();
+
+        frontier.Enqueue(start);
+        visited.Add(start);
+
+        while (frontier.Count > 0 && result.Count < count)
+        {
+            HexTile current = frontier.Dequeue();
+            result.Add(current);
+
+            foreach (HexTile neighbor in GetNeighbors(current))
+            {
+                if (visited.Contains(neighbor)) continue;
+                visited.Add(neighbor);
+                frontier.Enqueue(neighbor);
             }
         }
 

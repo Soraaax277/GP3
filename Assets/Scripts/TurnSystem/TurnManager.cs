@@ -12,6 +12,7 @@ public class TurnManager : MonoBehaviour
     private int currentPlayerIndex;
 
     private List<Unit> allUnits = new List<Unit>();
+    private List<TowerNode> allTowers = new List<TowerNode>();
 
     private void Awake()
     {
@@ -34,6 +35,9 @@ public class TurnManager : MonoBehaviour
 
         foreach (Unit unit in allUnits)
             unit.OnTurnStart(currentPlayer);
+
+        foreach (TowerNode tower in allTowers)
+            tower.CheckForDestruction();
     }
 
     public void EndTurn()
@@ -53,5 +57,11 @@ public class TurnManager : MonoBehaviour
     {
         if (!allUnits.Contains(unit))
             allUnits.Add(unit);
+    }
+
+    public void RegisterTower(TowerNode tower)
+    {
+        if (!allTowers.Contains(tower))
+            allTowers.Add(tower);
     }
 }

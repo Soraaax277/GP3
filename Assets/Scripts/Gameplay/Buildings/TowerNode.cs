@@ -5,7 +5,8 @@ public class TowerNode : MonoBehaviour
     public enum TowerState
     {
         Unbuilt,
-        Built
+        Built,
+        Destroyed
     }
 
     public HexTile tile;
@@ -15,7 +16,6 @@ public class TowerNode : MonoBehaviour
 
     private GameObject rangeIndicator;
 
-    // Called when tower is placed
     public void Initialize(HexTile hexTile)
     {
         tile = hexTile;
@@ -24,10 +24,9 @@ public class TowerNode : MonoBehaviour
         state = TowerState.Unbuilt;
 
         CreateRangeIndicator();
-        ShowRange(false); // IMPORTANT: unbuilt towers show NO range
+        ShowRange(false);
     }
 
-    // Called only for placement preview
     public void CreatePreview()
     {
         CreateRangeIndicator();
@@ -40,11 +39,13 @@ public class TowerNode : MonoBehaviour
 
         rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         rangeIndicator.transform.SetParent(transform);
-        rangeIndicator.transform.localPosition = new Vector3(0f, 0.01f, 0f);
+        rangeIndicator.transform.localPosition = new Vector3(0f, 0f, 0.01f);
         rangeIndicator.transform.localRotation = Quaternion.identity;
 
+        float visualRadius = range * GridManager.Instance.hexSize;
+
         rangeIndicator.transform.localScale =
-            new Vector3(range * 2f, 0.01f, range * 2f);
+            new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
 
         Renderer rend = rangeIndicator.GetComponent<Renderer>();
         rend.material = new Material(Shader.Find("Sprites/Default"));
@@ -52,7 +53,6 @@ public class TowerNode : MonoBehaviour
         Destroy(rangeIndicator.GetComponent<Collider>());
     }
 
-    // CALLED LATER by builder
     public void Build()
     {
         if (state == TowerState.Built)
@@ -60,17 +60,21 @@ public class TowerNode : MonoBehaviour
 
         state = TowerState.Built;
 
-        // Built towers show range
         SetRangeColor(new Color(0f, 1f, 0f, 0.25f));
-        ShowRange(true);
 
-        // Signal logic will hook here later
+        ApplyInfluence();
+
         Debug.Log("Tower built and now operational");
     }
 
     public bool IsBuilt()
     {
         return state == TowerState.Built;
+    }
+
+    public bool IsDestroyed()
+    {
+        return state == TowerState.Destroyed;
     }
 
     public void SetRangeColor(Color color)
@@ -83,5 +87,46 @@ public class TowerNode : MonoBehaviour
     {
         if (rangeIndicator != null)
             rangeIndicator.SetActive(show);
+    }
+
+    private void OnMouseEnter()
+    {
+        if (state == TowerState.Built)
+            ShowRange(true);
+    }
+
+    private void OnMouseExit()
+    {
+        if (state == TowerState.Built)
+            ShowRange(false);
+    }
+
+    void ApplyInfluence()
+    {
+        var tilesInRange = GridManager.Instance.GetTilesInRange(tile, 1);
+
+        foreach (HexTile t in tilesInRange)
+        {
+            t.influence += t.baseInfluence;
+            Debug.Log($"{t.name} gained +{t.baseInfluence} influence from tower");
+        }
+    }
+
+    public void CheckForDestruction()
+    {
+        if (state != TowerState.Built)
+            return;
+
+        if (Random.value < 0.1f)
+        {
+            DestroyTower();
+        }
+    }
+
+    void DestroyTower()
+    {
+        state = TowerState.Destroyed;
+        ShowRange(false);
+        Debug.Log("Tower has been destroyed and needs repair!");
     }
 }
