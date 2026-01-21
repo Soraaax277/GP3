@@ -16,6 +16,7 @@ public class BuildUIManager : MonoBehaviour
     public Button constructButton;
     public Button buildWireButton;
     public Button towerPlacementButton;
+    public GameObject towerPlacementDisabledHelper;
 
     private Unit currentUnit;
 
@@ -30,13 +31,13 @@ public class BuildUIManager : MonoBehaviour
         if (!buildPanel.activeSelf)
             return;
 
-        // Ignore clicks while placing a tower
+
+
         if (placementManager != null && placementManager.IsPlacing)
             return;
 
         if (Input.GetMouseButtonDown(0))
         {
-            // ignore the click if this flag is true
             if (ignoreNextClick)
             {
                 ignoreNextClick = false;
@@ -50,8 +51,6 @@ public class BuildUIManager : MonoBehaviour
 
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                // If we have a business, close if clicking elsewhere. 
-                // If we have a unit, clicking away also closes.
                 if (currentBusiness != null && hit.collider.gameObject != currentBusiness.businessBuilding)
                 {
                     CloseBuildMenu();
@@ -59,11 +58,8 @@ public class BuildUIManager : MonoBehaviour
                 }
                 else if (currentUnit != null)
                 {
-                    // For units, clicking a different tile or object should close the menu
-                    // unless we are in selection or placement mode
                     if (!placementManager.IsPlacing && !WirePlacementManager.Instance.IsPlacing)
                     {
-                        // Minor logic: if we clicked a hex tile or something else, close
                         CloseBuildMenu();
                     }
                 }
@@ -92,7 +88,7 @@ public class BuildUIManager : MonoBehaviour
     public void OpenBuildMenu(SignalNode business)
     {
         currentBusiness = business;
-        currentUnit = null; // Reset unit context
+        currentUnit = null;
         buildPanel.SetActive(true);
 
         UpdateBuildButtons();
@@ -102,12 +98,10 @@ public class BuildUIManager : MonoBehaviour
     public void OpenBuildMenuForUnit(Unit unit)
     {
         currentUnit = unit;
-        currentBusiness = null; // Ensure no business context is active
+        currentBusiness = null;
         buildPanel.SetActive(true);
-        ignoreNextClick = true; // Prevent closing in the same frame as opening
+        ignoreNextClick = true;
         
-        // Find nearest business to show purchase UI if needed
-        // For now, builders just show the build panel
         UpdateBuildButtons();
     }
 
@@ -117,27 +111,48 @@ public class BuildUIManager : MonoBehaviour
         bool isSpecialist = currentUnit is WireSpecialist;
         bool isSignalNode = currentBusiness != null;
 
-        if (constructButton != null) constructButton.gameObject.SetActive(isBuilder);
-        if (buildWireButton != null) buildWireButton.gameObject.SetActive(isSpecialist);
+        if (constructButton != null) 
+        {
+            constructButton.gameObject.SetActive(isBuilder);
+            if (isBuilder) constructButton.interactable = currentUnit.CanAct;
+        }
+        if (buildWireButton != null) 
+        {
+            buildWireButton.gameObject.SetActive(isSpecialist);
+            if (isSpecialist) buildWireButton.interactable = currentUnit.CanAct;
+        }
         
         if (towerPlacementButton != null)
         {
             towerPlacementButton.gameObject.SetActive(isSignalNode);
+            
+            if (towerPlacementDisabledHelper != null) 
+                towerPlacementDisabledHelper.SetActive(false);
+
             if (isSignalNode)
             {
-                bool canPlace = currentBusiness.CanPlaceTower();
-                towerPlacementButton.interactable = canPlace;
-                Debug.Log($"[BuildUI] Tower Button State: interactable={canPlace} ({currentBusiness.towersPlacedCount}/{currentBusiness.maxTowers})");
+                bool canPlace = currentBusiness.towersPlacedCount < currentBusiness.maxTowers;
+                
+                if (towerPlacementDisabledHelper != null)
+                {
+                    towerPlacementButton.gameObject.SetActive(canPlace);
+                    towerPlacementDisabledHelper.SetActive(!canPlace);
+                }
+                else
+                {
+                    towerPlacementButton.interactable = canPlace;
+                    if (!canPlace && EventSystem.current.currentSelectedGameObject == towerPlacementButton.gameObject)
+                        EventSystem.current.SetSelectedGameObject(null);
+                }
             }
         }
 
         bool isNextToInfrastructure = CheckAdjacency();
-        Debug.Log($"[BuildUI] Overall State: Builder={isBuilder}, Specialist={isSpecialist}, SignalNode={isSignalNode}");
     }
 
     bool CheckAdjacency()
     {
-        if (currentUnit == null) return true; // Default to true if not unit-driven
+        if (currentUnit == null) return true;
 
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentUnit.currentTile))
         {
@@ -149,12 +164,12 @@ public class BuildUIManager : MonoBehaviour
 
     public void BuildTower()
     {
+        if (towerPlacementButton != null && !towerPlacementButton.interactable) return;
+        
         if (currentBusiness != null)
         {
             if (!currentBusiness.CanPlaceTower())
             {
-                Debug.LogWarning("[BuildUIManager] Cannot build tower: Limit reached.");
-                UpdateBuildButtons();
                 return;
             }
             placementManager.StartTowerPlacement(currentBusiness);
@@ -167,7 +182,7 @@ public class BuildUIManager : MonoBehaviour
 
     public void BuildWire()
     {
-        if (currentUnit is WireSpecialist specialist)
+        if (currentUnit is WireSpecialist specialist && specialist.CanAct)
         {
             WirePlacementManager.Instance.StartWirePlacement(specialist);
         }

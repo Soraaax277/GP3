@@ -2,9 +2,14 @@
 
 public class BuilderUnit : Unit
 {
-    public int moveRange = 2;
     public int buildRange = 1;
     public int buildsRemaining = 3;
+
+    public override void Initialize(HexTile spawnTile, PlayerData player)
+    {
+        base.Initialize(spawnTile, player);
+        SetMoveRange(2);
+    }
 
     public void ConstructAdjacentTower()
     {
@@ -17,7 +22,7 @@ public class BuilderUnit : Unit
         TowerNode targetTower = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            if (neighbor.placedTower != null && !neighbor.placedTower.IsBuilt())
+            if (neighbor.placedTower != null && neighbor.placedTower.state == TowerNode.TowerState.Unbuilt)
             {
                 targetTower = neighbor.placedTower;
                 break;
@@ -30,23 +35,24 @@ public class BuilderUnit : Unit
             return;
         }
 
-        // Adjacency check for power connection is already handled during placement,
-        // but we can re-verify here if needed.
-        
         targetTower.Build();
 
-        buildsRemaining--;
+        buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
         ConsumeAction();
         Debug.Log($"[Builder] Construction complete. Builds left: {buildsRemaining}");
 
         if (buildsRemaining <= 0)
         {
             Die();
+            return;
         }
 
-        SetSelected(false);
-        PlayerInput.Instance.ClearHighlights();
-        BuildUIManager.Instance.CloseBuildMenu();
+        if (!owner.isAI)
+        {
+            SetSelected(false);
+            PlayerInput.Instance.ClearHighlights();
+            BuildUIManager.Instance.CloseBuildMenu();
+        }
     }
 
     void Die()

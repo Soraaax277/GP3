@@ -7,6 +7,7 @@ public class UnitActionPanel : MonoBehaviour
     public GameObject panel;
     public Button constructButton;
     public Button buildWireButton;
+    public Button repairButton;
 
     private Unit currentUnit;
 
@@ -14,6 +15,13 @@ public class UnitActionPanel : MonoBehaviour
     {
         Instance = this;
         panel.SetActive(false);
+        
+        if (constructButton != null)
+            constructButton.gameObject.SetActive(false);
+        if (buildWireButton != null)
+            buildWireButton.gameObject.SetActive(false);
+        if (repairButton != null)
+            repairButton.gameObject.SetActive(false);
     }
 
     public void Open(Unit unit)
@@ -21,8 +29,29 @@ public class UnitActionPanel : MonoBehaviour
         currentUnit = unit;
         panel.SetActive(true);
 
-        if (constructButton != null) constructButton.gameObject.SetActive(unit is BuilderUnit);
-        if (buildWireButton != null) buildWireButton.gameObject.SetActive(unit is WireSpecialist);
+        if (constructButton != null) 
+        {
+            bool isBuilder = unit is BuilderUnit;
+            constructButton.gameObject.SetActive(isBuilder);
+            if (isBuilder)
+                constructButton.interactable = unit.CanAct;
+        }
+        
+        if (buildWireButton != null) 
+        {
+            bool isWireSpecialist = unit is WireSpecialist;
+            buildWireButton.gameObject.SetActive(isWireSpecialist);
+            if (isWireSpecialist)
+                buildWireButton.interactable = unit.CanAct;
+        }
+        
+        if (repairButton != null)
+        {
+            bool isTechnician = unit is Technician;
+            repairButton.gameObject.SetActive(isTechnician);
+            if (isTechnician)
+                repairButton.interactable = unit.CanAct;
+        }
     }
 
     public void Close()
@@ -45,6 +74,15 @@ public class UnitActionPanel : MonoBehaviour
         if (currentUnit is WireSpecialist specialist)
         {
             WirePlacementManager.Instance.StartWirePlacement(specialist);
+            Close();
+        }
+    }
+
+    public void OnClickRepair()
+    {
+        if (currentUnit is Technician technician)
+        {
+            technician.RepairAdjacentStructure();
             Close();
         }
     }

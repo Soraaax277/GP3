@@ -3,13 +3,15 @@ using UnityEngine;
 public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
 {
     public HexTile ParentTile { get; private set; }
+    public PlayerData owner { get; private set; }
     public bool IsPowered { get; set; }
 
     private GameObject visual;
 
-    public void Initialize(HexTile tile)
+    public void Initialize(HexTile tile, PlayerData player)
     {
         ParentTile = tile;
+        owner = player;
         tile.placedWire = this;
 
         CreateVisual();

@@ -159,4 +159,48 @@ public class GridManager : MonoBehaviour
         return result;
     }
 
+    public List<HexTile> FindPath(HexTile start, HexTile end)
+    {
+        if (start == end) return new List<HexTile> { start };
+
+        Queue<HexTile> frontier = new Queue<HexTile>();
+        frontier.Enqueue(start);
+
+        Dictionary<HexTile, HexTile> cameFrom = new Dictionary<HexTile, HexTile>();
+        cameFrom[start] = null;
+
+        bool found = false;
+        while (frontier.Count > 0)
+        {
+            HexTile current = frontier.Dequeue();
+
+            if (current == end)
+            {
+                found = true;
+                break;
+            }
+
+            foreach (HexTile next in GetNeighbors(current))
+            {
+                if (!cameFrom.ContainsKey(next) && (!next.IsOccupied() || next == end))
+                {
+                    cameFrom[next] = current;
+                    frontier.Enqueue(next);
+                }
+            }
+        }
+
+        if (!found) return null;
+
+        List<HexTile> path = new List<HexTile>();
+        HexTile temp = end;
+        while (temp != null)
+        {
+            path.Add(temp);
+            temp = cameFrom[temp];
+        }
+        path.Reverse();
+        return path;
+    }
+
 }

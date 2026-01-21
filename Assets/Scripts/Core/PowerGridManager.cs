@@ -20,14 +20,11 @@ public class PowerGridManager : MonoBehaviour
 
     public void RefreshGrid()
     {
-        // 1. Reset all powerable nodes
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
             if (tile.placedTower is IPowerable pTower) pTower.IsPowered = false;
-            // WireNode will also implement IPowerable when created
         }
 
-        // 2. BFS from all SignalNodes
         Queue<HexTile> frontier = new Queue<HexTile>();
         HashSet<HexTile> visited = new HashSet<HexTile>();
 
@@ -41,14 +38,12 @@ public class PowerGridManager : MonoBehaviour
         {
             HexTile current = frontier.Dequeue();
 
-            // Notify powerable components on this tile
             UpdatePowerOnTile(current, true);
 
             foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(current))
             {
                 if (visited.Contains(neighbor)) continue;
 
-                // Only spread power through infrastructure
                 if (HasConductiveInfrastructure(neighbor))
                 {
                     visited.Add(neighbor);
@@ -57,7 +52,6 @@ public class PowerGridManager : MonoBehaviour
             }
         }
 
-        // 3. Final pass to update visuals for anything that remained unpowered
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
             if (!visited.Contains(tile))
@@ -69,7 +63,6 @@ public class PowerGridManager : MonoBehaviour
 
     private bool HasConductiveInfrastructure(HexTile tile)
     {
-        // SignalNodes, Towers, and Wires spread power
         return tile.placedNode != null || tile.placedTower != null || tile.placedWire != null;
     }
 

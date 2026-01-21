@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class HexTile : MonoBehaviour
 {
@@ -9,7 +10,8 @@ public class HexTile : MonoBehaviour
     public Unit placedUnit;
 
     public int baseInfluence;
-    public int influence;
+    public Dictionary<PlayerData, int> influenceByPlayer = new Dictionary<PlayerData, int>();
+    public int influenceSuppression;
 
     private Renderer rend;
     private Color baseColor;
@@ -26,15 +28,43 @@ public class HexTile : MonoBehaviour
         name = $"Hex {coords.x},{coords.y},{coords.z}";
 
         baseInfluence = Random.Range(1, 11);
-        influence = baseInfluence;
+        Debug.Log($"{name} base influence: {baseInfluence}");
+    }
 
-        Debug.Log($"{name} influence: {influence}");
+    public int GetTotalInfluence(PlayerData forPlayer)
+    {
+        int raw = baseInfluence;
+        if (influenceByPlayer.ContainsKey(forPlayer))
+            raw += influenceByPlayer[forPlayer];
+        
+        return Mathf.Max(0, raw);
+    }
+
+    public void AddInfluence(PlayerData player, int amount)
+    {
+        if (!influenceByPlayer.ContainsKey(player))
+            influenceByPlayer[player] = 0;
+        influenceByPlayer[player] += amount;
+    }
+
+    public void RemoveInfluence(PlayerData player, int amount)
+    {
+        if (influenceByPlayer.ContainsKey(player))
+        {
+            influenceByPlayer[player] -= amount;
+            if (influenceByPlayer[player] < 0) influenceByPlayer[player] = 0;
+        }
     }
 
 
     public bool IsOccupied()
     {
-        return placedNode != null || placedUnit != null || placedWire != null || placedTower != null;
+        return placedNode != null || placedUnit != null || placedTower != null;
+    }
+
+    public bool HasWire()
+    {
+        return placedWire != null;
     }
 
     public bool IsWalkable()

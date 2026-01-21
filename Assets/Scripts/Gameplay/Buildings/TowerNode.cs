@@ -11,17 +11,26 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         Destroyed
     }
 
+    public PlayerData owner { get; private set; }
+    public SignalNode parentNode { get; private set; }
     public HexTile tile;
     public int range = 3;
-
     public TowerState state { get; private set; }
-
     private GameObject rangeIndicator;
 
-    public void Initialize(HexTile hexTile)
+    void IInfrastructure.Initialize(HexTile hexTile, PlayerData player) => Initialize(hexTile, player, null);
+
+    public void Initialize(HexTile hexTile, PlayerData player, SignalNode parent = null)
     {
         tile = hexTile;
+        owner = player;
+        parentNode = parent;
         tile.placedTower = this;
+
+        if (parentNode != null)
+            parentNode.towersPlacedCount++;
+
+        TurnManager.Instance.RegisterTower(this);
 
         state = TowerState.Unbuilt;
 
@@ -123,9 +132,12 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
         foreach (HexTile t in tilesInRange)
         {
-            t.influence += t.baseInfluence;
-            Debug.Log($"{t.name} gained +{t.baseInfluence} influence from tower");
+            t.AddInfluence(owner, t.baseInfluence);
+            Debug.Log($"{t.name} gained +{t.baseInfluence} influence for {owner.playerName} from tower");
         }
+
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.NotifyStatusChanged();
     }
 
     public void UpdatePowerState(bool powered)
@@ -142,7 +154,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         }
         else
         {
-            SetRangeColor(new Color(1f, 0.5f, 0f, 0.25f)); // Orange for unpowered
+            SetRangeColor(new Color(1f, 0.5f, 0f, 0.25f));
             if (wasPowered) RemoveInfluence();
         }
     }
@@ -153,9 +165,12 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
         foreach (HexTile t in tilesInRange)
         {
-            t.influence -= t.baseInfluence;
-            Debug.Log($"{t.name} lost influence from tower (power cut)");
+            t.RemoveInfluence(owner, t.baseInfluence);
+            Debug.Log($"{t.name} lost influence for {owner.playerName} from tower (power cut)");
         }
+
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.NotifyStatusChanged();
     }
 
     public void CheckForDestruction()
@@ -167,6 +182,21 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         {
             DestroyTower();
         }
+    }
+
+    public void Repair()
+    {
+        if (state != TowerState.Destroyed) return;
+
+        state = TowerState.Built;
+        ApplyInfluence();
+
+        if (PowerGridManager.Instance != null)
+        {
+            PowerGridManager.Instance.RefreshGrid();
+        }
+
+        Debug.Log("Tower has been repaired and is now operational!");
     }
 
     void DestroyTower()

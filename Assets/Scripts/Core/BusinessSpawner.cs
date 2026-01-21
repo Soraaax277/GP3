@@ -45,7 +45,7 @@ public class BusinessSpawner : MonoBehaviour
             return null;
         }
 
-        node.Initialize(player, chosenTile);
+        node.Initialize(chosenTile, player);
 
         return node;
     }

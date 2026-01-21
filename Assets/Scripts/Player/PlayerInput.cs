@@ -18,8 +18,15 @@ public class PlayerInput : MonoBehaviour
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            if ((TowerPlacementManager.Instance != null && TowerPlacementManager.Instance.IsPlacing) ||
+                (WirePlacementManager.Instance != null && WirePlacementManager.Instance.IsPlacing))
                 return;
+
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            {
+                DeselectUnit();
+                return;
+            }
 
             Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
 
@@ -37,6 +44,7 @@ public class PlayerInput : MonoBehaviour
                 SignalNode business = hit.collider.GetComponentInParent<SignalNode>();
                 if (business != null)
                 {
+                    DeselectUnit();
                     BuildUIManager.Instance.OpenBuildMenu(business);
                     UnitActionPanel.Instance.Close();
                     return;
@@ -61,8 +69,10 @@ public class PlayerInput : MonoBehaviour
             HexTile tile = hit.collider.GetComponent<HexTile>();
             if (tile != null)
             {
-                int range = GetUnitMoveRange(selectedUnit);
-                selectedUnit.MoveTo(tile, range);
+            if (tile != null)
+            {
+                selectedUnit.MoveTo(tile, selectedUnit.movementRemaining);
+            }
             }
         }
     }
@@ -87,9 +97,7 @@ public class PlayerInput : MonoBehaviour
 
     int GetUnitMoveRange(Unit unit)
     {
-        if (unit is BuilderUnit b) return b.moveRange;
-        if (unit is WireSpecialist w) return w.moveRange;
-        return 1;
+        return unit.movementRemaining;
     }
 
     void HandleHover()
@@ -97,7 +105,7 @@ public class PlayerInput : MonoBehaviour
         if (selectedUnit == null)
             return;
 
-        if (!selectedUnit.CanAct || selectedUnit.IsFresh)
+        if (!selectedUnit.CanAct || selectedUnit.movementRemaining <= 0)
         {
             ClearHighlights();
             return;
@@ -124,18 +132,17 @@ public class PlayerInput : MonoBehaviour
     {
         ClearHighlights();
 
-        int range = GetUnitMoveRange(selectedUnit);
+        int range = selectedUnit.movementRemaining;
 
-        List<HexTile> path = FindPath(
-            selectedUnit.currentTile,
-            target,
-            range
-        );
+        List<HexTile> path = GridManager.Instance.FindPath(selectedUnit.currentTile, target);
 
-        if (path == null || path.Count == 0)
+        if (path == null || path.Count <= 1)
         {
-            target.HighlightBlocked();
-            highlightedTiles.Add(target);
+            if (target != selectedUnit.currentTile)
+            {
+                target.HighlightBlocked();
+                highlightedTiles.Add(target);
+            }
             return;
         }
 
@@ -143,58 +150,23 @@ public class PlayerInput : MonoBehaviour
         {
             HexTile tile = path[i];
 
-            if (i <= range)
+            if (i == 0)
+            {
+                tile.HighlightWalkable();
+            }
+            else if (i <= range)
+            {
                 tile.HighlightWalkable(); 
+            }
             else
+            {
                 tile.HighlightBlocked(); 
+            }
 
             highlightedTiles.Add(tile);
         }
     }
 
-    List<HexTile> FindPath(HexTile start, HexTile goal, int maxRange)
-    {
-        Queue<HexTile> frontier = new Queue<HexTile>();
-        Dictionary<HexTile, HexTile> cameFrom = new Dictionary<HexTile, HexTile>();
-
-        frontier.Enqueue(start);
-        cameFrom[start] = null;
-
-        while (frontier.Count > 0)
-        {
-            HexTile current = frontier.Dequeue();
-
-            if (current == goal)
-                break;
-
-            foreach (HexTile next in GridManager.Instance.GetNeighbors(current))
-            {
-                if (cameFrom.ContainsKey(next))
-                    continue;
-
-                if (!next.IsWalkable())
-                    continue;
-
-                frontier.Enqueue(next);
-                cameFrom[next] = current;
-            }
-        }
-
-        if (!cameFrom.ContainsKey(goal))
-            return null;
-
-        List<HexTile> path = new List<HexTile>();
-        HexTile step = goal;
-
-        while (step != null)
-        {
-            path.Add(step);
-            step = cameFrom[step];
-        }
-
-        path.Reverse();
-        return path;
-    }
 
     public void SelectUnit(Unit unit)
     {

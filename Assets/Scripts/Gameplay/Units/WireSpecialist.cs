@@ -2,14 +2,13 @@ using UnityEngine;
 
 public class WireSpecialist : Unit
 {
-    public int moveRange = 3;
     public int wiresRemaining = 8;
 
     public void BuildWire(HexTile tile, float yRotation = 0f)
     {
         if (!canAct && !testingMode) return;
 
-        if (tile == null || tile.IsOccupied()) return;
+        if (tile == null || tile.IsOccupied() || tile.HasWire()) return;
 
         int dist = GridManager.Instance.CubeDistance(currentTile.cubeCoords, tile.cubeCoords);
         if (dist > 1)
@@ -50,7 +49,8 @@ public class WireSpecialist : Unit
         WireNode wireNode = wireObj.GetComponent<WireNode>();
         if (wireNode == null) wireNode = wireObj.AddComponent<WireNode>();
         
-        wireNode.Initialize(tile);
+        wireNode.Initialize(tile, owner);
+        HologramUtil.MakeSolid(wireObj);
 
         wiresRemaining--;
         ConsumeAction();

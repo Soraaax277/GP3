@@ -1,10 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-public class SignalNode : MonoBehaviour
+public class SignalNode : MonoBehaviour, IInfrastructure
 {
+    public HexTile ParentTile => tile;
     public PlayerData owner;
     public HexTile tile;
+    PlayerData IInfrastructure.owner => owner;
     public int range = 5;
     private GameObject rangeIndicator;
 
@@ -16,7 +18,7 @@ public class SignalNode : MonoBehaviour
 
     public bool CanPlaceTower() => towersPlacedCount < maxTowers;
 
-    public void Initialize(PlayerData player, HexTile hexTile)
+    public void Initialize(HexTile hexTile, PlayerData player)
     {
         owner = player;
         tile = hexTile;
@@ -79,7 +81,6 @@ public class SignalNode : MonoBehaviour
             rangeIndicator.SetActive(false);
     }
 
-    // OnMouseDown removed - Input handled via PlayerInput Raycast
 
     public bool IsTileWithinInfluence(HexTile target)
     {
@@ -100,8 +101,11 @@ public class SignalNode : MonoBehaviour
 
         foreach (HexTile t in tilesInRange)
         {
-            t.influence += t.baseInfluence;
-            Debug.Log($"{t.name} gained +{t.baseInfluence} influence from SignalNode");
+            t.AddInfluence(owner, t.baseInfluence);
+            Debug.Log($"{t.name} gained +{t.baseInfluence} influence for {owner.playerName} from SignalNode");
         }
+
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.NotifyStatusChanged();
     }
 }

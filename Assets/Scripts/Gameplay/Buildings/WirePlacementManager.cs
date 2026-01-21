@@ -97,7 +97,7 @@ public class WirePlacementManager : MonoBehaviour
             }
         }
 
-        bool valid = distFromUnit <= 1 && isNextToPower && !tile.IsOccupied();
+        bool valid = distFromUnit <= 1 && isNextToPower && !tile.IsOccupied() && !tile.HasWire();
         isTileValid = valid;
         
         Color holoColor = valid ? new Color(1f, 1f, 0f, 0.4f) : new Color(1f, 0f, 0f, 0.4f);
@@ -113,11 +113,7 @@ public class WirePlacementManager : MonoBehaviour
         if (hoveredTile == null || !isTileValid) return;
 
         currentSpecialist.BuildWire(hoveredTile, currentYRotation);
-        
-        if (currentSpecialist == null || currentSpecialist.wiresRemaining <= 0)
-        {
-            CancelPlacement();
-        }
+        CancelPlacement();
     }
 
     void CancelPlacement()

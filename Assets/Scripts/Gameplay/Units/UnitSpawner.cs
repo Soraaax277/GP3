@@ -9,19 +9,20 @@ public class UnitSpawner : MonoBehaviour
         Instance = this;
     }
 
-    public void SpawnUnit(GameObject unitPrefab, SignalNode business)
+    public Unit SpawnUnit(GameObject unitPrefab, SignalNode business)
     {
         HexTile spawnTile = GetAdjacentFreeTile(business.tile);
 
         if (spawnTile == null)
         {
             Debug.LogWarning("No free tile to spawn unit!");
-            return;
+            return null;
         }
 
         GameObject unitObj = Instantiate(unitPrefab);
         Unit unit = unitObj.GetComponent<Unit>();
         unit.Initialize(spawnTile, business.owner);
+        return unit;
     }
 
     HexTile GetAdjacentFreeTile(HexTile centerTile)

@@ -19,6 +19,6 @@ public class BuildNodeCommand
         );
 
         SignalNode node = nodeObj.GetComponent<SignalNode>();
-        node.Initialize(player, tile);
+        node.Initialize(tile, player);
     }
 }

@@ -56,7 +56,6 @@ public class TowerPlacementManager : MonoBehaviour
 
         if (business != null && !business.CanPlaceTower())
         {
-            Debug.LogError($"[TowerPlacement] SignalNode {business.name} has reached its Tower Limit ({business.maxTowers})!");
             return;
         }
 
@@ -162,11 +161,10 @@ public class TowerPlacementManager : MonoBehaviour
         HologramUtil.MakeSolid(realTower);
 
         TowerNode node = realTower.GetComponent<TowerNode>();
-        node.Initialize(hoveredTile);
+        node.Initialize(hoveredTile, selectedBusiness != null ? selectedBusiness.owner : selectedBuilder.owner, selectedBusiness);
         
         if (selectedBusiness != null)
         {
-            selectedBusiness.towersPlacedCount++;
             if (BuildUIManager.Instance != null && BuildUIManager.Instance.buildPanel.activeSelf)
             {
                 BuildUIManager.Instance.UpdateBuildButtons();
