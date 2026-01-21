@@ -14,6 +14,7 @@ public class UnitPurchaseUI : MonoBehaviour
 
     public void Open(SignalNode business)
     {
+        Debug.Log($"[UnitPurchaseUI] Opening for business: {business.name}");
         currentBusiness = business;
         gameObject.SetActive(true);
     }

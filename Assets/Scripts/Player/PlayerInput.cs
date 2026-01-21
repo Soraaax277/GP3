@@ -18,14 +18,37 @@ public class PlayerInput : MonoBehaviour
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                return;
+
             Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
 
-            if (!Physics.Raycast(ray, out _))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                DeselectUnit();
+                Unit unit = hit.collider.GetComponentInParent<Unit>();
+                if (unit != null)
+                {
+                    SelectUnit(unit);
+                    UnitActionPanel.Instance.Open(unit);
+                    BuildUIManager.Instance.CloseBuildMenu();
+                    return;
+                }
+
+                SignalNode business = hit.collider.GetComponentInParent<SignalNode>();
+                if (business != null)
+                {
+                    BuildUIManager.Instance.OpenBuildMenu(business);
+                    UnitActionPanel.Instance.Close();
+                    return;
+                }
+
+                DeselectAndClose();
+            }
+            else
+            {
+                DeselectAndClose();
             }
         }
-
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
             if (selectedUnit == null || !selectedUnit.CanAct)
@@ -35,20 +58,38 @@ public class PlayerInput : MonoBehaviour
             if (!Physics.Raycast(ray, out RaycastHit hit))
                 return;
 
-            TowerNode tower = hit.collider.GetComponent<TowerNode>();
-            if (tower != null && selectedUnit is BuilderUnit builder)
-            {
-                builder.BuildTower(tower);
-                return;
-            }
-
             HexTile tile = hit.collider.GetComponent<HexTile>();
             if (tile != null)
             {
-                int range = (selectedUnit is BuilderUnit b) ? b.moveRange : 1;
+                int range = GetUnitMoveRange(selectedUnit);
                 selectedUnit.MoveTo(tile, range);
             }
         }
+    }
+
+    private void DeselectAndClose()
+    {
+        if (TowerPlacementManager.Instance != null && TowerPlacementManager.Instance.IsPlacing)
+        {
+            TowerPlacementManager.Instance.SendMessage("CancelPlacement", SendMessageOptions.DontRequireReceiver);
+        }
+        else if (WirePlacementManager.Instance != null && WirePlacementManager.Instance.IsPlacing)
+        {
+            WirePlacementManager.Instance.SendMessage("CancelPlacement", SendMessageOptions.DontRequireReceiver);
+        }
+        else
+        {
+            DeselectUnit();
+            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+            if (UnitActionPanel.Instance != null) UnitActionPanel.Instance.Close();
+        }
+    }
+
+    int GetUnitMoveRange(Unit unit)
+    {
+        if (unit is BuilderUnit b) return b.moveRange;
+        if (unit is WireSpecialist w) return w.moveRange;
+        return 1;
     }
 
     void HandleHover()
@@ -83,7 +124,7 @@ public class PlayerInput : MonoBehaviour
     {
         ClearHighlights();
 
-        int range = (selectedUnit is BuilderUnit b) ? b.moveRange : 1;
+        int range = GetUnitMoveRange(selectedUnit);
 
         List<HexTile> path = FindPath(
             selectedUnit.currentTile,
@@ -131,7 +172,7 @@ public class PlayerInput : MonoBehaviour
                 if (cameFrom.ContainsKey(next))
                     continue;
 
-                if (next.IsOccupied() || next.HasTower())
+                if (!next.IsWalkable())
                     continue;
 
                 frontier.Enqueue(next);

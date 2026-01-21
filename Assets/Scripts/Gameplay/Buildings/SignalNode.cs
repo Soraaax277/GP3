@@ -11,6 +11,11 @@ public class SignalNode : MonoBehaviour
     public int influenceRadius;
     public GameObject businessBuilding;
 
+    public int towersPlacedCount = 0;
+    public int maxTowers = 2;
+
+    public bool CanPlaceTower() => towersPlacedCount < maxTowers;
+
     public void Initialize(PlayerData player, HexTile hexTile)
     {
         owner = player;
@@ -25,6 +30,12 @@ public class SignalNode : MonoBehaviour
             CreateRangeIndicator();
 
         ApplyInfluence();
+
+        if (PowerGridManager.Instance != null)
+        {
+            PowerGridManager.Instance.RegisterSource(this);
+            PowerGridManager.Instance.RefreshGrid();
+        }
     }
 
     void CreateRangeIndicator()
@@ -68,16 +79,7 @@ public class SignalNode : MonoBehaviour
             rangeIndicator.SetActive(false);
     }
 
-    void OnMouseDown()
-    {
-        Debug.Log("Business clicked!");
-
-        if (owner.playerId != 0)
-            return;
-
-        BuildUIManager.Instance.OpenBuildMenu(this);
-        UnitPurchaseUI.Instance.Open(this);
-    }
+    // OnMouseDown removed - Input handled via PlayerInput Raycast
 
     public bool IsTileWithinInfluence(HexTile target)
     {

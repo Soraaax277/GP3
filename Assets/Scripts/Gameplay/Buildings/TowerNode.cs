@@ -1,7 +1,9 @@
 using UnityEngine;
 
-public class TowerNode : MonoBehaviour
+public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 {
+    public HexTile ParentTile => tile;
+    public bool IsPowered { get; set; }
     public enum TowerState
     {
         Unbuilt,
@@ -25,6 +27,11 @@ public class TowerNode : MonoBehaviour
 
         CreateRangeIndicator();
         ShowRange(false);
+
+        if (PowerGridManager.Instance != null)
+        {
+            PowerGridManager.Instance.RefreshGrid();
+        }
     }
 
     public void CreatePreview()
@@ -60,11 +67,14 @@ public class TowerNode : MonoBehaviour
 
         state = TowerState.Built;
 
-        SetRangeColor(new Color(0f, 1f, 0f, 0.25f));
-
         ApplyInfluence();
 
-        Debug.Log("Tower built and now operational");
+        if (PowerGridManager.Instance != null)
+        {
+            PowerGridManager.Instance.RefreshGrid();
+        }
+
+        Debug.Log("Tower built and now operational (pending power)");
     }
 
     public bool IsBuilt()
@@ -103,12 +113,48 @@ public class TowerNode : MonoBehaviour
 
     void ApplyInfluence()
     {
+        if (!IsPowered && state == TowerState.Built)
+        {
+            Debug.Log($"{name} is unpowered - influence not applied");
+            return;
+        }
+
         var tilesInRange = GridManager.Instance.GetTilesInRange(tile, 1);
 
         foreach (HexTile t in tilesInRange)
         {
             t.influence += t.baseInfluence;
             Debug.Log($"{t.name} gained +{t.baseInfluence} influence from tower");
+        }
+    }
+
+    public void UpdatePowerState(bool powered)
+    {
+        bool wasPowered = IsPowered;
+        IsPowered = powered;
+
+        if (state != TowerState.Built) return;
+
+        if (powered)
+        {
+            SetRangeColor(new Color(0f, 1f, 0f, 0.25f));
+            if (!wasPowered) ApplyInfluence();
+        }
+        else
+        {
+            SetRangeColor(new Color(1f, 0.5f, 0f, 0.25f)); // Orange for unpowered
+            if (wasPowered) RemoveInfluence();
+        }
+    }
+
+    void RemoveInfluence()
+    {
+        var tilesInRange = GridManager.Instance.GetTilesInRange(tile, 1);
+
+        foreach (HexTile t in tilesInRange)
+        {
+            t.influence -= t.baseInfluence;
+            Debug.Log($"{t.name} lost influence from tower (power cut)");
         }
     }
 

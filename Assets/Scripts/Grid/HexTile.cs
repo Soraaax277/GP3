@@ -5,6 +5,7 @@ public class HexTile : MonoBehaviour
     public Vector3Int cubeCoords;
     public SignalNode placedNode;
     public TowerNode placedTower;
+    public WireNode placedWire;
     public Unit placedUnit;
 
     public int baseInfluence;
@@ -33,7 +34,12 @@ public class HexTile : MonoBehaviour
 
     public bool IsOccupied()
     {
-        return placedNode != null || placedUnit != null;
+        return placedNode != null || placedUnit != null || placedWire != null || placedTower != null;
+    }
+
+    public bool IsWalkable()
+    {
+        return placedNode == null && placedUnit == null && placedTower == null;
     }
 
     public bool HasTower()

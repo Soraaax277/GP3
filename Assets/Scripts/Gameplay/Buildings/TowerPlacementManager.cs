@@ -2,6 +2,7 @@
 
 public class TowerPlacementManager : MonoBehaviour
 {
+    public static TowerPlacementManager Instance;
     public GameObject towerPrefab;
 
     private GameObject hologram;
@@ -9,15 +10,23 @@ public class TowerPlacementManager : MonoBehaviour
     private bool isPlacing;
     private bool canPlace;
     public SignalNode selectedBusiness;
+    public BuilderUnit selectedBuilder;
     public float lastPlacementTime;
 
     public bool IsPlacing => isPlacing;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     void Update()
     {
         if (!isPlacing) return;
 
         FollowMouse();
+
+        if (Time.time < lastPlacementTime + 0.1f) return;
 
         if (Input.GetMouseButtonDown(0) && hoveredTile != null && canPlace)
         {
@@ -30,20 +39,49 @@ public class TowerPlacementManager : MonoBehaviour
         }
     }
 
-    public void StartTowerPlacement(SignalNode business)
+    public void StartTowerPlacement(SignalNode business, BuilderUnit builder = null)
     {
-        if (isPlacing || business == null) return;
+        Debug.Log($"[TowerPlacement] Start request. Business: {business?.name}, Builder: {builder?.name}");
+        if (isPlacing) 
+        {
+            Debug.Log("[TowerPlacement] Already placing!");
+            return;
+        }
+
+        if (towerPrefab == null)
+        {
+            Debug.LogError("[TowerPlacement] Tower Prefab is MISSING in the Inspector! Please assign it to the TowerPlacementManager.");
+            return;
+        }
+
+        if (business != null && !business.CanPlaceTower())
+        {
+            Debug.LogError($"[TowerPlacement] SignalNode {business.name} has reached its Tower Limit ({business.maxTowers})!");
+            return;
+        }
 
         isPlacing = true;
         selectedBusiness = business;
+        selectedBuilder = builder;
+        lastPlacementTime = Time.time;
 
-        BuildUIManager.Instance.ignoreNextClick = true;
+        if (BuildUIManager.Instance != null)
+            BuildUIManager.Instance.ignoreNextClick = true;
 
         hologram = Instantiate(towerPrefab);
+        Debug.Log($"[TowerPlacement] Hologram instantiated: {hologram?.name}");
+        
         HologramUtil.MakeHologram(hologram, new Color(0f, 1f, 0f, 0.35f));
 
         TowerNode previewNode = hologram.GetComponent<TowerNode>();
-        previewNode.CreatePreview();
+        if (previewNode != null)
+        {
+            previewNode.CreatePreview();
+        }
+        else
+        {
+            Debug.LogError("[TowerPlacement] The TowerPrefab does not have a TowerNode component attached!");
+        }
     }
 
 
@@ -63,20 +101,36 @@ public class TowerPlacementManager : MonoBehaviour
 
     void ValidateTile(HexTile tile)
     {
-        if (hologram == null || selectedBusiness == null) return;
+        if (hologram == null) return;
+        if (selectedBusiness == null && selectedBuilder == null) return;
 
         TowerNode previewNode = hologram.GetComponent<TowerNode>();
         bool occupied = tile.HasTower();
-        bool isBusinessTile = tile == selectedBusiness.tile;
+        bool isBusinessTile = (selectedBusiness != null) && (tile == selectedBusiness.tile);
 
-        Vector3 businessPos = selectedBusiness.tile.transform.position;
-        Vector3 tilePos = tile.transform.position;
-        float distance = Vector3.Distance(tilePos, businessPos);
+        bool inRange = false;
+        if (selectedBusiness != null)
+        {
+            float distance = Vector3.Distance(tile.transform.position, selectedBusiness.tile.transform.position);
+            inRange = distance <= selectedBusiness.GetVisualRadius();
+        }
+        else if (selectedBuilder != null)
+        {
+            int dist = GridManager.Instance.CubeDistance(selectedBuilder.currentTile.cubeCoords, tile.cubeCoords);
+            if (dist <= selectedBuilder.buildRange)
+            {
+                foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
+                {
+                    if (neighbor.placedNode != null || neighbor.placedTower != null || neighbor.placedWire != null)
+                    {
+                        inRange = true;
+                        break;
+                    }
+                }
+            }
+        }
 
-        float visualRadius = selectedBusiness.GetVisualRadius();
-        bool outsideVisual = distance > visualRadius;
-
-        canPlace = !occupied && !isBusinessTile && !outsideVisual;
+        canPlace = !occupied && !isBusinessTile && inRange;
 
         Color holoColor = canPlace ? new Color(0f, 1f, 0f, 0.35f) : new Color(1f, 0f, 0f, 0.35f);
         Color rangeColor = canPlace ? new Color(0f, 1f, 0f, 0.25f) : new Color(1f, 0f, 0f, 0.25f);
@@ -90,6 +144,13 @@ public class TowerPlacementManager : MonoBehaviour
     {
         if (!canPlace || hoveredTile == null) return;
 
+        if (selectedBusiness != null && !selectedBusiness.CanPlaceTower())
+        {
+            Debug.LogError("[TowerPlacement] Limit reached just before placement!");
+            CancelPlacement();
+            return;
+        }
+
         Destroy(hologram);
 
         GameObject realTower = Instantiate(
@@ -102,8 +163,22 @@ public class TowerPlacementManager : MonoBehaviour
 
         TowerNode node = realTower.GetComponent<TowerNode>();
         node.Initialize(hoveredTile);
+        
+        if (selectedBusiness != null)
+        {
+            selectedBusiness.towersPlacedCount++;
+            if (BuildUIManager.Instance != null && BuildUIManager.Instance.buildPanel.activeSelf)
+            {
+                BuildUIManager.Instance.UpdateBuildButtons();
+            }
+        }
+
+        if (selectedBuilder != null)
+        {
+        }
 
         isPlacing = false;
+        selectedBuilder = null;
         lastPlacementTime = Time.time;
     }
 

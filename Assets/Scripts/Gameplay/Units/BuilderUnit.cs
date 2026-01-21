@@ -4,55 +4,55 @@ public class BuilderUnit : Unit
 {
     public int moveRange = 2;
     public int buildRange = 1;
+    public int buildsRemaining = 3;
 
-    public void BuildTower(TowerNode tower)
+    public void ConstructAdjacentTower()
     {
-        Debug.Log($"[Builder] Build attempt on tower: {tower?.name}");
-
-        if (!CanAct && !testingMode)
+        if (!canAct && !testingMode)
         {
             Debug.Log("[Builder] Cannot act (turn/action used)");
             return;
         }
 
-        if (tower == null)
+        TowerNode targetTower = null;
+        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            Debug.Log("[Builder] Tower is null");
+            if (neighbor.placedTower != null && !neighbor.placedTower.IsBuilt())
+            {
+                targetTower = neighbor.placedTower;
+                break;
+            }
+        }
+
+        if (targetTower == null)
+        {
+            Debug.Log("[Builder] No unbuilt tower adjacent!");
             return;
         }
 
-        Debug.Log($"[Builder] Tower state BEFORE build: {tower.state}");
+        // Adjacency check for power connection is already handled during placement,
+        // but we can re-verify here if needed.
+        
+        targetTower.Build();
 
-        if (tower.IsBuilt())
-        {
-            Debug.Log("[Builder] Tower already built");
-            return;
-        }
-
-        int dist = GridManager.Instance.CubeDistance(
-            currentTile.cubeCoords,
-            tower.tile.cubeCoords
-        );
-
-        Debug.Log($"[Builder] Distance to tower: {dist}");
-
-        if (dist > buildRange)
-        {
-            Debug.Log("[Builder] Tower too far to build");
-            return;
-        }
-
-        tower.Build();
-
-        Debug.Log($"[Builder] Tower state AFTER build: {tower.state}");
-
+        buildsRemaining--;
         ConsumeAction();
-        Debug.Log("[Builder] Action consumed");
+        Debug.Log($"[Builder] Construction complete. Builds left: {buildsRemaining}");
+
+        if (buildsRemaining <= 0)
+        {
+            Die();
+        }
 
         SetSelected(false);
         PlayerInput.Instance.ClearHighlights();
+        BuildUIManager.Instance.CloseBuildMenu();
+    }
 
-        Debug.Log("[Builder] Build completed successfully");
+    void Die()
+    {
+        if (currentTile != null) currentTile.placedUnit = null;
+        Destroy(gameObject);
     }
 
 }
