@@ -107,6 +107,16 @@ public class GridManager : MonoBehaviour
         return tile;
     }
 
+    public HexTile GetTile(int x, int y)
+    {
+        foreach (var tile in tiles.Values)
+        {
+            if (tile.cubeCoords.x == x && tile.cubeCoords.y == y)
+                return tile;
+        }
+        return null;
+    }
+
     public int CubeDistance(Vector3Int a, Vector3Int b)
     {
         return Mathf.Max(

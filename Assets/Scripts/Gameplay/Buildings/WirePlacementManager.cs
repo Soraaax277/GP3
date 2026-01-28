@@ -122,4 +122,22 @@ public class WirePlacementManager : MonoBehaviour
         isPlacing = false;
         currentSpecialist = null;
     }
+
+    public WireNode PlaceWireDirect(HexTile tile, PlayerData owner)
+    {
+        if (tile == null || wirePrefab == null) return null;
+
+        GameObject wireObj = Instantiate(
+            wirePrefab,
+            tile.transform.position + Vector3.up * 0.84f,
+            Quaternion.Euler(0, 0, 90)
+        );
+
+        HologramUtil.MakeSolid(wireObj);
+
+        WireNode wire = wireObj.GetComponent<WireNode>();
+        wire.Initialize(tile, owner);
+
+        return wire;
+    }
 }

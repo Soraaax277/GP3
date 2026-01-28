@@ -7,12 +7,12 @@ public class TurnManager : MonoBehaviour
 
     public enum GameEra { Industrial, EarlyEighties, Retro, Futuristic }
     public GameEra currentEra { get; private set; }
-    public int currentTurnNumber { get; private set; } = 1;
+    public int currentTurn { get; set; } = 1;
     public const int MAX_TURNS = 100;
 
     public PlayerData currentPlayer { get; private set; }
 
-    private List<PlayerData> players;
+    public List<PlayerData> players;
     private int currentPlayerIndex;
 
     private List<Unit> allUnits = new List<Unit>();
@@ -30,10 +30,18 @@ public class TurnManager : MonoBehaviour
         Instance = this;
     }
 
+    private void Start()
+    {
+        if (SaveSystem.HasSaveData())
+        {
+            SaveSystem.LoadGame();
+        }
+    }
+
     public void StartGame(List<PlayerData> playerList)
     {
         players = playerList;
-        currentTurnNumber = 1;
+        currentTurn = 1;
         currentEra = GameEra.Industrial;
         currentPlayerIndex = 0;
 
@@ -43,7 +51,7 @@ public class TurnManager : MonoBehaviour
     void StartTurn()
     {
         currentPlayer = players[currentPlayerIndex];
-        Debug.Log($"Turn {currentTurnNumber} - {currentPlayer.playerName}'s turn");
+        Debug.Log($"Turn {currentTurn} - {currentPlayer.playerName}'s turn");
 
         OnGameStatusChanged?.Invoke();
 
@@ -69,19 +77,20 @@ public class TurnManager : MonoBehaviour
         if (currentPlayerIndex >= players.Count)
         {
             currentPlayerIndex = 0;
-            currentTurnNumber++;
+            currentTurn++;
             UpdateEra();
             CheckGameEnd();
         }
 
+        SaveSystem.SaveGame();
         StartTurn();
     }
 
     void UpdateEra()
     {
-        if (currentTurnNumber > 75) currentEra = GameEra.Futuristic;
-        else if (currentTurnNumber > 50) currentEra = GameEra.Retro;
-        else if (currentTurnNumber > 25) currentEra = GameEra.EarlyEighties;
+        if (currentTurn > 75) currentEra = GameEra.Futuristic;
+        else if (currentTurn > 50) currentEra = GameEra.Retro;
+        else if (currentTurn > 25) currentEra = GameEra.EarlyEighties;
         else currentEra = GameEra.Industrial;
         
         Debug.Log($"Game Era: {currentEra}");
@@ -89,7 +98,7 @@ public class TurnManager : MonoBehaviour
 
     void CheckGameEnd()
     {
-        if (currentTurnNumber > MAX_TURNS)
+        if (currentTurn > MAX_TURNS)
         {
             Debug.Log("Game Over! Turn Limit Reached.");
         }
@@ -105,5 +114,10 @@ public class TurnManager : MonoBehaviour
     {
         if (!allTowers.Contains(tower))
             allTowers.Add(tower);
+    }
+
+    public string GetCurrentEra()
+    {
+        return currentEra.ToString();
     }
 }

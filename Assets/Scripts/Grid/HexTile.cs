@@ -91,4 +91,21 @@ public class HexTile : MonoBehaviour
     {
         rend.material.color = baseColor;
     }
+
+    public int GetInfluence(PlayerData player)
+    {
+        if (influenceByPlayer.ContainsKey(player))
+            return influenceByPlayer[player];
+        return 0;
+    }
+
+    public void SetInfluence(PlayerData player, int amount)
+    {
+        influenceByPlayer[player] = amount;
+    }
+
+    public void ClearInfluence()
+    {
+        influenceByPlayer.Clear();
+    }
 }

@@ -86,6 +86,11 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         Debug.Log("Tower built and now operational (pending power)");
     }
 
+    public void SetBuilt()
+    {
+        state = TowerState.Built;
+    }
+
     public bool IsBuilt()
     {
         return state == TowerState.Built;

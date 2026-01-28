@@ -49,4 +49,23 @@ public class BusinessSpawner : MonoBehaviour
 
         return node;
     }
+
+    public SignalNode SpawnBusiness(HexTile tile, PlayerData player)
+    {
+        if (tile == null || businessPrefab == null) return null;
+
+        Vector3 spawnPos = tile.transform.position + new Vector3(0f, 1.51f, 0f);
+        GameObject businessObj = Instantiate(businessPrefab, spawnPos, businessPrefab.transform.rotation);
+
+        SignalNode node = businessObj.GetComponent<SignalNode>();
+        if (node == null)
+        {
+            Destroy(businessObj);
+            return null;
+        }
+
+        node.Initialize(tile, player);
+
+        return node;
+    }
 }

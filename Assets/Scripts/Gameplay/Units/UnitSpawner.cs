@@ -4,6 +4,11 @@ public class UnitSpawner : MonoBehaviour
 {
     public static UnitSpawner Instance;
 
+    public GameObject wireSpecialistPrefab;
+    public GameObject builderPrefab;
+    public GameObject salesMarketerPrefab;
+    public GameObject technicianPrefab;
+
     private void Awake()
     {
         Instance = this;

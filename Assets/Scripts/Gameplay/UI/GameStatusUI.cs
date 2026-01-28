@@ -29,7 +29,7 @@ public class GameStatusUI : MonoBehaviour
         if (TurnManager.Instance == null) return;
 
         if (turnText != null)
-            turnText.text = $"Turn: {TurnManager.Instance.currentTurnNumber} / {TurnManager.MAX_TURNS}";
+            turnText.text = $"Turn: {TurnManager.Instance.currentTurn} / {TurnManager.MAX_TURNS}";
 
         if (eraText != null)
         {

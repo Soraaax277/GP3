@@ -188,4 +188,21 @@ public class TowerPlacementManager : MonoBehaviour
         lastPlacementTime = Time.time;
     }
 
+    public TowerNode PlaceTowerDirect(HexTile tile, PlayerData owner, SignalNode parentNode = null)
+    {
+        if (tile == null || towerPrefab == null) return null;
+
+        GameObject realTower = Instantiate(
+            towerPrefab,
+            tile.transform.position + Vector3.up * 1.2f,
+            Quaternion.identity
+        );
+
+        HologramUtil.MakeSolid(realTower);
+
+        TowerNode node = realTower.GetComponent<TowerNode>();
+        node.Initialize(tile, owner, parentNode);
+
+        return node;
+    }
 }
