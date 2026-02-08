@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
+  m_Name: A_ERA3 4
+  m_EditorClassIdentifier: Assembly-CSharp::TechNode
+  techName: Modern SatComm
+  researchCost: 1065
+  researchBonus: 1
+  preReqs:
+  - {fileID: 11400000, guid: 36bcb09851339d147b733a142739cf46, type: 2}
+  unlockEffects:
+  - type: 0
+    description: +30% to Tower Influence Radius
+    targetUnit: {fileID: 0}
+    amount: 30
+    isBuildable: 0
+    skillName: 
+  - type: 0
+    description: -20% HQ Influence Radius
+    targetUnit: {fileID: 0}
+    amount: -20
+    isBuildable: 0
+    skillName: 
+  - type: 0
+    description: +50% to Signal Boosters Influence Radius
+    targetUnit: {fileID: 0}
+    amount: 50
+    isBuildable: 0
+    skillName: 

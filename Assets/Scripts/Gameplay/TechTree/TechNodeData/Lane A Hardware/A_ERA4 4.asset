@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
+  m_Name: A_ERA4 4
+  m_EditorClassIdentifier: Assembly-CSharp::TechNode
+  techName: Quantum Communication
+  researchCost: 3800
+  researchBonus: 2
+  preReqs:
+  - {fileID: 11400000, guid: 5416c083077ebf74ba808ca97d5662ab, type: 2}
+  - {fileID: 11400000, guid: 1d798cf30db092c469f6547252812519, type: 2}
+  unlockEffects:
+  - type: 0
+    description: 'Total Revenue Gain from Towers is Doubled '
+    targetUnits: []
+    amount: 2
+    isBuildable: 1
+    skillName: 

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
+  m_Name: C_ERA3 4
+  m_EditorClassIdentifier: Assembly-CSharp::TechNode
+  techName: Deadlier Methods
+  description: '+25% to Degradation on Sabotages for Saboteurs '
+  researchCost: 2600
+  researchBonus: 2
+  preReqs:
+  - {fileID: 11400000, guid: 07e8eb0283d98364faacafd1d5dae3e1, type: 2}
+  - {fileID: 11400000, guid: 89bec046eb413e847aba2e7495f6d882, type: 2}
+  unlockEffects:
+  - type: 0
+    targetUnits: []
+    statToUpgrade: 
+    amount: 25
+    skillName: 

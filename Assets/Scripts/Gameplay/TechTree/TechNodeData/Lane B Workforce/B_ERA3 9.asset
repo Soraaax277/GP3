@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
+  m_Name: B_ERA3 9
+  m_EditorClassIdentifier: Assembly-CSharp::TechNode
+  techName: Loyalist Workers
+  description: Unlocks Advanced Service Center
+  researchCost: 2500
+  researchBonus: 2
+  preReqs:
+  - {fileID: 11400000, guid: d8026b5943995914d8a2c597dbe8adc6, type: 2}
+  - {fileID: 11400000, guid: 858c55dc617928243acde029f23f4f24, type: 2}
+  unlockEffects:
+  - type: 1
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
