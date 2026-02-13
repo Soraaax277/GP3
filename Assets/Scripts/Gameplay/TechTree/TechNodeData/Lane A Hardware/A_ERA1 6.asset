@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: A_ERA1 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Coaxial Cables
+  description: 
   researchCost: 70
   researchBonus: 3
   preReqs:
@@ -21,20 +22,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c85caf07c09defc42b70427d00c1769d, type: 2}
   unlockEffects:
   - type: 0
-    description: +10% Revenue Gain from Towers
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 
   - type: 0
-    description: +2 to Max Wire Length
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 2
-    isBuildable: 0
     skillName: 
   - type: 0
-    description: +3 Max Tower Capacity
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 3
-    isBuildable: 0
     skillName: 

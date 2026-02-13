@@ -18,20 +18,24 @@ public class TechNode : ScriptableObject
     [Header("Tech Effects")] 
     public List<TechEffect> unlockEffects;
     
-    private bool isUnlocked;
+    [System.NonSerialized] private bool isUnlocked = false;
     
-    public bool Unlockable()
+    private bool Unlockable()
     {
         foreach (var preReq in preReqs)
         {
-            if (!preReq.isUnlocked) return false;
+            if (preReqs.Count != 0 && !preReq.isUnlocked)
+            {
+                Debug.Log("Prerequisite Tech: \'" + preReq.techName + "\' is not yet unlocked.");
+                return false;
+            }
         }
         return true;
     }
 
     public void UnlockTech()
     {
-        if (!isUnlocked)
+        if (!isUnlocked && Unlockable())
         {
             foreach (var effect in unlockEffects)
             {

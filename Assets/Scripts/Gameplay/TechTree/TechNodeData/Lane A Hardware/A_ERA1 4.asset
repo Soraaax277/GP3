@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: A_ERA1 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Vulcanized Rubber Insulation
+  description: 
   researchCost: 40
   researchBonus: 1
   preReqs:
   - {fileID: 11400000, guid: 52db719728075394f83d975be0ad7274, type: 2}
   unlockEffects:
   - type: 0
-    description: -5% Degradation Effects for Wires
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: -5
-    isBuildable: 0
     skillName: 

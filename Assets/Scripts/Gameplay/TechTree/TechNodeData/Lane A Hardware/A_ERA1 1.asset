@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: A_ERA1 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Improved Copper Wiring
+  description: 
   researchCost: 5
   researchBonus: 1
   preReqs:
   - {fileID: 11400000, guid: bac0c16e2243e494d8cded0a203385ad, type: 2}
   unlockEffects:
   - type: 0
-    description: +10% Revenue Gain From Towers
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 

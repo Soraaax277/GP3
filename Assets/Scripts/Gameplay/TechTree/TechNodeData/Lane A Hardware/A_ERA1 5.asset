@@ -13,20 +13,19 @@ MonoBehaviour:
   m_Name: A_ERA1 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Increased Tower Height
+  description: 
   researchCost: 50
   researchBonus: 1
   preReqs:
   - {fileID: 11400000, guid: da78f7e15b609784aaa2aafd682d28f6, type: 2}
   unlockEffects:
   - type: 0
-    description: +5% Influence Radius on Towers
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 5
-    isBuildable: 0
     skillName: 
   - type: 0
-    description: +2 Max Tower Capacity
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 2
-    isBuildable: 0
     skillName: 

@@ -5,8 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8a8ee501-7811-4222-9ce3-78a947c92530" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.GP3/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GP3/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/GameScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/GameScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/ShaderGraphSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ShaderGraphSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNode.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNode.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 0.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 0.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 1.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 1.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 2.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 2.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 3.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 3.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 4.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 4.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 5.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 5.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 6.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 6.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 7.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechNodeData/Lane A Hardware/A_ERA1 7.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,7 +28,6 @@
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/Prefabs/Builder.prefab" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Prefabs/SalesMarketer.prefab" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/TechTreeManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/Gameplay/TechTree/UI/TechButton.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectColorInfo">{
@@ -93,7 +101,8 @@
       <workItem from="1768765431648" duration="1884000" />
       <workItem from="1770175129413" duration="3580000" />
       <workItem from="1770182455396" duration="2820000" />
-      <workItem from="1770531232353" duration="15640000" />
+      <workItem from="1770531232353" duration="16042000" />
+      <workItem from="1771015510656" duration="2203000" />
     </task>
     <servers />
   </component>

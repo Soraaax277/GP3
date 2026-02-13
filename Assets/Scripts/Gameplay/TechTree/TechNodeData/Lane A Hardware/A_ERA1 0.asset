@@ -13,13 +13,14 @@ MonoBehaviour:
   m_Name: A_ERA1 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Telecommunications Fundamentals
+  description: 
   researchCost: 0
   researchBonus: 1
   preReqs: []
   unlockEffects:
   - type: 1
-    description: Unlocks Telecom Towers
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 0
     skillName: 
+  isUnlocked: 1
