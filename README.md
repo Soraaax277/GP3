@@ -1,8 +1,10 @@
 # README CHANGES
 
 > Made for huge changes and updates in the game's system
+
 > This document is intended for the development team as a handoff and continuation guide.
-> Put what you a header of when and who updated who above here:
+
+> Put what a header of when and who updated who above here:
 
 --------------------------------------------------------------------------------------------
 ## 02/21/2026 UPDATE (UPDATED BY CHARLES)
