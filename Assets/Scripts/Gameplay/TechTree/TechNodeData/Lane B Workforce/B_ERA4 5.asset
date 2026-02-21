@@ -15,17 +15,29 @@ MonoBehaviour:
   techName: Instant 3D-Printers
   description: +20% Maintenance Cost +3 Actions for all Workers
   researchCost: 4150
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: e5c563612384cb44780ccd848697093b, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: -50
     skillName: 
-  - type: 0
+    infraStatName: BuildingCost
+    infraValueMod: 0.5
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: -50
     skillName: 
+    infraStatName: RepairCost
+    infraValueMod: 0.5
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

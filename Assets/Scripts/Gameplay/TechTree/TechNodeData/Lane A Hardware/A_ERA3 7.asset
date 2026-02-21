@@ -13,20 +13,30 @@ MonoBehaviour:
   m_Name: A_ERA3 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: High-Tech Modern SatComm
+  description: 
   researchCost: 1200
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: ad6e88df62f1dbb4199e7f72b68de24e, type: 2}
   unlockEffects:
-  - type: 0
-    description: +20% Tower Influence Radius
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: Signal Jammers have a 50% larger radius
-    targetUnit: {fileID: 0}
+    infraStatName: TowerRange
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 50
-    isBuildable: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: SignalJammerRadiusUpgrade
+    isHardwareEra: 0

@@ -17,53 +17,45 @@ public class SalesMarketer : Unit
         ShowRange(true);
     }
 
-    public override void OnTurnStart(PlayerData activePlayer)
+    public override void ReceiveStatUpgrade(string statName, float amount)
     {
-        base.OnTurnStart(activePlayer);
-        
-        if (owner == activePlayer)
+        base.ReceiveStatUpgrade(statName, amount);
+
+        if (statName == "DenyRange")
         {
-            ApplyDenialEffect();
+            denyRange += (int)amount;
+            if (rangeIndicator != null)
+            {
+                float visualRadius = denyRange * GridManager.Instance.hexSize;
+                rangeIndicator.transform.localScale = new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
+            }
+            Debug.Log($"SalesMarketer: Deny range increased to {denyRange}");
+        }
+        else if (statName == "DenyChance")
+        {
+            denyChance += amount;
+            Debug.Log($"SalesMarketer: Deny chance increased by {amount * 100}% (now {denyChance * 100}%)");
+        }
+        else if (statName == "DenyAmount")
+        {
+            denyAmount += (int)amount;
+            Debug.Log($"SalesMarketer: Deny amount increased by {(int)amount} (now {denyAmount})");
+        }
+        else if (statName == "Actions")
+        {
+            // SalesMarketer doesn't have action charges like other units
+            // Actions for SalesMarketer might enable multiple denies per turn
+            Debug.Log($"SalesMarketer received +{(int)amount} Actions (passive unit)");
         }
     }
 
-    private void ApplyDenialEffect()
+    public override void OnTurnStart(PlayerData activePlayer)
     {
-        var tilesInRange = GridManager.Instance.GetTilesInRange(currentTile, denyRange);
-        bool anyTriggered = false;
-
-        foreach (HexTile tile in tilesInRange)
-        {
-            var enemyInfluences = tile.influenceByPlayer
-                .Where(kvp => kvp.Key != owner && kvp.Value > 0)
-                .ToList();
-
-            if (enemyInfluences.Count > 0)
-            {
-                if (Random.value < denyChance)
-                {
-                    anyTriggered = true;
-                    foreach (var kvp in enemyInfluences)
-                    {
-                        tile.RemoveInfluence(kvp.Key, denyAmount);
-                        Debug.Log($"[SalesMarketer] Denied {denyAmount} influence of {kvp.Key.playerName} at {tile.name}");
-                    }
-                }
-            }
-        }
-
-        if (anyTriggered)
-        {
-            if (TurnManager.Instance != null)
-                TurnManager.Instance.NotifyStatusChanged();
-            StartCoroutine(FlashIndicator(Color.cyan));
-        }
+        base.OnTurnStart(activePlayer);
     }
 
     void CreateRangeIndicator()
     {
-        if (rangeIndicator != null) return;
-
         rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         rangeIndicator.transform.SetParent(transform);
         rangeIndicator.transform.localPosition = new Vector3(0f, 0f, 0.01f);
@@ -85,29 +77,6 @@ public class SalesMarketer : Unit
             rangeIndicator.SetActive(show);
     }
 
-    private void OnMouseEnter()
-    {
-        ShowRange(true);
-    }
-
-    private void OnMouseExit()
-    {
-        ShowRange(true);
-    }
-
-    private System.Collections.IEnumerator FlashIndicator(Color flashColor)
-    {
-        if (rangeIndicator == null) yield break;
-        
-        Renderer rend = rangeIndicator.GetComponent<Renderer>();
-        Color original = rend.material.color;
-        
-        rangeIndicator.SetActive(true);
-        rend.material.color = flashColor;
-        
-        yield return new WaitForSeconds(0.5f);
-        
-        rend.material.color = original;
-        ShowRange(false);
-    }
+    private void OnMouseEnter() { ShowRange(true); }
+    private void OnMouseExit() { ShowRange(false); }
 }

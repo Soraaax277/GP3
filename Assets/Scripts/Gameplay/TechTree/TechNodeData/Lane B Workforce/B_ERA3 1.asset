@@ -15,17 +15,39 @@ MonoBehaviour:
   techName: Builder Specialization
   description: +50% Structure and  Wiring Durability Unlocks BPO Centers
   researchCost: 550
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: df0742d218cca3f44b19f79fde11da4a, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
-    statToUpgrade: 
+    statToUpgrade: StructureDurability
     amount: 50
     skillName: 
-  - type: 1
+    infraStatName: StructureDurability
+    infraValueMod: 0.5
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
-    statToUpgrade: 
-    amount: 0
+    statToUpgrade: StructureDurability
+    amount: 50
     skillName: 
+    infraStatName: WireDurability
+    infraValueMod: 0.5
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: StructureDurability
+    amount: 50
+    skillName: 
+    infraStatName: WireDurability
+    infraValueMod: 0.5
+    isMultiplier: 0
+    featureName: BPOCenters
+    isHardwareEra: 0

@@ -13,26 +13,61 @@ MonoBehaviour:
   m_Name: A_ERA3 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Retro Tech Progression
+  description: 
   researchCost: 600
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 1
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: c8ba8416e209a784caa1f91c55828edf, type: 2}
   unlockEffects:
-  - type: 0
-    description: +1 to Company Level
-    targetUnit: {fileID: 0}
+  - type: 5
+    targetUnits: []
+    statToUpgrade: 
     amount: 1
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: +25% to Final Revenue Gain
-    targetUnit: {fileID: 0}
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 1
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 25
-    isBuildable: 0
     skillName: 
-  - type: 1
-    description: +2 Max Tower Capacity
-    targetUnit: {fileID: 0}
+    infraStatName: FinalRevenueGain
+    infraValueMod: 0.25
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 2
-    isBuildable: 0
     skillName: 
+    infraStatName: ResearchGain
+    infraValueMod: 0.3
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 2
+    skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 2
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 2
+    skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 2
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -13,14 +13,21 @@ MonoBehaviour:
   m_Name: B_ERA1 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Company Accounting
+  description: -10% Recruitment Cost
   researchCost: 30
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 978f80d9fefc1314a9fc16f1971feea1, type: 2}
   unlockEffects:
-  - type: 0
-    description: -10% Worker Recruitment Cost
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 
+    infraStatName: RecruitmentCost
+    infraValueMod: -0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

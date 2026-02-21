@@ -13,20 +13,30 @@ MonoBehaviour:
   m_Name: A_ERA3 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: High-Speed Fiber Optic
+  description: 
   researchCost: 1120
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: bcdd74f574ef8294f916a497b6cf1582, type: 2}
   unlockEffects:
-  - type: 0
-    description: +20% Revenue Gain from Towers
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: +5 Max Tower Capacity
-    targetUnit: {fileID: 0}
+    infraStatName: TowerRevenue
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: TowerCapacity
     amount: 5
-    isBuildable: 0
     skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 5
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

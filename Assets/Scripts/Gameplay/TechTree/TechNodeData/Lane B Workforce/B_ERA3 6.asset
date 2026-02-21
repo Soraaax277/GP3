@@ -15,17 +15,29 @@ MonoBehaviour:
   techName: Advanced Wiring Kit
   description: +2 to Max Wire Length +50% Wire Durability
   researchCost: 970
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 8516db20bc86e8841a56ab979eb441f8, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 2
     skillName: 
-  - type: 2
+    infraStatName: WireLength
+    infraValueMod: 2
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 50
+    amount: 2
     skillName: 
+    infraStatName: WireDurability
+    infraValueMod: 0.5
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

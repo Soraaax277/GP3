@@ -16,33 +16,60 @@ MonoBehaviour:
   description: -50% Recruitment Cost -100% Maintenance Cost -70% to Movement Penalties
     Unlocks Robo-Workers and Robo-Marshalls Unlocks Worker Factories (Robot Production)
   researchCost: 5000
-  researchBonus: 2
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 13285121ebd77d349be687708c062c16, type: 2}
   - {fileID: 11400000, guid: bc41c348247aec34886f0e0b6da2d722, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 1
     targetUnits: []
     statToUpgrade: 
     amount: -50
     skillName: 
-  - type: 0
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 4
     targetUnits: []
     statToUpgrade: 
     amount: -100
     skillName: 
-  - type: 0
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: WorkerFactories
+    isHardwareEra: 0
+  - type: 4
     targetUnits: []
     statToUpgrade: 
-    amount: -70
+    amount: -100
     skillName: 
-  - type: 1
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: ReducedMovementPenalty
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 0
+    amount: -100
     skillName: 
-  - type: 1
+    infraStatName: RecruitmentCost
+    infraValueMod: 0.5
+    isMultiplier: 1
+    featureName: ReducedMovementPenalty
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 0
+    amount: -100
     skillName: 
+    infraStatName: MaintenanceCost
+    infraValueMod: -1
+    isMultiplier: 1
+    featureName: ReducedMovementPenalty
+    isHardwareEra: 0

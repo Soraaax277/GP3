@@ -15,12 +15,20 @@ MonoBehaviour:
   techName: Untested Stimulants
   description: Repairs have a 10% chance to fully restore Durability
   researchCost: 3500
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: c32aaf1716e016d4fae64336f5e2fecd, type: 2}
   unlockEffects:
-  - type: 2
-    targetUnits: []
+  - type: 4
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
     statToUpgrade: 
     amount: 0
-    skillName: Repair_Max
+    skillName: FullRestoreChance
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: UntestedStimulants
+    isHardwareEra: 0

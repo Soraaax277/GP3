@@ -13,27 +13,57 @@ MonoBehaviour:
   m_Name: B_ERA2 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Increased Workforce Size
+  description: '-1 Turns needed to produce Workers
+
+    Unlocks Foremen unit
+
+    Unlocks
+    Canteens building'
   researchCost: 190
-  researchBonus: 2
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 4ec93084a13b2f64f9665ee8778aa397, type: 2}
   - {fileID: 11400000, guid: 576ad2de5fa5bb249b09bd97d417bb05, type: 2}
   unlockEffects:
-  - type: 0
-    description: -1 Turns needed to produce Workers
-    targetUnit: {fileID: 0}
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: Canteens
+    isHardwareEra: 0
   - type: 1
-    description: Unlock Foremen
-    targetUnit: {fileID: 0}
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
-  - type: 1
-    description: Unlock Canteens
-    targetUnit: {fileID: 0}
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: Canteens
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
+    infraStatName: ProductionTimeReduction
+    infraValueMod: -1
+    isMultiplier: 0
+    featureName: Canteens
+    isHardwareEra: 0
+  - type: 5
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: Canteens
+    isHardwareEra: 0

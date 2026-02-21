@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections; 
 using System.Collections.Generic;
 
 public abstract class Unit : MonoBehaviour
@@ -12,13 +13,18 @@ public abstract class Unit : MonoBehaviour
 
     private Renderer[] renderers;
     private Material[] originalMaterials;
-    private Material outlineMaterial;
 
     public int moveRange = 3;
     public int movementRemaining;
     public bool isMoving;
 
     public bool forceCanAct = false;
+
+    //  UPKEEP  (System 3)
+    //  Gold subtracted from the owning player at the start of each turn.
+    //  Override this value in subclasses (e.g. BuilderUnit, TechnicianUnit)
+    //  to give each unit type its own upkeep cost.
+    public int goldUpkeep = 10;
 
     public bool CanAct => canAct;
     public bool CanSelect => owner == TurnManager.Instance.currentPlayer;
@@ -36,32 +42,34 @@ public abstract class Unit : MonoBehaviour
         
         spawnTile.placedUnit = this;
 
-        TurnManager.Instance.RegisterUnit(this);
+        // Register with TurnManager
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.RegisterUnit(this);
 
         renderers = GetComponentsInChildren<Renderer>();
 
         originalMaterials = new Material[renderers.Length];
         for (int i = 0; i < renderers.Length; i++)
         {
-            originalMaterials[i] = renderers[i].material;
-        }
-
-        outlineMaterial = new Material(Shader.Find("Sprites/Default"));
-        outlineMaterial.color = new Color(0f, 1f, 0f, 0.7f);
-
-        SetMoveRange(moveRange);
-        
-        if (testingMode)
-        {
-            canAct = true;
-            isFresh = false;
+            if (renderers[i] != null)
+                originalMaterials[i] = renderers[i].material;
         }
     }
 
-    public virtual void SetMoveRange(int range)
+    public virtual void OnTurnStart(PlayerData activePlayer)
     {
-        moveRange = range;
-        movementRemaining = moveRange;
+        if (owner == activePlayer)
+        {
+            isFresh = false;
+            canAct = true;
+            movementRemaining = moveRange;
+        }
+    }
+
+    public void ConsumeAction()
+    {
+        canAct = false;
+        movementRemaining = 0; 
     }
 
     public void SetSelected(bool selected)
@@ -70,60 +78,50 @@ public abstract class Unit : MonoBehaviour
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            renderers[i].material = selected ? outlineMaterial : originalMaterials[i];
+            if (renderers[i] != null)
+            {
+                if (selected)
+                {
+                    renderers[i].material.color = Color.green; 
+                }
+                else
+                {
+                    renderers[i].material = originalMaterials[i];
+                }
+            }
         }
     }
 
-    public virtual void OnTurnStart(PlayerData activePlayer)
-    {
-        if (owner != activePlayer) return;
-
-        isFresh = false;
-        canAct = true;
-        movementRemaining = moveRange;
-    }
-
-    public void ConsumeAction()
-    {
-        canAct = false;
-        movementRemaining = 0;
-    }
-
-    public void MoveTo(HexTile tile, int allowedRange)
+    // Accepts 2 arguments as required by PlayerInput and EnemyAI
+    public void MoveTo(HexTile tile, int range)
     {
         if (isMoving) return;
-        
-        if (TurnManager.Instance.currentPlayer != owner && !testingMode)
-        {
-            Debug.Log("Wait for your turn again!");
-            return;
-        }
-
-        if (!canAct && !testingMode)
-        {
-            Debug.Log("Unit already acted or out of movement!");
-            return;
-        }
-
-        List<HexTile> path = GridManager.Instance.FindPath(currentTile, tile);
-        if (path == null || path.Count - 1 > movementRemaining)
-        {
-            Debug.Log("No valid path or too far!");
-            return;
-        }
-
-        StartCoroutine(MoveRoutine(path));
+        StartCoroutine(MoveRoutine(tile, range));
     }
 
-    private System.Collections.IEnumerator MoveRoutine(List<HexTile> path)
+    private IEnumerator MoveRoutine(HexTile target, int range)
     {
         isMoving = true;
         
-        if (currentTile != null)
-            currentTile.placedUnit = null;
-
-        for (int i = 1; i < path.Count; i++)
+        List<HexTile> path = GridManager.Instance.FindPath(currentTile, target);
+        if (path == null || path.Count == 0)
         {
+            isMoving = false;
+            yield break;
+        }
+
+        // Remove start tile from path
+        path.RemoveAt(0);
+
+        currentTile.placedUnit = null;
+
+        // Use the passed 'range' or movementRemaining, whichever is smaller
+        int limit = Mathf.Min(range, movementRemaining);
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            if (limit <= 0 && !testingMode) break;
+
             HexTile nextTile = path[i];
             Vector3 startPos = transform.position;
             Vector3 endPos = nextTile.transform.position + Vector3.up * 1f;
@@ -141,6 +139,7 @@ public abstract class Unit : MonoBehaviour
             transform.position = endPos;
             currentTile = nextTile;
             movementRemaining--;
+            limit--;
         }
 
         currentTile.placedUnit = this;
@@ -149,7 +148,7 @@ public abstract class Unit : MonoBehaviour
         if (!owner.isAI)
         {
             SetSelected(false);
-            PlayerInput.Instance.ClearHighlights();
+            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
         }
     }
 
@@ -163,10 +162,36 @@ public abstract class Unit : MonoBehaviour
         if (path == null) return false;
         
         int dist = path.Count - 1;
-        if (dist > movementRemaining) return false;
-        if (tile == currentTile) return true;
-        if (tile.IsOccupied()) return false;
+        return dist <= movementRemaining && dist <= allowedRange; 
+    }
+    
+    public void SetMoveRange(int range)
+    {
+        moveRange = range;
+    }
 
-        return true;
+    public virtual void ReceiveStatUpgrade(string statName, float amount)
+    {
+        if (statName == "MoveRange" || statName == "Movement")
+        {
+            moveRange += (int)amount;
+            Debug.Log($"{name} received +{(int)amount} Move Range");
+        }
+        else if (statName == "Actions")
+        {
+            // "Actions" is a universal stat that applies to all worker types.
+            // Subclasses override this to apply to their specific charge stat.
+            Debug.Log($"{name} received +{(int)amount} Actions (base implementation)");
+        }
+        else if (statName == "UpkeepReduction")
+        {
+            goldUpkeep = Mathf.Max(0, goldUpkeep - (int)amount);
+            Debug.Log($"{name} upkeep reduced by {(int)amount}, now {goldUpkeep}");
+        }
+    }
+
+    public virtual void UnlockSkill(string skillName)
+    {
+        Debug.Log($"{name} unlocked skill: {skillName}");
     }
 }

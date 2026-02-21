@@ -13,15 +13,21 @@ MonoBehaviour:
   m_Name: A_ERA4 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: AI-Powered Encryption
+  description: 
   researchCost: 4600
-  researchBonus: 2
+  goldCost: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 5416c083077ebf74ba808ca97d5662ab, type: 2}
   - {fileID: 11400000, guid: 021117531c05bb447a6a1c0f37ec98fd, type: 2}
   unlockEffects:
-  - type: 0
-    description: +5 to Max Tower Capacity
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 5
-    isBuildable: 1
     skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 5
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

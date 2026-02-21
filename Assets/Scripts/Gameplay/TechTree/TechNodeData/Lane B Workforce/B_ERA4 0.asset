@@ -15,17 +15,49 @@ MonoBehaviour:
   techName: 100-year Worker Contract
   description: +20% Revenue Gain -30% Recruitment and Maintenance Cost
   researchCost: 2800
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 07ea2e7ae1b29294995466913e719202, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 20
     skillName: 
-  - type: 0
+    infraStatName: TowerRevenue
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: -30
     skillName: 
+    infraStatName: RecruitmentCost
+    infraValueMod: -0.3
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: -30
+    skillName: 
+    infraStatName: MaintenanceCost
+    infraValueMod: -0.3
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 5
+    targetUnits: []
+    statToUpgrade: 
+    amount: -30
+    skillName: 
+    infraStatName: MaintenanceCost
+    infraValueMod: -0.3
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

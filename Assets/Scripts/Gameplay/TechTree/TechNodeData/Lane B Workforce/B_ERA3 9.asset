@@ -15,13 +15,30 @@ MonoBehaviour:
   techName: Loyalist Workers
   description: Unlocks Advanced Service Center
   researchCost: 2500
-  researchBonus: 2
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: d8026b5943995914d8a2c597dbe8adc6, type: 2}
   - {fileID: 11400000, guid: 858c55dc617928243acde029f23f4f24, type: 2}
   unlockEffects:
-  - type: 1
+  - type: 4
     targetUnits: []
     statToUpgrade: 
     amount: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: FinalResting
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: WorkerFactories
+    isHardwareEra: 0

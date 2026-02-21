@@ -13,20 +13,30 @@ MonoBehaviour:
   m_Name: A_ERA2 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Early SatComm
+  description: 
   researchCost: 350
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: fe73be03ffa0bda4a938a7d4a26169eb, type: 2}
   unlockEffects:
-  - type: 0
-    description: +20% HQ Influence Radius
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 0
     skillName: 
-  - type: 2
-    description: 10% HQ Influence Radius per Tower within Influence
-    targetUnit: {fileID: 0}
+    infraStatName: InfluenceRadius
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 15
-    isBuildable: 0
     skillName: HQ_PerTower_InfluenceGain
+    infraStatName: BaseSignalBoost
+    infraValueMod: 5
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

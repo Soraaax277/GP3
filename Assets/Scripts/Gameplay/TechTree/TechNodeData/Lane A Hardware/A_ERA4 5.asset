@@ -13,15 +13,21 @@ MonoBehaviour:
   m_Name: A_ERA4 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Nanomachine Towers
+  description: 
   researchCost: 4200
-  researchBonus: 2
+  goldCost: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 1d798cf30db092c469f6547252812519, type: 2}
   - {fileID: 11400000, guid: 021117531c05bb447a6a1c0f37ec98fd, type: 2}
   unlockEffects:
-  - type: 0
-    description: 100% Revenue refunded when disassembling towers
+  - type: 4
     targetUnits: []
+    statToUpgrade: 
     amount: 100
-    isBuildable: 1
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: TowerRefund
+    isHardwareEra: 0

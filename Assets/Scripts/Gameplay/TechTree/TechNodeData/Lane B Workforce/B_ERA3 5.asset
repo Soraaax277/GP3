@@ -16,17 +16,31 @@ MonoBehaviour:
   description: +25% Durability restored from Repairs. First-time Repairs grant additional
     +25% Durability (Repairmen only)
   researchCost: 875
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 8516db20bc86e8841a56ab979eb441f8, type: 2}
   unlockEffects:
   - type: 0
-    targetUnits: []
-    statToUpgrade: 
-    amount: 25
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: RepairEfficiency
+    amount: 0.25
     skillName: 
-  - type: 0
-    targetUnits: []
-    statToUpgrade: 
-    amount: 25
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 4
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: FirstTimeRepairBonus
+    amount: 0.25
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: AdvancedRepairTools
+    isHardwareEra: 0

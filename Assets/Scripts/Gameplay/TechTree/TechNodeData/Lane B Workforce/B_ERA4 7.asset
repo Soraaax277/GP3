@@ -15,12 +15,19 @@ MonoBehaviour:
   techName: 'Space-Age Telecommunication Research '
   description: Unlocks Rocketship
   researchCost: 10000
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 2a579f5e5e40eb54585c3e27a614a60a, type: 2}
   unlockEffects:
-  - type: 1
+  - type: 4
     targetUnits: []
     statToUpgrade: 
     amount: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: Rocketship
+    isHardwareEra: 0

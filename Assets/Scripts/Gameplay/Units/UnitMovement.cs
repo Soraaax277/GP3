@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 public class UnitMovement : MonoBehaviour
 {
@@ -14,8 +13,7 @@ public class UnitMovement : MonoBehaviour
     private void OnMouseDown()
     {
         if (EventSystem.current.IsPointerOverGameObject()) return;
-        if (unit == null) return;
-        if (PlayerInput.Instance == null) return;
+        if (unit == null || PlayerInput.Instance == null) return;
 
         if (unit.testingMode)
         {
@@ -23,9 +21,7 @@ public class UnitMovement : MonoBehaviour
             return;
         }
 
-        if (!unit.CanAct) return;
-        if (!unit.CanSelect) return;
-        if (unit.IsFresh) return;
+        if (!unit.CanAct || !unit.CanSelect || unit.IsFresh) return;
         if (TurnManager.Instance.currentPlayer != unit.owner) return;
 
         PlayerInput.Instance.SelectUnit(unit);

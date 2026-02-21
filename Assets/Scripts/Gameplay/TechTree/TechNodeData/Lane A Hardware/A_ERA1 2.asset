@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA1 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Improved Pole Materials
-  description: 
+  description: 5% Durability on all Telecom Towers.
   researchCost: 10
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: bac0c16e2243e494d8cded0a203385ad, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 5
     skillName: 
+    infraStatName: TowerDurability
+    infraValueMod: 0.05
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

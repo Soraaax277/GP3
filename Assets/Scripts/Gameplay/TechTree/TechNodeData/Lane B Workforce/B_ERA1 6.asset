@@ -13,20 +13,34 @@ MonoBehaviour:
   m_Name: B_ERA1 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Advance Tool Kit
+  description: 'Max Wire Length +1
+
+    +10% Durability restored in repairs'
   researchCost: 34
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 4e6f6897c782f844399580a879e8fdaa, type: 2}
   unlockEffects:
-  - type: 0
-    description: +1 to Max Wire Length
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 1
-    isBuildable: 0
     skillName: 
+    infraStatName: WireLength
+    infraValueMod: 1
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 0
-    description: +10% Repair Effectiveness
-    targetUnit: {fileID: 0}
-    amount: 1
-    isBuildable: 0
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: RepairEfficiency
+    amount: 0.1
     skillName: 
+    infraStatName: RepairEfficiency
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

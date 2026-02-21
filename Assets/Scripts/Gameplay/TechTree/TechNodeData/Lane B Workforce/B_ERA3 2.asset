@@ -15,17 +15,30 @@ MonoBehaviour:
   techName: Repair Specialization
   description: +50% Durability restored from Repairs Unlocks IT Personnel
   researchCost: 600
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: df0742d218cca3f44b19f79fde11da4a, type: 2}
   unlockEffects:
   - type: 0
-    targetUnits: []
-    statToUpgrade: 
-    amount: 50
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: RepairEfficiency
+    amount: 0.5
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 1
     targetUnits: []
     statToUpgrade: 
     amount: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

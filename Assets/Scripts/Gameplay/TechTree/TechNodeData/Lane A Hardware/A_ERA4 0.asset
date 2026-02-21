@@ -13,40 +13,72 @@ MonoBehaviour:
   m_Name: A_ERA4 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: New-Age Tech Progression
+  description: 
   researchCost: 3000
-  researchBonus: 3
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 581a0d8e1226ed64ca9e302375db8285, type: 2}
   - {fileID: 11400000, guid: b897afca447905f4998a249e048a308f, type: 2}
   - {fileID: 11400000, guid: f96a5b0b61b2fb9478a38c1f6073485f, type: 2}
   unlockEffects:
-  - type: 0
-    description: +1 to Company HQ Level
+  - type: 5
     targetUnits: []
+    statToUpgrade: 
     amount: 1
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: +50% Revenue Gain from Towers
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 1
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 50
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: 25% Final Revenue Gain
+    infraStatName: TowerRevenue
+    infraValueMod: 0.5
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 25
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: 20% Influence Radius for Towers
+    infraStatName: FinalRevenueGain
+    infraValueMod: 0.25
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: 20% Influence Radius for Towers
+    infraStatName: TowerRange
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 0
     skillName: 
+    infraStatName: InfluenceRadius
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 20
+    skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 4
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

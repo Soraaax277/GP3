@@ -1,21 +1,92 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class TechButton : MonoBehaviour
 {
-    [Header("Tech to Unlock")] public TechNode tech;
+    [Header("Tech to Unlock")]
+    public TechNode tech;
+
+    [Header("UI References")]
     public Button button;
-    public TextMeshProUGUI techDisplay;
+
+    [Tooltip("The Image component on a Child object that holds the colored sprite. This is what will be tinted.")]
+    public Image targetImage;
 
     void Start()
     {
-        button = this.GetComponent<Button>();
-        techDisplay = this.GetComponent<TextMeshProUGUI>();
+        InitializeComponents();
+
+        // Add Listener to click
+        if (button != null)
+        {
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(OnTechClicked);
+        }
+
+        UpdateNodeVisuals();
     }
- 
-    public void SetNodeText()
+
+    // Helper to ensure components are found even if Start() hasn't run yet
+    private void InitializeComponents()
     {
-        techDisplay.text = tech.techName;
+        if (button == null) button = GetComponent<Button>();
+
+        // Make the parent button invisible but keep Raycast Target ON so that
+        // UIAnimator (also on this GameObject) continues to receive pointer events.
+        Image parentButtonImage = GetComponent<Image>();
+        if (parentButtonImage != null)
+        {
+            parentButtonImage.color = Color.clear;
+            parentButtonImage.raycastTarget = true; // MUST stay true for pointer events to work
+        }
+
+        // Find child image if not assigned manually
+        if (targetImage == null)
+        {
+            // Try to find an image in children that isn't the parent button image itself
+            Image[] images = GetComponentsInChildren<Image>(true);
+            foreach(var img in images)
+            {
+                if(img.gameObject != this.gameObject)
+                {
+                    targetImage = img;
+                    break; // Found first child image
+                }
+            }
+        }
+    }
+
+    private void OnTechClicked()
+    {
+        if (TechTreeWindowManager.Instance != null && tech != null)
+        {
+            TechTreeWindowManager.Instance.SelectTechNode(tech);
+        }
+    }
+
+    public void UpdateNodeVisuals()
+    {
+        InitializeComponents();
+
+        // Ensure we have necessary components before proceeding
+        if (tech == null || button == null || targetImage == null) return;
+
+        // Apply logic to tint the child image sprite
+        if (tech.IsUnlocked)
+        {
+            button.interactable = true;
+            targetImage.color = new Color(1f, 0.95f, 0.8f, 1f); 
+        }
+        else if (tech.CanUnlock())
+        {
+            button.interactable = true;
+            targetImage.color = Color.white; 
+        }
+        else
+        {
+            button.interactable = true;
+            // Gray tint desaturates and darkens the colored sprite underneath
+            targetImage.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+        }
     }
 }

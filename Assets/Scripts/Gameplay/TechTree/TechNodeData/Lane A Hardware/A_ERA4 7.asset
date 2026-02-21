@@ -13,22 +13,32 @@ MonoBehaviour:
   m_Name: A_ERA4 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: State-of-the-Art Telecom Hardware
+  description: 
   researchCost: 6000
-  researchBonus: 3
+  goldCost: 0
+  rpBonusPerTurn: 3
   preReqs:
   - {fileID: 11400000, guid: 09b2c1c14d29b7440bdedd276761f565, type: 2}
   - {fileID: 11400000, guid: 55e3d04f2be01c14d942dd1626f64cea, type: 2}
   - {fileID: 11400000, guid: 5ecd707c732a267438a8c594a8347027, type: 2}
   unlockEffects:
-  - type: 0
-    description: +200% Revenue Gain from Towers
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 200
-    isBuildable: 1
     skillName: 
-  - type: 0
-    description: +200% toFinal Revenue Gain
+    infraStatName: TowerRevenue
+    infraValueMod: 2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 200
-    isBuildable: 1
     skillName: 
+    infraStatName: FinalRevenueGain
+    infraValueMod: 2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

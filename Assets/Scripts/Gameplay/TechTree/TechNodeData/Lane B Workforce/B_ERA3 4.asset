@@ -15,17 +15,19 @@ MonoBehaviour:
   techName: Portable Workbenches
   description: -20% to Building Costs
   researchCost: 850
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: a5d1b8c7c4a88b042888d96a28003aed, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 50
     skillName: 
-  - type: 2
-    targetUnits: []
-    statToUpgrade: 
-    amount: 0
-    skillName: 
+    infraStatName: BuildingCost
+    infraValueMod: -0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

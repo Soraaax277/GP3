@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA1 3
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Durable Copper Wiring
-  description: 
+  description: 10% Wire Durability
   researchCost: 40
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 52db719728075394f83d975be0ad7274, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 10
     skillName: 
+    infraStatName: WireDurability
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

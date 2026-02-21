@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ac7853a1b51b04a909b016f92e520e, type: 3}
+  m_Name: TechButton
+  m_EditorClassIdentifier: Assembly-CSharp::UITheme
+  hoverScale: 1.1
+  hoverDuration: 0.15
+  hoverEase: 6
+  clickScale: 0.95
+  clickDuration: 0.1
+  clickEase: 6
+  entryScale: 1
+  entryDuration: 0
+  entryEase: 1

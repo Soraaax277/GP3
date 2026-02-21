@@ -15,17 +15,33 @@ MonoBehaviour:
   techName: Adrenaline Implants
   description: +20% Maintenance Cost +3 Actions for all Workers
   researchCost: 3750
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 2eaab0ca7ec15f6459ee9e37f62a071a, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 20
     skillName: 
+    infraStatName: MaintenanceCost
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
   - type: 0
-    targetUnits: []
-    statToUpgrade: 
+    targetUnits:
+    - {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
+    - {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+    - {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: Actions
     amount: 3
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

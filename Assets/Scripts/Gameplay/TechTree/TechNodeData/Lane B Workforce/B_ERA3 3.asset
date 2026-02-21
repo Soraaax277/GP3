@@ -15,12 +15,19 @@ MonoBehaviour:
   techName: Improved Building Materials
   description: -25% to Structure Degradation Effects
   researchCost: 700
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: a5d1b8c7c4a88b042888d96a28003aed, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: -25
     skillName: 
+    infraStatName: StructureDegradation
+    infraValueMod: -0.25
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

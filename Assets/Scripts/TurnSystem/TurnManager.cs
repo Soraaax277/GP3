@@ -5,8 +5,13 @@ public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance;
 
+    //  WORLD ERA  (advances every 25 turns, shared by all players)
     public enum GameEra { Industrial, EarlyEighties, Retro, Futuristic }
     public GameEra currentEra { get; private set; }
+
+    //  PLAYER ERA  (per-player tech levels — stored on PlayerData)
+    public enum PlayerEra { Industrial, EarlyEighties, Retro, Futuristic }
+
     public int currentTurn { get; set; } = 1;
     public const int MAX_TURNS = 100;
 
@@ -15,8 +20,9 @@ public class TurnManager : MonoBehaviour
     public List<PlayerData> players;
     private int currentPlayerIndex;
 
-    private List<Unit> allUnits = new List<Unit>();
-    private List<TowerNode> allTowers = new List<TowerNode>();
+    private List<Unit>       allUnits  = new List<Unit>();
+    private List<TowerNode>  allTowers = new List<TowerNode>();
+    private List<WireNode>   allWires  = new List<WireNode>();
 
     public event System.Action OnGameStatusChanged;
 
@@ -25,6 +31,7 @@ public class TurnManager : MonoBehaviour
         OnGameStatusChanged?.Invoke();
     }
 
+    //  LIFECYCLE
     private void Awake()
     {
         Instance = this;
@@ -48,28 +55,164 @@ public class TurnManager : MonoBehaviour
         StartTurn();
     }
 
+    //  TURN FLOW
     void StartTurn()
     {
         currentPlayer = players[currentPlayerIndex];
-        Debug.Log($"Turn {currentTurn} - {currentPlayer.playerName}'s turn");
 
+        // CLEANUP UI
+        // Ensure no old menus are stuck open from the previous player
+        if (BuildUIManager.Instance != null) 
+            BuildUIManager.Instance.CloseBuildMenu();
+
+        // SIGNAL PROPAGATION
+        // Propagate signal from every player's HQs before influence is recalculated,
+        // so that towers have up-to-date receivedSignalStrength values.
+        foreach (PlayerData p in players)
+        {
+            foreach (SignalNode node in p.ownedNodes)
+            {
+                if (node != null)
+                    node.PropagateSignal();
+            }
+        }
+
+        // CALCULATE GLOBAL STATE 
+        if (InfluenceManager.Instance != null)
+        {
+            InfluenceManager.Instance.RecalculateGlobalInfluence(players);
+        }
+        else
+        {
+            Debug.LogError("TurnManager: Missing InfluenceManager!");
+        }
+
+        // PROCESS INCOME
+        if (EconomyManager.Instance != null)
+        {
+            EconomyManager.Instance.ProcessTurnIncome(currentPlayer);
+        }
+        else
+        {
+            Debug.LogError("TurnManager: Missing EconomyManager!");
+        }
+        
+        // UPDATE GAME WORLD 
         OnGameStatusChanged?.Invoke();
 
-        foreach (Unit unit in allUnits)
-            unit.OnTurnStart(currentPlayer);
+        // Iterate a copy so destroyed units can be safely removed mid-loop
+        for (int i = allUnits.Count - 1; i >= 0; i--)
+        {
+            if (allUnits[i] == null) { allUnits.RemoveAt(i); continue; }
+            allUnits[i].OnTurnStart(currentPlayer);
+        }
 
+        // TOWER DECAY
         foreach (TowerNode tower in allTowers)
-            tower.CheckForDestruction();
+        {
+            if (tower.owner == currentPlayer) 
+            {
+                tower.ProcessTurnDecay();
+            }
+        }
 
+        // WIRE DECAY
+        for (int i = allWires.Count - 1; i >= 0; i--)
+        {
+            WireNode wire = allWires[i];
+            
+            if (wire == null) 
+            {
+                allWires.RemoveAt(i);
+                continue;
+            }
+
+            if (wire.owner == currentPlayer)
+            {
+                wire.DecayWire();
+            }
+        }
+
+        // CAMERA TRACKING
+        HandleCameraFocus(currentPlayer);
+
+        // AI EXECUTION
         if (currentPlayer.isAI && EnemyAI.Instance != null)
         {
             EnemyAI.Instance.ExecuteTurn(currentPlayer);
         }
     }
 
-    public List<Unit> GetAllUnits() => allUnits;
-    public List<PlayerData> GetPlayers() => players;
+    private void HandleCameraFocus(PlayerData player)
+    {
+        if (CameraController.Instance == null) return;
 
+        Vector3 focusPoint = GetPlayerFocusPoint(player);
+
+        if (player.isAI)
+        {
+            // Lock controls and pan to enemy (Cutscene Mode)
+            CameraController.Instance.cutsceneMode = true;
+            CameraController.Instance.FocusOnPosition(focusPoint);
+        }
+        else
+        {
+            // Release Cutscene Mode (Player Turn)
+            CameraController.Instance.cutsceneMode = false;
+            CameraController.Instance.FocusOnPosition(focusPoint);
+        }
+    }
+
+    private Vector3 GetPlayerFocusPoint(PlayerData player)
+    {
+        Vector3 averagePos = Vector3.zero;
+        int count = 0;
+
+        // Collect all owned items for THIS SPECIFIC player
+        // Null check guards against units destroyed mid-turn (e.g. BuilderUnit running out of charges)
+        foreach (var unit in allUnits)
+        {
+            if (unit == null) continue;
+            if (unit.owner == player)
+            {
+                averagePos += unit.transform.position;
+                count++;
+            }
+        }
+        foreach (var tower in allTowers)
+        {
+            if (tower.owner == player)
+            {
+                averagePos += tower.transform.position;
+                count++;
+            }
+        }
+
+        // Also include HQs (SignalNodes) in the calculation
+        foreach (var node in player.ownedNodes)
+        {
+            if (node != null)
+            {
+                averagePos += node.transform.position;
+                count++;
+            }
+        }
+
+        if (count > 0)
+        {
+            return averagePos / count;
+        }
+        
+        return CameraController.Instance.transform.position; 
+    }
+
+    //  ACCESSORS
+    public List<Unit>      GetAllUnits()  => allUnits;
+    public List<TowerNode> GetAllTowers() => allTowers;   
+    public List<WireNode>  GetAllWires()  => allWires;    
+    public List<PlayerData> GetPlayers()  => players;
+
+    //  END TURN
     public void EndTurn()
     {
         currentPlayerIndex++;
@@ -100,14 +243,26 @@ public class TurnManager : MonoBehaviour
     {
         if (currentTurn > MAX_TURNS)
         {
-            Debug.Log("Game Over! Turn Limit Reached.");
+            PlayerData winner = InfluenceManager.Instance.GetWinner();
+            int winningScore = InfluenceManager.Instance.GetTotalInfluence(winner);
+            
+            Debug.Log($"Game Over! Turn Limit Reached.");
+            Debug.Log($"WINNER: {winner.playerName} with {winningScore} Influence!");
         }
     }
 
+    //  REGISTRATION
     public void RegisterUnit(Unit unit)
     {
         if (!allUnits.Contains(unit))
             allUnits.Add(unit);
+    }
+
+    // Call this before Destroy(gameObject) on any unit so it is removed from
+    // the allUnits list. Prevents MissingReferenceException in GetPlayerFocusPoint.
+    public void UnregisterUnit(Unit unit)
+    {
+        allUnits.Remove(unit);
     }
 
     public void RegisterTower(TowerNode tower)
@@ -116,8 +271,50 @@ public class TurnManager : MonoBehaviour
             allTowers.Add(tower);
     }
 
+    public void RegisterWire(WireNode wire)
+    {
+        if (!allWires.Contains(wire))
+            allWires.Add(wire);
+    }
+
     public string GetCurrentEra()
     {
         return currentEra.ToString();
+    }
+
+    //  ERA COMPARISON HELPERS  (System 1)
+    // True when the World Era is ahead of the player's Hardware Era.
+    // Triggers the obsolete-tech influence debuff.
+    public bool IsHardwareObsolete(PlayerData player)
+    {
+        return (int)currentEra > (int)player.hardwareEra;
+    }
+
+    // True when the player's Hardware Era is ahead of their Workforce Era.
+    // Triggers the unskilled-labor upkeep penalty.
+    public bool HasLaborMismatch(PlayerData player)
+    {
+        return (int)player.hardwareEra > (int)player.workforceEra;
+    }
+
+    // Returns the influence generation multiplier for a player based on how
+    // many eras their hardware lags behind the World Era.
+    // Gap of 0 → 1.0 (no penalty).  Each era gap → −25 %, floored at 25 %.
+    public float GetEraInfluenceMultiplier(PlayerData player)
+    {
+        int eraGap = (int)currentEra - (int)player.hardwareEra;
+        if (eraGap <= 0) return 1.0f;
+
+        return Mathf.Max(0.25f, 1f - eraGap * 0.25f);
+    }
+
+    // Returns the upkeep cost multiplier caused by a hardware/workforce era mismatch.
+    // Gap of 0 → 1.0 (no penalty).  Each era gap → +50 % upkeep.
+    public float GetUpkeepMultiplier(PlayerData player)
+    {
+        int eraGap = (int)player.hardwareEra - (int)player.workforceEra;
+        if (eraGap <= 0) return 1.0f;
+
+        return 1f + eraGap * 0.5f;
     }
 }

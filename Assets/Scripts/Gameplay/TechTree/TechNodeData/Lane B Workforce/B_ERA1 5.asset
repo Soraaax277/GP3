@@ -13,14 +13,25 @@ MonoBehaviour:
   m_Name: B_ERA1 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Work Insurance
+  description: Workers +1 Action
   researchCost: 28
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 4e6f6897c782f844399580a879e8fdaa, type: 2}
   unlockEffects:
   - type: 0
-    description: +1 Action for Workers
-    targetUnit: {fileID: 0}
+    targetUnits:
+    - {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
+    - {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    - {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+    statToUpgrade: Actions
     amount: 1
-    isBuildable: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

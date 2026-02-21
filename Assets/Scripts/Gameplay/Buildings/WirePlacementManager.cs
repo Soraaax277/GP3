@@ -15,6 +15,34 @@ public class WirePlacementManager : MonoBehaviour
 
     public bool IsPlacing => isPlacing;
 
+    //  WIRE LENGTH  ("WireLength" flat bonus tech)
+    //  Base = 1 hex from the specialist unit.
+    //  Increased by the "WireLength" TechEffect flat bonus (e.g. +2 from Coaxial Cables).
+    public int MaxWireLength
+    {
+        get
+        {
+            int baseLen = 1;
+            if (TechManager.Instance == null) return baseLen;
+            int bonus = Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus("WireLength"));
+            return baseLen + bonus;
+        }
+    }
+
+    //  WIRE COST  ("WireCost" multiplier tech)
+    //  Base = 10 gold per wire tile.
+    //  Reduced by the "WireCost" TechEffect multiplier (set value to -0.1 for 10% off).
+    //  Default GetInfraMultiplier returns 1.0, so: 10 * 1.0 = 10 gold (no tech).
+    //  With -0.1 applied: 10 * 0.9 = 9 gold.
+    public int baseCost = 10;
+
+    public int GetCurrentWireCost()
+    {
+        if (TechManager.Instance == null) return baseCost;
+        float multiplier = TechManager.Instance.GetInfraMultiplier("WireCost");
+        return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
+    }
+
     void Awake() => Instance = this;
 
     void Update()
@@ -55,7 +83,8 @@ public class WirePlacementManager : MonoBehaviour
         currentYRotation = 0f;
         lastStartTime = Time.time;
 
-        BuildUIManager.Instance.ignoreNextClick = true;
+        if (BuildUIManager.Instance != null)
+             BuildUIManager.Instance.ignoreNextClick = true;
 
         if (wirePrefab != null)
         {
@@ -85,21 +114,41 @@ public class WirePlacementManager : MonoBehaviour
         hoveredTile = tile;
         hologram.transform.position = tile.transform.position + Vector3.up * 0.84f;
 
-        int distFromUnit = GridManager.Instance.CubeDistance(currentSpecialist.currentTile.cubeCoords, tile.cubeCoords);
-        
+        // VALIDITY CHECK
+        int distFromUnit = GridManager.Instance.CubeDistance(
+            currentSpecialist.currentTile.cubeCoords, tile.cubeCoords);
+
+        // Check wire length against tech limit
+        bool isWithinReach = distFromUnit <= MaxWireLength;
+
+        // Must be adjacent to an owned network tile (node / wire / powered tower)
+        // Previously accepted ANY player's infrastructure. Now checks ownership
+        // so wires must connect to the specialist's own network.
         bool isNextToPower = false;
-        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
+        if (GridManager.Instance != null)
         {
-            if (neighbor.placedNode != null || neighbor.placedTower != null || neighbor.placedWire != null)
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
             {
-                isNextToPower = true;
-                break;
+                bool ownedNode  = neighbor.placedNode  != null && neighbor.placedNode.owner  == currentSpecialist.owner;
+                bool ownedTower = neighbor.placedTower != null && neighbor.placedTower.owner == currentSpecialist.owner;
+                bool ownedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == currentSpecialist.owner;
+
+                if (ownedNode || ownedTower || ownedWire)
+                {
+                    isNextToPower = true;
+                    break;
+                }
             }
         }
 
-        bool valid = distFromUnit <= 1 && isNextToPower && !tile.IsOccupied() && !tile.HasWire();
+        // Player must be able to afford it
+        int cost = GetCurrentWireCost();
+        bool canAfford = currentSpecialist.owner != null && currentSpecialist.owner.resources >= cost;
+
+        bool valid = isWithinReach && isNextToPower && !tile.IsOccupied() && !tile.HasWire() && canAfford;
         isTileValid = valid;
-        
+
+        // Colour the hologram: yellow = valid, red = invalid
         Color holoColor = valid ? new Color(1f, 1f, 0f, 0.4f) : new Color(1f, 0f, 0f, 0.4f);
         
         if (wirePrefab != null)
@@ -111,6 +160,19 @@ public class WirePlacementManager : MonoBehaviour
     void PlaceWire()
     {
         if (hoveredTile == null || !isTileValid) return;
+
+        // DEDUCT WIRE COST from player resources
+        int cost = GetCurrentWireCost();
+        if (currentSpecialist.owner.resources < cost)
+        {
+            Debug.Log($"[WirePlacement] Not enough gold! Need {cost}, have {currentSpecialist.owner.resources}");
+            CancelPlacement();
+            return;
+        }
+
+        currentSpecialist.owner.resources -= cost;
+        Debug.Log($"[WirePlacement] Wire placed for {cost} gold. " +
+                  $"Remaining: {currentSpecialist.owner.resources}");
 
         currentSpecialist.BuildWire(hoveredTile, currentYRotation);
         CancelPlacement();
@@ -137,6 +199,12 @@ public class WirePlacementManager : MonoBehaviour
 
         WireNode wire = wireObj.GetComponent<WireNode>();
         wire.Initialize(tile, owner);
+
+        // Register with TurnManager so it participates in decay each turn
+        if (TurnManager.Instance != null)
+        {
+            TurnManager.Instance.RegisterWire(wire);
+        }
 
         return wire;
     }

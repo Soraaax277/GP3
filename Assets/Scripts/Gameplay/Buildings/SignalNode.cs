@@ -1,111 +1,206 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-public class SignalNode : MonoBehaviour, IInfrastructure
+public class SignalNode : MonoBehaviour
 {
-    public HexTile ParentTile => tile;
-    public PlayerData owner;
-    public HexTile tile;
-    PlayerData IInfrastructure.owner => owner;
-    public int range = 5;
-    private GameObject rangeIndicator;
+    //  IDENTITY
+    public PlayerData owner { get; private set; }
+    public HexTile    tile  { get; private set; }
 
-    public int influenceRadius;
+    public HexTile ParentTile => tile;
+
+    [Header("Visual")]
     public GameObject businessBuilding;
 
-    public int towersPlacedCount = 0;
+    //  TOWER CAPACITY
+    [Header("Tower Settings")]
+    [Tooltip("Base number of towers this HQ can support before any tech upgrades.")]
     public int maxTowers = 2;
 
-    public bool CanPlaceTower() => towersPlacedCount < maxTowers;
+    public int CurrentMaxTowers
+    {
+        get
+        {
+            int bonus = 0;
+            if (TechManager.Instance != null)
+                bonus = Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus("TowerCapacity"));
+            return maxTowers + bonus;
+        }
+    }
 
+    public int towersPlacedCount = 0;
+
+    public bool CanPlaceTower()
+    {
+        return towersPlacedCount < CurrentMaxTowers;
+    }
+
+    // -----------------------------------------------------------------------
+    //  INFLUENCE / PLACEMENT RADIUS
+    //  Supports BOTH flat bonus AND multiplier via the same "InfluenceRadius" key.
+    //
+    //  Flat  (isMultiplier ☐): adds directly to the base radius.
+    //         e.g. base 3 + bonus 1 = 4 tiles
+    //
+    //  Mult  (isMultiplier ✅): scales the result after flat bonus is added.
+    //         e.g. (base 3 + 0) * 1.1 = 3.3 → 3 tiles  (at +10%)
+    //         e.g. (base 3 + 0) * 0.8 = 2.4 → 2 tiles  (Modern SatComm -20%)
+    //
+    //  Both can be stacked — flat first, then the multiplier.
+    // -----------------------------------------------------------------------
+    [Header("Influence Settings")]
+    [Tooltip("Base hex radius within which towers can be placed from this HQ.")]
+    public int baseInfluenceRadius = 3;
+
+    public int CurrentInfluenceRadius
+    {
+        get
+        {
+            if (TechManager.Instance == null) return baseInfluenceRadius;
+
+            float flatBonus  = TechManager.Instance.GetInfraFlatBonus("InfluenceRadius");
+            float multiplier = TechManager.Instance.GetInfraMultiplier("InfluenceRadius");
+
+            // Safety: prevent zero/negative multiplier collapsing the radius
+            if (multiplier <= 0f) multiplier = 1f;
+
+            int result = Mathf.RoundToInt((baseInfluenceRadius + flatBonus) * multiplier);
+            return Mathf.Max(1, result);
+        }
+    }
+
+    //  SIGNAL  (System 2)
+    [Header("Signal")]
+    [Tooltip("Base signal strength broadcast from this HQ each turn.")]
+    public float baseSignalStrength = 50f;
+
+    public List<TowerNode> connectedTowers { get; private set; } = new List<TowerNode>();
+
+    //  INITIALIZATION
     public void Initialize(HexTile hexTile, PlayerData player)
     {
+        tile  = hexTile;
         owner = player;
-        tile = hexTile;
 
-        tile.placedNode = this;
-        player.ownedNodes.Add(this);
+        tile.placedNode       = this;
+        tile.placedSignalNode = this;
 
-        businessBuilding = this.gameObject;
+        if (!player.ownedNodes.Contains(this))
+            player.ownedNodes.Add(this);
 
-        if (!player.isAI)
-            CreateRangeIndicator();
+        if (businessBuilding == null)
+            businessBuilding = gameObject;
 
-        ApplyInfluence();
+        Debug.Log($"[SignalNode] Initialized for {player.playerName} at {hexTile.name}");
+    }
 
-        if (PowerGridManager.Instance != null)
+    //  BASE SIGNAL
+    public float GetBaseSignalStrength()
+    {
+        float techBoost = 0f;
+        if (TechManager.Instance != null)
+            techBoost = TechManager.Instance.GetInfraFlatBonus("BaseSignalBoost");
+        return baseSignalStrength + techBoost;
+    }
+
+    //  SIGNAL PROPAGATION  (System 2)
+    public void PropagateSignal()
+    {
+        if (GridManager.Instance == null || tile == null) return;
+
+        foreach (TowerNode tower in TurnManager.Instance.GetAllTowers())
         {
-            PowerGridManager.Instance.RegisterSource(this);
-            PowerGridManager.Instance.RefreshGrid();
-        }
-    }
-
-    void CreateRangeIndicator()
-    {
-        rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-
-        Vector3 indicatorPos = tile.transform.position;
-        indicatorPos.y = 1f;
-        rangeIndicator.transform.position = indicatorPos;
-
-        float visualRadius = influenceRadius * GridManager.Instance.hexSize;
-
-        rangeIndicator.transform.localScale =
-            new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
-
-        Renderer rend = rangeIndicator.GetComponent<Renderer>();
-        rend.material = new Material(Shader.Find("Sprites/Default"));
-        rend.material.color = new Color(0f, 0.5f, 1f, 0.25f);
-
-        Destroy(rangeIndicator.GetComponent<Collider>());
-        rangeIndicator.SetActive(false);
-    }
-
-    public float GetVisualRadius()
-    {
-        if (rangeIndicator == null)
-            return 0f;
-
-        return rangeIndicator.transform.localScale.x / 2f;
-    }
-
-    void OnMouseEnter()
-    {
-        if (rangeIndicator != null)
-            rangeIndicator.SetActive(true);
-    }
-
-    void OnMouseExit()
-    {
-        if (rangeIndicator != null)
-            rangeIndicator.SetActive(false);
-    }
-
-
-    public bool IsTileWithinInfluence(HexTile target)
-    {
-        int dist = HexDistance(tile.cubeCoords, target.cubeCoords);
-        return dist <= influenceRadius;
-    }
-
-    int HexDistance(Vector3Int a, Vector3Int b)
-    {
-        return (Mathf.Abs(a.x - b.x)
-              + Mathf.Abs(a.y - b.y)
-              + Mathf.Abs(a.z - b.z)) / 2;
-    }
-
-    void ApplyInfluence()
-    {
-        var tilesInRange = GridManager.Instance.GetTilesInRange(tile, influenceRadius);
-
-        foreach (HexTile t in tilesInRange)
-        {
-            t.AddInfluence(owner, t.baseInfluence);
-            Debug.Log($"{t.name} gained +{t.baseInfluence} influence for {owner.playerName} from SignalNode");
+            if (tower != null && tower.owner == owner)
+                tower.receivedSignalStrength = 0f;
         }
 
-        if (TurnManager.Instance != null)
-            TurnManager.Instance.NotifyStatusChanged();
+        float decayRate = 0.50f;
+        if (TechManager.Instance != null)
+        {
+            float reduction = TechManager.Instance.GetInfraFlatBonus("SignalDecayReduction");
+            decayRate = Mathf.Max(0.05f, decayRate - reduction);
+        }
+
+        // "MicrowaveRelays" feature: HQ broadcasts directly to all owned towers
+        // without needing a wire chain — signal still decays per hop distance.
+        bool microwaveRelays = TechManager.Instance != null &&
+                               TechManager.Instance.IsFeatureUnlocked("MicrowaveRelays");
+
+        float startSignal = GetBaseSignalStrength();
+
+        var queue   = new Queue<(HexTile tile, float signal)>();
+        var visited = new HashSet<HexTile>();
+
+        visited.Add(tile);
+
+        if (microwaveRelays)
+        {
+            // Bypass wire requirement — seed directly from all owned towers regardless
+            // of wire connectivity. Distance from HQ determines hop count.
+            foreach (TowerNode tower in TurnManager.Instance.GetAllTowers())
+            {
+                if (tower == null || tower.owner != owner || tower.tile == null) continue;
+                int hops = GridManager.Instance.CubeDistance(tile.cubeCoords, tower.tile.cubeCoords);
+                float signal = startSignal * Mathf.Pow(1f - decayRate, hops);
+                if (signal > tower.receivedSignalStrength)
+                    tower.receivedSignalStrength = signal;
+                if (!connectedTowers.Contains(tower))
+                    connectedTowers.Add(tower);
+            }
+        }
+        else
+        {
+            // Standard BFS through owned wires
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
+            {
+                if (neighbor == null || visited.Contains(neighbor)) continue;
+
+                bool hasOwnedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == owner;
+                bool hasOwnedTower = neighbor.placedTower != null && neighbor.placedTower.owner == owner;
+
+                if (hasOwnedWire || hasOwnedTower)
+                    queue.Enqueue((neighbor, startSignal * (1f - decayRate)));
+            }
+
+            connectedTowers.Clear();
+
+            while (queue.Count > 0)
+            {
+                var (current, signal) = queue.Dequeue();
+
+                if (visited.Contains(current)) continue;
+                visited.Add(current);
+
+                if (current.placedTower != null && current.placedTower.owner == owner)
+                {
+                    TowerNode tower = current.placedTower;
+                    if (signal > tower.receivedSignalStrength)
+                    {
+                        tower.receivedSignalStrength = signal;
+                        Debug.Log($"[Signal] {owner.playerName}'s {tower.name} receives: {signal:F2}");
+                    }
+                    if (!connectedTowers.Contains(tower))
+                        connectedTowers.Add(tower);
+                }
+
+                if (current.placedWire != null && current.placedWire.owner == owner)
+                {
+                    foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(current))
+                    {
+                        if (neighbor == null || visited.Contains(neighbor)) continue;
+
+                        bool hasOwnedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == owner;
+                        bool hasOwnedTower = neighbor.placedTower != null && neighbor.placedTower.owner == owner;
+
+                        if (hasOwnedWire || hasOwnedTower)
+                            queue.Enqueue((neighbor, signal * (1f - decayRate)));
+                    }
+                }
+            }
+        }
+
+        Debug.Log($"[Signal] {owner.playerName}'s HQ propagated " +
+                  $"(base: {startSignal}, decay: {decayRate * 100:F0}%/hop, " +
+                  $"microwave: {microwaveRelays}, connected towers: {connectedTowers.Count})");
     }
 }

@@ -15,10 +15,10 @@ public class EnemyAI : MonoBehaviour
     public GameObject technicianPrefab;
 
     [Header("Costs")]
-    public int wireSpecialistCost = 25;
-    public int builderCost = 50;
-    public int salesMarketerCost = 30;
-    public int technicianCost = 20;
+    public int wireSpecialistCost  = 25;
+    public int builderCost         = 50;
+    public int salesMarketerCost   = 30;
+    public int technicianCost      = 20;
 
     private void Awake()
     {
@@ -51,7 +51,7 @@ public class EnemyAI : MonoBehaviour
 
         List<Unit> myUnits = TurnManager.Instance.GetAllUnits().Where(u => u.owner == aiPlayer).ToList();
         int specialistCount = myUnits.Count(u => u is WireSpecialist);
-        int builderCount = myUnits.Count(u => u is BuilderUnit);
+        int builderCount    = myUnits.Count(u => u is BuilderUnit);
 
         bool needsBuilder = GetUnbuiltTowers(aiPlayer).Any();
         
@@ -81,9 +81,11 @@ public class EnemyAI : MonoBehaviour
         }
 
         int technicianCount = myUnits.Count(u => u is Technician);
-        bool needsRepair = FindObjectsByType<TowerNode>(FindObjectsSortMode.None).Any(t => t.owner == aiPlayer && t.IsDestroyed());
+        bool needsRepair = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Any(t => t.owner == aiPlayer && t.IsDestroyed());
         
-        Debug.Log($"[EnemyAI] Technician Check - Count: {technicianCount}, NeedsRepair: {needsRepair}, Resources: {aiPlayer.resources}, Cost: {technicianCost}, Prefab: {technicianPrefab != null}");
+        Debug.Log($"[EnemyAI] Technician Check - Count: {technicianCount}, NeedsRepair: {needsRepair}, " +
+                  $"Resources: {aiPlayer.resources}, Cost: {technicianCost}, Prefab: {technicianPrefab != null}");
         
         if (needsRepair && technicianCount < 1 && aiPlayer.resources >= technicianCost)
         {
@@ -142,7 +144,7 @@ public class EnemyAI : MonoBehaviour
 
     private HexTile FindBestTowerSpot(SignalNode node)
     {
-        var tilesInRange = GridManager.Instance.GetTilesInRange(node.tile, node.influenceRadius)
+        var tilesInRange = GridManager.Instance.GetTilesInRange(node.tile, node.CurrentInfluenceRadius)
             .Where(t => !t.IsOccupied() && !t.HasTower() && t != node.tile)
             .OrderByDescending(t => t.GetTotalInfluence(node.owner));
 
@@ -158,8 +160,10 @@ public class EnemyAI : MonoBehaviour
 
     private List<TowerNode> GetUnbuiltTowers(PlayerData owner)
     {
+        // TowerState.Unbuilt was renamed to TowerState.Hologram (System 3 three-phase build).
+        // A Hologram is the newly-placed blueprint that a Builder must Construct.
         return FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
-            .Where(t => t.owner == owner && t.state == TowerNode.TowerState.Unbuilt).ToList();
+            .Where(t => t.owner == owner && t.state == TowerNode.TowerState.Hologram).ToList();
     }
 
     private IEnumerator HandleBuilder(BuilderUnit builder)
@@ -184,7 +188,8 @@ public class EnemyAI : MonoBehaviour
                 builder.MoveTo(moveTarget, builder.moveRange);
                 yield return new WaitForSeconds(0.5f);
                 
-                if (builder != null && builder.CanAct && GridManager.Instance.GetNeighbors(builder.currentTile).Contains(target.tile))
+                if (builder != null && builder.CanAct && 
+                    GridManager.Instance.GetNeighbors(builder.currentTile).Contains(target.tile))
                 {
                     builder.ConstructAdjacentTower();
                 }
@@ -256,7 +261,7 @@ public class EnemyAI : MonoBehaviour
                     if (distToTarget < minTargetDist)
                     {
                         minTargetDist = distToTarget;
-                        bestWireTile = tile;
+                        bestWireTile  = tile;
                     }
                 }
             }
@@ -272,7 +277,8 @@ public class EnemyAI : MonoBehaviour
             else
             {
                 moveTarget = GridManager.Instance.GetNeighbors(bestWireTile)
-                    .Where(n => !n.IsOccupied() && GridManager.Instance.CubeDistance(specialist.currentTile.cubeCoords, n.cubeCoords) <= specialist.moveRange)
+                    .Where(n => !n.IsOccupied() && 
+                                GridManager.Instance.CubeDistance(specialist.currentTile.cubeCoords, n.cubeCoords) <= specialist.moveRange)
                     .OrderBy(n => GridManager.Instance.CubeDistance(specialist.currentTile.cubeCoords, n.cubeCoords))
                     .FirstOrDefault();
             }
@@ -301,6 +307,7 @@ public class EnemyAI : MonoBehaviour
             .OrderBy(t => GridManager.Instance.CubeDistance(t.cubeCoords, goal.cubeCoords))
             .FirstOrDefault();
     }
+
     private IEnumerator HandleSalesMarketer(SalesMarketer marketer)
     {
         HexTile target = GridManager.Instance.tiles.Values
@@ -340,7 +347,8 @@ public class EnemyAI : MonoBehaviour
                     technician.MoveTo(moveTarget, technician.moveRange);
                     yield return new WaitForSeconds(0.5f);
 
-                    if (technician != null && technician.CanAct && GridManager.Instance.GetNeighbors(technician.currentTile).Contains(target.tile))
+                    if (technician != null && technician.CanAct && 
+                        GridManager.Instance.GetNeighbors(technician.currentTile).Contains(target.tile))
                     {
                         technician.RepairAdjacentStructure();
                     }

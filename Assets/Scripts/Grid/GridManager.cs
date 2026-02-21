@@ -4,14 +4,14 @@ using System.Collections.Generic;
 public class GridManager : MonoBehaviour
 {
     private static readonly Vector3Int[] CubeDirections =
-{
-    new Vector3Int( 1, -1,  0),
-    new Vector3Int( 1,  0, -1),
-    new Vector3Int( 0,  1, -1),
-    new Vector3Int(-1,  1,  0),
-    new Vector3Int(-1,  0,  1),
-    new Vector3Int( 0, -1,  1),
-};
+    {
+        new Vector3Int( 1, -1,  0),
+        new Vector3Int( 1,  0, -1),
+        new Vector3Int( 0,  1, -1),
+        new Vector3Int(-1,  1,  0),
+        new Vector3Int(-1,  0,  1),
+        new Vector3Int( 0, -1,  1),
+    };
     public bool IsReady { get; private set; }
     public static GridManager Instance;
 
@@ -19,6 +19,14 @@ public class GridManager : MonoBehaviour
     public int width = 75;
     public int height = 45;
     public float hexSize = 1f;
+
+    [Header("Continent Generation Settings")]
+    [Tooltip("How zoomed in the noise is. Lower values = larger, smoother landmasses.")]
+    public float noiseScale = 0.04f; 
+    [Tooltip("The base value required to spawn land. Lower = more land overall.")]
+    public float landThreshold = -0.1f; 
+    [Tooltip("How strongly the edges of the map turn to water. Lower = land pushes closer to edges.")]
+    public float edgeFalloff = 0.8f;
 
     [Header("References")]
     public GameObject hexTilePrefab;
@@ -31,7 +39,6 @@ public class GridManager : MonoBehaviour
         Instance = this;
     }
 
-
     private void Start()
     {
         GenerateGrid();
@@ -41,29 +48,123 @@ public class GridManager : MonoBehaviour
     {
         tiles.Clear();
 
+        // Determine the center of the grid in world space for the falloff calculation
+        Vector3 worldCenter = HexToWorld(width / 2, height / 2);
+        
+        // The maximum radius based on the grid dimensions
+        float maxRadius = (Mathf.Min(width, height) / 2f) * (hexSize * 2f);
+        
+        // Generate random offsets so the continent is different every time you play
+        float randomOffsetX = Random.Range(-10000f, 10000f);
+        float randomOffsetY = Random.Range(-10000f, 10000f);
+
+        // New world generation approach:
+        // STEP 1: INITIAL NOISE GENERATION
         for (int q = 0; q < width; q++)
         {
             for (int r = 0; r < height; r++)
             {
                 Vector3 worldPos = HexToWorld(q, r);
-                Vector3Int cubeCoords = AxialToCube(q, r);
+                
+                float distFromCenter = Vector3.Distance(worldPos, worldCenter);
+                float normalizedDist = distFromCenter / maxRadius;
 
-                GameObject tileObj = Instantiate(
-                    hexTilePrefab,
-                    worldPos,
-                    hexTilePrefab.transform.rotation,
-                    transform
-                );
+                float noiseValue = Mathf.PerlinNoise((q + randomOffsetX) * noiseScale, (r + randomOffsetY) * noiseScale);
+                float finalLandValue = noiseValue - (normalizedDist * edgeFalloff);
 
-                HexTile tile = tileObj.GetComponent<HexTile>();
-                tile.Initialize(cubeCoords);
+                if (finalLandValue >= landThreshold)
+                {
+                    Vector3Int cubeCoords = AxialToCube(q, r);
 
-                tiles.Add(cubeCoords, tile);
+                    GameObject tileObj = Instantiate(
+                        hexTilePrefab,
+                        worldPos,
+                        hexTilePrefab.transform.rotation,
+                        transform
+                    );
+
+                    HexTile tile = tileObj.GetComponent<HexTile>();
+                    tile.Initialize(cubeCoords);
+
+                    tiles.Add(cubeCoords, tile);
+                }
             }
         }
 
+        // STEP 2: POST-PROCESSING (REMOVE DETACHED ISLANDS)
+        RemoveDisconnectedIslands();
+
         IsReady = true;
-        Debug.Log($"Generated {tiles.Count} hex tiles");
+        Debug.Log($"Generated {tiles.Count} hex tiles forming a single contiguous continent.");
+    }
+
+    private void RemoveDisconnectedIslands()
+    {
+        List<HashSet<HexTile>> allLandmasses = new List<HashSet<HexTile>>();
+        HashSet<HexTile> unvisitedTiles = new HashSet<HexTile>(tiles.Values);
+
+        // 1. Group all tiles into distinct landmasses
+        while (unvisitedTiles.Count > 0)
+        {
+            // Grab any unvisited tile to start a new flood fill
+            var enumerator = unvisitedTiles.GetEnumerator();
+            enumerator.MoveNext();
+            HexTile startTile = enumerator.Current;
+
+            // Get all connected tiles for this specific island
+            HashSet<HexTile> currentLandmass = GetConnectedRegion(startTile);
+            allLandmasses.Add(currentLandmass);
+
+            // Remove these tiles from the unvisited pool so we don't check them again
+            unvisitedTiles.ExceptWith(currentLandmass);
+        }
+
+        // 2. If we have more than one island, we need to prune the smaller ones
+        if (allLandmasses.Count > 1)
+        {
+            // Sort the list of landmasses by size, largest first
+            allLandmasses.Sort((a, b) => b.Count.CompareTo(a.Count));
+
+            // The first one [0] is the main continent. Destroy all others.
+            for (int i = 1; i < allLandmasses.Count; i++)
+            {
+                foreach (HexTile islandTile in allLandmasses[i])
+                {
+                    tiles.Remove(islandTile.cubeCoords);
+                    Destroy(islandTile.gameObject);
+                }
+            }
+        }
+    }
+
+    private HashSet<HexTile> GetConnectedRegion(HexTile startTile)
+    {
+        HashSet<HexTile> region = new HashSet<HexTile>();
+        Queue<HexTile> frontier = new Queue<HexTile>();
+
+        frontier.Enqueue(startTile);
+        region.Add(startTile);
+
+        while (frontier.Count > 0)
+        {
+            HexTile current = frontier.Dequeue();
+
+            foreach (HexTile neighbor in GetNeighbors(current))
+            {
+                if (!region.Contains(neighbor))
+                {
+                    region.Add(neighbor);
+                    frontier.Enqueue(neighbor);
+                }
+            }
+        }
+
+        return region;
+    }
+
+    public IEnumerable<HexTile> GetAllTiles()
+    {
+        return tiles.Values;
     }
 
     public List<HexTile> GetNeighbors(HexTile tile)
@@ -82,13 +183,14 @@ public class GridManager : MonoBehaviour
 
         return neighbors;
     }
+    
     Vector3 HexToWorld(int q, int r)
     {
-        float width = hexSize * 2f;
-        float height = Mathf.Sqrt(3f) * hexSize;
+        float tileWidth = hexSize * 2f;
+        float tileHeight = Mathf.Sqrt(3f) * hexSize;
 
-        float x = width * (q + r * 0.5f);
-        float z = height * r;
+        float x = tileWidth * (q + r * 0.5f);
+        float z = tileHeight * r;
 
         return new Vector3(x, 0f, z);
     }
@@ -125,6 +227,7 @@ public class GridManager : MonoBehaviour
             Mathf.Abs(a.z - b.z)
         );
     }
+    
     public List<HexTile> GetTilesInRange(HexTile centerTile, int range)
     {
         List<HexTile> result = new List<HexTile>();
@@ -212,5 +315,4 @@ public class GridManager : MonoBehaviour
         path.Reverse();
         return path;
     }
-
 }

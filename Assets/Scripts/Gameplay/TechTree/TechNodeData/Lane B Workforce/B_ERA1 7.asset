@@ -13,27 +13,46 @@ MonoBehaviour:
   m_Name: B_ERA1 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Company Service Centers
+  description: 'Unlocks Service Center building
+
+    Unlocks Maintenance Crew unit'
   researchCost: 65
-  researchBonus: 2
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: cd9323f318b3a004d82c066a6ebfd692, type: 2}
   - {fileID: 11400000, guid: 388ab0074d281754cb4b7e6fc4c7c06d, type: 2}
   unlockEffects:
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: ServiceCenter
+    isHardwareEra: 0
   - type: 1
-    description: Unlocks Service Center
-    targetUnit: {fileID: 0}
+    targetUnits:
+    - {fileID: 0}
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
-  - type: 1
-    description: Unlocks Maintenance Crews
-    targetUnit: {fileID: 0}
+    infraStatName: WorkerProductionTime
+    infraValueMod: -1
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits:
+    - {fileID: 0}
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
-  - type: 0
-    description: -1 Turns to Produce Workers
-    targetUnit: {fileID: 0}
-    amount: 0
-    isBuildable: 0
-    skillName: 
+    infraStatName: WorkerProductionTime
+    infraValueMod: -1
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

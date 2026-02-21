@@ -13,14 +13,31 @@ MonoBehaviour:
   m_Name: B_ERA2 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Monthly Work Seminars
+  description: +20% Structure and Wiring Durability
   researchCost: 245
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: f4f7415861ec49b46af718ef15c78010, type: 2}
   unlockEffects:
-  - type: 0
-    description: +20% Structure and Wiring Durability
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 0
     skillName: 
+    infraStatName: StructureDurability
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 20
+    skillName: 
+    infraStatName: WireDurability
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

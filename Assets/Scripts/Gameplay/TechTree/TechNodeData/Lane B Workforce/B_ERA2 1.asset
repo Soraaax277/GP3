@@ -13,14 +13,21 @@ MonoBehaviour:
   m_Name: B_ERA2 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Improved Worker Gear
+  description: -20% Movement Penalty on Rough Terrain
   researchCost: 220
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: f4f7415861ec49b46af718ef15c78010, type: 2}
   unlockEffects:
-  - type: 0
-    description: -20% Movement Penalty on Rough Terrain for Workers
-    targetUnit: {fileID: 0}
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 20
-    isBuildable: 1
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: ImprovedWorkerGear
+    isHardwareEra: 0

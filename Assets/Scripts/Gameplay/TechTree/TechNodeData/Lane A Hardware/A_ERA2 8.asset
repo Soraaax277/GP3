@@ -13,22 +13,32 @@ MonoBehaviour:
   m_Name: A_ERA2 8
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: High-Quality Wireless Communications
+  description: 
   researchCost: 500
-  researchBonus: 3
+  goldCost: 0
+  rpBonusPerTurn: 3
   preReqs:
   - {fileID: 11400000, guid: 69b971449b49f17489fc13acf53bc4f8, type: 2}
   - {fileID: 11400000, guid: 75fa1cb88f6306543b05cc82fb0adb47, type: 2}
   - {fileID: 11400000, guid: 958a2a8ecc98d9f49a2a4055fe343a88, type: 2}
   unlockEffects:
-  - type: 0
-    description: +25% Revenue Gain from Tower
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 25
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: +25% to Tower Influence Radius
-    targetUnit: {fileID: 0}
+    infraStatName: TowerRevenue
+    infraValueMod: 0.25
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 25
-    isBuildable: 0
     skillName: 
+    infraStatName: TowerRange
+    infraValueMod: 0.25
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

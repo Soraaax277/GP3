@@ -13,22 +13,36 @@ MonoBehaviour:
   m_Name: B_ERA2 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Improved Company Transportation
+  description: '-25% Movement Penalty on Rough Terrain
+
+    +1 to Worker Movement'
   researchCost: 325
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 90ff1746bd4a15e4ea506860d6c3030f, type: 2}
   - {fileID: 11400000, guid: 19bdbdccfd5b07848917eff865cf2de8, type: 2}
   - {fileID: 11400000, guid: 087528e98f6d9e64288c557c790bc5d9, type: 2}
   unlockEffects:
-  - type: 0
-    description: -25% Movement Penalty on Rough Terrain
-    targetUnit: {fileID: 0}
+  - type: 4
+    targetUnits: []
+    statToUpgrade: ImprovedCarpentry
     amount: 10
-    isBuildable: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: ImprovedCarpentry
+    isHardwareEra: 0
   - type: 0
-    description: +1 to Worker Movement
-    targetUnit: {fileID: 0}
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+    statToUpgrade: Movement
     amount: 1
-    isBuildable: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

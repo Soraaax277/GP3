@@ -13,14 +13,22 @@ MonoBehaviour:
   m_Name: B_ERA2 3
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Increased Research Effort
+  description: +50% Durability restored from Repairs
   researchCost: 260
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: c0a6b47f2907e5b44911242f8388093b, type: 2}
   unlockEffects:
   - type: 0
-    description: +50% Durability restored from Repairs
-    targetUnit: {fileID: 0}
-    amount: 50
-    isBuildable: 0
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: RepairEfficiency
+    amount: 0.5
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -15,13 +15,21 @@ MonoBehaviour:
   techName: Versatile Builder Tool Kit
   description: 'Builders can now also do repairs to Infrastructure '
   researchCost: 1000
-  researchBonus: 2
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 3dc120dd889c0684e853f1077d1a0ffb, type: 2}
   - {fileID: 11400000, guid: 35a903d090c76d347b7895ce7c9f9be2, type: 2}
   unlockEffects:
   - type: 2
-    targetUnits: []
+    targetUnits:
+    - {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
     statToUpgrade: 
     amount: 0
-    skillName: Builder_Versatile
+    skillName: VersatileBuilderToolKit
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -15,17 +15,30 @@ MonoBehaviour:
   techName: Stricter Qualification Requirements
   description: +20% Durability on Repairs +20% Structure Durability
   researchCost: 3200
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: dc3c715772a135749a21675d3773be19, type: 2}
   unlockEffects:
   - type: 0
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: RepairEfficiency
+    amount: 20
+    skillName: 
+    infraStatName: RepairEfficiency
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 20
     skillName: 
-  - type: 0
-    targetUnits: []
-    statToUpgrade: 
-    amount: 20
-    skillName: 
+    infraStatName: StructureDurability
+    infraValueMod: 0.2
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

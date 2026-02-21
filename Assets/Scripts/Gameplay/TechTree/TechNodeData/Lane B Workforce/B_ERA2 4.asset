@@ -13,20 +13,34 @@ MonoBehaviour:
   m_Name: B_ERA2 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Efficient Worker Deployment
+  description: '-10% Recruitment Cost
+
+    Additional -10% Recruitment Cost in Service
+    Centers'
   researchCost: 275
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: c0a6b47f2907e5b44911242f8388093b, type: 2}
   unlockEffects:
-  - type: 0
-    description: -10% Recruitment Cost
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: Additional -10% Recruitment Cost in Service Centers
-    targetUnit: {fileID: 0}
+    infraStatName: RecruitmentCost
+    infraValueMod: -1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 
+    infraStatName: ServiceCenterRecruitmentBonus
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: ServiceCenterRecruitmentBonus
+    isHardwareEra: 0

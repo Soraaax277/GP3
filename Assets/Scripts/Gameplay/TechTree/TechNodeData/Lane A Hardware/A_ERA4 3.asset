@@ -13,26 +13,40 @@ MonoBehaviour:
   m_Name: A_ERA4 3
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Tesseract Discovery
+  description: 
   researchCost: 3600
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: e5afc6cab42795c44b5c95bd4b376833, type: 2}
   unlockEffects:
-  - type: 1
-    description: Unlocks Tesseract
+  - type: 4
     targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
-  - type: 1
-    description: -50% to Tower Cost
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: Tesseract
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: -50
-    isBuildable: 0
     skillName: 
-  - type: 1
-    description: -50% to Wiring Cost
+    infraStatName: TowerCost
+    infraValueMod: -0.5
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: -50
-    isBuildable: 0
     skillName: 
+    infraStatName: WireCost
+    infraValueMod: -0.5
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

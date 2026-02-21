@@ -13,26 +13,53 @@ MonoBehaviour:
   m_Name: A_ERA1 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Coaxial Cables
-  description: 
+  description: "+10% Revenue Gain from Towers Wires length \n+2 Tiles\r\n+10% Wire
+    Cost \n+3 Max Tower Capacity"
   researchCost: 70
-  researchBonus: 3
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 8dc0dc585ec8bd9409c0ee0735d5d77b, type: 2}
   - {fileID: 11400000, guid: 2ecd93251055c3b4984d1fdaf2a11db8, type: 2}
   - {fileID: 11400000, guid: c85caf07c09defc42b70427d00c1769d, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 10
     skillName: 
-  - type: 0
+    infraStatName: TowerRevenue
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 2
     skillName: 
-  - type: 0
+    infraStatName: WireLength
+    infraValueMod: 2
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 3
     skillName: 
+    infraStatName: WireCost
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 3
+    skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 3
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

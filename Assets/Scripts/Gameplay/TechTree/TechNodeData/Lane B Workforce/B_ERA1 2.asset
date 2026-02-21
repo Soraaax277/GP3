@@ -13,20 +13,34 @@ MonoBehaviour:
   m_Name: B_ERA1 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Higher Quality Tools
+  description: '+5% Durability restored through Repairs
+
+    +5% Structure Durability'
   researchCost: 14
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: caae3db48063fbf4fb8c175ba6ffb7ee, type: 2}
   unlockEffects:
   - type: 0
-    description: +5% Durability on Repairs
-    targetUnit: {fileID: 0}
-    amount: 5
-    isBuildable: 0
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+    statToUpgrade: RepairEfficiency
+    amount: 0.05
     skillName: 
-  - type: 0
-    description: +5% Structure Durability
-    targetUnit: {fileID: 0}
-    amount: 5
-    isBuildable: 0
+    infraStatName: RepairEfficiency
+    infraValueMod: 0.05
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
     skillName: 
+    infraStatName: StructureDurability
+    infraValueMod: 0.05
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

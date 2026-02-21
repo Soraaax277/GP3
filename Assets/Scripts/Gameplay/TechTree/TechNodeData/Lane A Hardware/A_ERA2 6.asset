@@ -13,26 +13,40 @@ MonoBehaviour:
   m_Name: A_ERA2 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Tower Triangulation
+  description: 
   researchCost: 375
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: fe73be03ffa0bda4a938a7d4a26169eb, type: 2}
   unlockEffects:
-  - type: 2
-    description: Towers can now reveal Fog of War in a 2-Tile Radius
-    targetUnit: {fileID: 0}
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 0
     skillName: 
-  - type: 1
-    description: Unlocks Signal Jammers
-    targetUnit: {fileID: 0}
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: FogOfWarReveal
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
-  - type: 1
-    description: Unlocks Signal Boosters
-    targetUnit: {fileID: 0}
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: SignalJammers
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 0
-    isBuildable: 1
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: SignalBooster
+    isHardwareEra: 0

@@ -5,6 +5,15 @@ public class HexTile : MonoBehaviour
 {
     public Vector3Int cubeCoords;
     public SignalNode placedNode;
+
+    //  SIGNAL NODE REFERENCE  (System 2)
+    //  Stores a direct reference to the SignalNode (HQ) placed on this tile.
+    //  Used by SignalNode.PropagateSignal() to identify the HQ's home tile,
+    //  and by other systems that need to check whether a tile hosts an HQ.
+    //  NOTE: placedNode already exists above — placedSignalNode is the typed
+    //  reference that avoids casts and makes intent explicit.
+    public SignalNode placedSignalNode;
+
     public TowerNode placedTower;
     public WireNode placedWire;
     public Unit placedUnit;

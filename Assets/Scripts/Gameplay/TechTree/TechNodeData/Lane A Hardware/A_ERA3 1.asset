@@ -13,20 +13,30 @@ MonoBehaviour:
   m_Name: A_ERA3 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Internet Foundations
+  description: 
   researchCost: 800
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: d9967feafd6c17d42aea1a419ee7ca10, type: 2}
   unlockEffects:
-  - type: 0
-    description: +30% to Revenue Gain from Towers
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 30
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: +2 Tower Capacity
-    targetUnit: {fileID: 0}
-    amount: 2
-    isBuildable: 0
+    infraStatName: TowerRevenue
+    infraValueMod: 0.3
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
+    amount: 30
     skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 2
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

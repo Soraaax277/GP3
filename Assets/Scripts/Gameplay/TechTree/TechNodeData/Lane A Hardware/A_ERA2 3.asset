@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA2 3
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Microwave Relays
+  description: 
   researchCost: 290
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 72e66b5cf1f01e44bb6cea27e3b2fb63, type: 2}
   unlockEffects:
-  - type: 2
-    description: Connections between HQ and Towers no Longer require wiring
-    targetUnit: {fileID: 0}
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: HQ_to_Tower_Wireless
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: MicrowaveRelays
+    isHardwareEra: 0

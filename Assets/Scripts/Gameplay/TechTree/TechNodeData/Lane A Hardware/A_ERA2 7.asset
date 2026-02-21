@@ -13,15 +13,21 @@ MonoBehaviour:
   m_Name: A_ERA2 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Effiicient Tower Construction
+  description: 
   researchCost: 370
-  researchBonus: 2
+  goldCost: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: f7c2ba7e509e3d546b30a38d002c1825, type: 2}
   - {fileID: 11400000, guid: b57729b9072ef7f4daf3e878fde60e1e, type: 2}
   unlockEffects:
-  - type: 2
-    description: +4 Max Tower Capacity
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 4
-    isBuildable: 0
     skillName: 
+    infraStatName: TowerCapacity
+    infraValueMod: 4
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

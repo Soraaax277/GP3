@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA4 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Wide Reach Specialization
+  description: 
   researchCost: 3400
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: e5afc6cab42795c44b5c95bd4b376833, type: 2}
   unlockEffects:
-  - type: 0
-    description: +100% Tower Influence Radius
+  - type: 3
     targetUnits: []
+    statToUpgrade: 
     amount: 100
-    isBuildable: 0
     skillName: 
+    infraStatName: TowerRange
+    infraValueMod: 1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

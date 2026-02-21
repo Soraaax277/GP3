@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA1 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Telecommunications Fundamentals
-  description: 
+  description: Unlocks Telecom Towers
   researchCost: 0
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs: []
   unlockEffects:
-  - type: 1
-    targetUnits: []
+  - type: 4
+    targetUnits:
+    - {fileID: 2462954530969636878, guid: 1469581c32d562b4e8864927e0715d4b, type: 3}
     statToUpgrade: 
     amount: 0
     skillName: 
-  isUnlocked: 1
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: TelecomTowers
+    isHardwareEra: 0

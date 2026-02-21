@@ -13,29 +13,51 @@ MonoBehaviour:
   m_Name: A_ERA1 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Radio Broadcasting
-  description: 
-  researchCost: 70
-  researchBonus: 3
+  description: "\r\n+10% Revenue Gain from Towers \n+10% Tower Influence Radius \n+10%
+    HQ Influence Radius\r\nUnlocks Power Boxes"
+  researchCost: 120
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 06eca37e3f69c3f4f941d083753b651a, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 10
+    amount: 0
     skillName: 
-  - type: 0
+    infraStatName: TowerRevenue
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 10
+    amount: 0
     skillName: 
-  - type: 0
+    infraStatName: TowerRange
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 10
+    amount: 0
     skillName: 
-  - type: 0
+    infraStatName: HQRange
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 4
     targetUnits: []
     statToUpgrade: 
-    amount: 10
+    amount: 0
     skillName: 
+    infraStatName: PowerBoxes
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: PowerBoxes
+    isHardwareEra: 0

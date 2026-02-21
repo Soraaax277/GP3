@@ -16,18 +16,43 @@ MonoBehaviour:
   description: Repairmen can now do repairs to wiring. Electricians can now do repairs
     to towers. Maintenance Crew can now repair Towers
   researchCost: 1100
-  researchBonus: 2
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: b37a9cad3e30faa40a004c89ad5a5a0f, type: 2}
   - {fileID: 11400000, guid: f8c1226d5be453543b9ee165c4a06dd3, type: 2}
   unlockEffects:
   - type: 2
-    targetUnits: []
+    targetUnits:
+    - {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
     statToUpgrade: 
     amount: 0
-    skillName: Wiring_Repairable
+    skillName: VersatileRepairmen
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 2
-    targetUnits: []
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
     statToUpgrade: 
     amount: 0
-    skillName: Tower_Repairable
+    skillName: VersatileRepairmen
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 2
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+    statToUpgrade: 
+    amount: 0
+    skillName: VersatileRepairmen
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

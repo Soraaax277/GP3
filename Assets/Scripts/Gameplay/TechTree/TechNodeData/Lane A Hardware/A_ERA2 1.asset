@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA2 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Enhanced Tower Electronics
+  description: 
   researchCost: 280
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 72e66b5cf1f01e44bb6cea27e3b2fb63, type: 2}
   unlockEffects:
-  - type: 0
-    description: +15% Revenue Gain from Towers
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 15
-    isBuildable: 0
     skillName: 
+    infraStatName: TowerRevenue
+    infraValueMod: 0.15
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

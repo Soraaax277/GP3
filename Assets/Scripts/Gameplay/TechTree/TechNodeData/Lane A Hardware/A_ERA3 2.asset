@@ -13,20 +13,30 @@ MonoBehaviour:
   m_Name: A_ERA3 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Broadband Communications
+  description: 
   researchCost: 970
-  researchBonus: 1
+  goldCost: 0
+  rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: dde6041db1681a54a8b87d75a8a3a2b7, type: 2}
   unlockEffects:
-  - type: 0
-    description: +10% to Revenue Gain from Towers
-    targetUnit: {fileID: 0}
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 
-  - type: 0
-    description: +10% Final Revenue Gain
-    targetUnit: {fileID: 0}
+    infraStatName: TowerRevenue
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
+    targetUnits: []
+    statToUpgrade: 
     amount: 10
-    isBuildable: 0
     skillName: 
+    infraStatName: FinalRevenueGain
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
