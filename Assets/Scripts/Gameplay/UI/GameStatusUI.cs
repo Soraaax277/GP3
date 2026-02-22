@@ -63,10 +63,18 @@ public class GameStatusUI : MonoBehaviour
         
         if (humanPlayer != null)
         {
-            // Check Gold
+            // Calculate projections
+            int income = EconomyManager.Instance != null ? EconomyManager.Instance.GetProjectedGoldIncome(humanPlayer) : 0;
+            int upkeep = EconomyManager.Instance != null ? EconomyManager.Instance.GetProjectedUpkeep(humanPlayer) : 0;
+            int net = income - upkeep;
+            
+            int rpIncome = EconomyManager.Instance != null ? EconomyManager.Instance.GetProjectedRPIncome(humanPlayer) : 0;
+
+            // 1. Check Gold
             if (humanPlayer.resources != _cachedGold)
             {
-                string goldString = $"Gold: {humanPlayer.resources}";
+                string netSign = net >= 0 ? "+" : "";
+                string goldString = $"Gold: {humanPlayer.resources} ({netSign}{net}/t)";
                 
                 // Update Main HUD
                 if (goldText != null) goldText.text = goldString;
@@ -77,10 +85,10 @@ public class GameStatusUI : MonoBehaviour
                 _cachedGold = humanPlayer.resources;
             }
 
-            // --- Check Research Points ---
+            // 2. Check Research Points
             if (humanPlayer.researchPoints != _cachedRP)
             {
-                string rpString = $"RP: {humanPlayer.researchPoints}";
+                string rpString = $"RP: {humanPlayer.researchPoints} (+{rpIncome}/t)";
 
                 // Update Main HUD
                 if (researchText != null) researchText.text = rpString;
@@ -91,8 +99,7 @@ public class GameStatusUI : MonoBehaviour
                 _cachedRP = humanPlayer.researchPoints;
             }
 
-            // Check Influence
-            // Note: Influence is usually calculated via Manager, so we fetch it fresh
+            // 3. Check Influence
             int currentInfluence = humanPlayer.GetTotalInfluence();
             if (currentInfluence != _cachedInfluence)
             {

@@ -77,6 +77,49 @@ public class SalesMarketer : Unit
             rangeIndicator.SetActive(show);
     }
 
+    public void PerformDeny()
+    {
+        if (!canAct) return;
+
+        Debug.Log($"[SalesMarketer] {owner.playerName}'s Marketer performing Deny action.");
+
+        List<HexTile> tilesInRange = GridManager.Instance.GetTilesInRange(currentTile, denyRange);
+        int tilesAffected = 0;
+
+        bool sabotageUnlocked = TechManager.Instance != null && TechManager.Instance.IsSabotageTabUnlocked();
+
+        foreach (HexTile tile in tilesInRange)
+        {
+            // SABOTAGE: Apply persistent suppression if unlocked
+            if (sabotageUnlocked)
+            {
+                tile.influenceSuppression += denyAmount;
+                Debug.Log($"[SalesMarketer] Sabotage! Added {denyAmount} suppression to {tile.name}");
+            }
+
+            // Create a list of players to remove influence from (excluding the owner)
+            List<PlayerData> enemyPlayers = tile.influenceByPlayer.Keys
+                .Where(p => p != owner)
+                .ToList();
+
+            foreach (PlayerData enemy in enemyPlayers)
+            {
+                if (tile.GetInfluence(enemy) > 0)
+                {
+                    if (Random.value <= denyChance)
+                    {
+                        tile.RemoveInfluence(enemy, denyAmount);
+                        tilesAffected++;
+                        Debug.Log($"[SalesMarketer] Successfully denied influence for {enemy.playerName} at {tile.name}");
+                    }
+                }
+            }
+        }
+
+        Debug.Log($"[SalesMarketer] Deny action complete. Tiles affected: {tilesAffected}");
+        ConsumeAction();
+    }
+
     private void OnMouseEnter() { ShowRange(true); }
     private void OnMouseExit() { ShowRange(false); }
 }

@@ -161,7 +161,7 @@ public class Technician : Unit
         }
     }
 
-    private int GetRepairCost()
+    public int GetRepairCost()
     {
         int baseCost = 50; // Base repair cost
         if (TechManager.Instance != null)

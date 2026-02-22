@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using TMPro;
 
 public class BuildUIManager : MonoBehaviour
 {
@@ -27,6 +28,11 @@ public class BuildUIManager : MonoBehaviour
     public Button buildWireButton;
     public Button towerPlacementButton;
     public GameObject towerPlacementDisabledHelper;
+    
+    [Header("Cost UI References")]
+    public TextMeshProUGUI constructCostText;
+    public TextMeshProUGUI buildWireCostText;
+    public TextMeshProUGUI towerPlacementCostText;
 
     void Awake()
     {
@@ -215,13 +221,28 @@ public class BuildUIManager : MonoBehaviour
         {
             constructButton.gameObject.SetActive(isBuilder);
             if (isBuilder) 
-                constructButton.interactable = currentUnit.CanAct && towersUnlocked;
+            {
+                int cost = ((BuilderUnit)currentUnit).GetBuildingCost();
+                if (constructCostText != null) constructCostText.text = $"{cost}G";
+                
+                bool canAfford = currentUnit.owner.resources >= cost;
+                constructButton.interactable = currentUnit.CanAct && towersUnlocked && canAfford;
+                if (constructCostText != null) constructCostText.color = canAfford ? Color.white : Color.red;
+            }
         }
 
         if (buildWireButton != null) 
         {
             buildWireButton.gameObject.SetActive(isSpecialist);
-            if (isSpecialist) buildWireButton.interactable = currentUnit.CanAct;
+            if (isSpecialist) 
+            {
+                int cost = WirePlacementManager.Instance != null ? WirePlacementManager.Instance.GetCurrentWireCost() : 0;
+                if (buildWireCostText != null) buildWireCostText.text = $"{cost}G";
+
+                bool canAfford = currentUnit.owner.resources >= cost;
+                buildWireButton.interactable = currentUnit.CanAct && canAfford;
+                if (buildWireCostText != null) buildWireCostText.color = canAfford ? Color.white : Color.red;
+            }
         }
         
         if (towerPlacementButton != null)
@@ -234,9 +255,14 @@ public class BuildUIManager : MonoBehaviour
             if (isSignalNode)
             {
                 bool canPlace = currentBusiness.towersPlacedCount < currentBusiness.CurrentMaxTowers;
-                bool isInteractable = towersUnlocked && canPlace;
+                int cost = TowerPlacementManager.Instance != null ? TowerPlacementManager.Instance.GetCurrentTowerCost() : 0;
+                if (towerPlacementCostText != null) towerPlacementCostText.text = $"{cost}G";
+
+                bool canAfford = currentBusiness.owner.resources >= cost;
+                bool isInteractable = towersUnlocked && canPlace && canAfford;
 
                 towerPlacementButton.interactable = isInteractable;
+                if (towerPlacementCostText != null) towerPlacementCostText.color = canAfford ? Color.white : Color.red;
 
                 if (towerPlacementDisabledHelper != null)
                 {

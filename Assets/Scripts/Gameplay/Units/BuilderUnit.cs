@@ -135,7 +135,7 @@ public class BuilderUnit : Unit
         }
     }
 
-    private int GetBuildingCost()
+    public int GetBuildingCost()
     {
         int baseCost = 100; // Base building cost
         if (TechManager.Instance != null)
@@ -205,7 +205,7 @@ public class BuilderUnit : Unit
         }
     }
 
-    private int GetRepairCost()
+    public int GetRepairCost()
     {
         int baseCost = 60; // Base repair cost
         if (TechManager.Instance != null)

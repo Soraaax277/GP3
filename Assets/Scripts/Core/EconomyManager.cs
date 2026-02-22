@@ -109,4 +109,44 @@ public class EconomyManager : MonoBehaviour
 
         return total;
     }
+
+    //  PROJECTIONS (for UI breakdown)
+    
+    public int GetProjectedGoldIncome(PlayerData player)
+    {
+        int totalInfluence = InfluenceManager.Instance != null ? InfluenceManager.Instance.GetTotalInfluence(player) : 0;
+        int activeTowers   = player.GetActiveTowerCount();
+        
+        float baseGold = totalInfluence + (activeTowers * 50) + 100;
+        float goldMultiplier = 1.0f;
+        float finalRevenueMultiplier = 1.0f;
+
+        if (TechManager.Instance != null)
+        {
+            goldMultiplier = TechManager.Instance.GetInfraMultiplier("TowerRevenue");
+            finalRevenueMultiplier = TechManager.Instance.GetInfraMultiplier("FinalRevenueGain");
+        }
+
+        return Mathf.RoundToInt(baseGold * goldMultiplier * finalRevenueMultiplier);
+    }
+
+    public int GetProjectedRPIncome(PlayerData player)
+    {
+        int ownedBases = player.ownedNodes.Count;
+        float baseRP = (ownedBases * 15) + 5;
+        float rpMultiplier = 1.0f;
+
+        if (TechManager.Instance != null)
+        {
+            rpMultiplier = TechManager.Instance.GetInfraMultiplier("ResearchGain");
+        }
+
+        int rpFlatBonus = TechManager.Instance != null ? TechManager.Instance.GetTotalRPBonus() : 0;
+        return Mathf.RoundToInt(baseRP * rpMultiplier) + rpFlatBonus;
+    }
+
+    public int GetProjectedUpkeep(PlayerData player)
+    {
+        return CalculateTotalUpkeep(player);
+    }
 }

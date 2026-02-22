@@ -44,7 +44,7 @@ public class InfluenceManager : MonoBehaviour
                         if (TurnManager.Instance != null)
                             eraMultiplier = TurnManager.Instance.GetEraInfluenceMultiplier(player);
 
-                        playerTotalInfluence[player] += Mathf.RoundToInt(tileInf * eraMultiplier);
+                        playerTotalInfluence[player] += Mathf.RoundToInt(Mathf.Max(0, tileInf - tile.influenceSuppression) * eraMultiplier);
                     }
                 }
             }

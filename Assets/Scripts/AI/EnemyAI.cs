@@ -324,6 +324,11 @@ public class EnemyAI : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
             }
         }
+
+        if (marketer.CanAct)
+        {
+            marketer.PerformDeny();
+        }
     }
 
     private IEnumerator HandleTechnician(Technician technician)

@@ -80,6 +80,18 @@ public class TurnManager : MonoBehaviour
         // CALCULATE GLOBAL STATE 
         if (InfluenceManager.Instance != null)
         {
+            // DECAY PERSISTENT SUPPRESSION
+            if (GridManager.Instance != null)
+            {
+                foreach (var tile in GridManager.Instance.GetAllTiles())
+                {
+                    if (tile.influenceSuppression > 0)
+                    {
+                        tile.influenceSuppression = Mathf.Max(0, tile.influenceSuppression - 2);
+                    }
+                }
+            }
+
             InfluenceManager.Instance.RecalculateGlobalInfluence(players);
         }
         else

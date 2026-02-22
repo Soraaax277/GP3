@@ -49,7 +49,7 @@ public class UnitSpawner : MonoBehaviour
         return unit;
     }
 
-    private int GetRecruitmentCost(GameObject unitPrefab)
+    public int GetRecruitmentCost(GameObject unitPrefab)
     {
         // Base costs per unit type
         int baseCost = 50; // Default
