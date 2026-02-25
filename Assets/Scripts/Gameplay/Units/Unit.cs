@@ -70,7 +70,7 @@ public abstract class Unit : MonoBehaviour
     public void ConsumeAction()
     {
         canAct = false;
-        movementRemaining = 0; 
+        // movementRemaining remains as is, allowing units to move after actions
     }
 
     public void SetSelected(bool selected)

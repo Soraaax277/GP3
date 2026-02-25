@@ -123,7 +123,7 @@ public class SalesMarketer : Unit
     {
         rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         rangeIndicator.transform.SetParent(transform);
-        rangeIndicator.transform.localPosition = new Vector3(0f, 0f, 0.01f);
+        rangeIndicator.transform.localPosition = new Vector3(0f, 0f, 0.01f); // Reverted to original height
         rangeIndicator.transform.localRotation = Quaternion.identity;
 
         float visualRadius = denyRange * GridManager.Instance.hexSize;

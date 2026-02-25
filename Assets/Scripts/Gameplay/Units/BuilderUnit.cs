@@ -138,7 +138,7 @@ public class BuilderUnit : Unit
 
         if (targetTower == null)
         {
-            Debug.Log("[Builder] No hologram tower adjacent to construct!");
+            Debug.Log("[Builder] No hologram tower (TowerState.Hologram) adjacent to construct! Neighbors checked: " + GridManager.Instance.GetNeighbors(currentTile).Count);
             return;
         }
 
@@ -165,9 +165,8 @@ public class BuilderUnit : Unit
 
         if (!owner.isAI)
         {
-            SetSelected(false);
-            if (PlayerInput.Instance != null)     PlayerInput.Instance.ClearHighlights();
-            if (BuildUIManager.Instance != null)  BuildUIManager.Instance.CloseBuildMenu();
+            // Removed: Stop deselecting so units can move after actions
+            //if (BuildUIManager.Instance != null)  BuildUIManager.Instance.CloseBuildMenu();
         }
     }
 
@@ -235,9 +234,7 @@ public class BuilderUnit : Unit
 
         if (!owner.isAI)
         {
-            SetSelected(false);
-            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
-            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+            // Removed: Stop deselecting so units can move after actions
         }
     }
     

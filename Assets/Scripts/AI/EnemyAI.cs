@@ -153,6 +153,9 @@ public class EnemyAI : MonoBehaviour
 
     private void PlaceBlueprint(HexTile tile, PlayerData aiPlayer, SignalNode parent)
     {
+        if (tile.hasStructure)
+            tile.ClearEnvironmentalStructures();
+
         GameObject blueprint = Instantiate(towerPrefab, tile.transform.position + Vector3.up * 1.2f, Quaternion.identity);
         TowerNode node = blueprint.GetComponent<TowerNode>();
         node.Initialize(tile, aiPlayer, parent);

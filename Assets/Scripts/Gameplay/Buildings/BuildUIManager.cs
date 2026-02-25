@@ -226,8 +226,14 @@ public class BuildUIManager : MonoBehaviour
                 if (constructCostText != null) constructCostText.text = $"{cost}G";
                 
                 bool canAfford = currentUnit.owner.resources >= cost;
-                constructButton.interactable = currentUnit.CanAct && towersUnlocked && canAfford;
+                bool hasSkill = ((BuilderUnit)currentUnit).canConstructTower;
+                
+                constructButton.interactable = currentUnit.CanAct && towersUnlocked && canAfford && hasSkill;
+                
                 if (constructCostText != null) constructCostText.color = canAfford ? Color.white : Color.red;
+
+                if (!hasSkill && currentUnit.CanAct)
+                    Debug.Log("[BuildUI] Builder lacks 'canConstructTower' skill. Check 'Minimum Wage Contract' tech.");
             }
         }
 

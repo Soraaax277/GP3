@@ -81,6 +81,10 @@ public class WireSpecialist : Unit
 
         if (tile == null || tile.IsOccupied() || tile.HasWire()) return;
 
+        // Clear decorative buildings if they exist
+        if (tile.hasStructure)
+            tile.ClearEnvironmentalStructures();
+
         int dist = GridManager.Instance.CubeDistance(currentTile.cubeCoords, tile.cubeCoords);
         if (dist > 1)
         {
@@ -253,8 +257,7 @@ public class WireSpecialist : Unit
 
         if (!owner.isAI)
         {
-            SetSelected(false);
-            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
+            // Removed: Stop deselecting so units can move after actions
         }
     }
 

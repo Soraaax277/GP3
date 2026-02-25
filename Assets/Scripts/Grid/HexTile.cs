@@ -3,7 +3,11 @@ using System.Collections.Generic;
 
 public class HexTile : MonoBehaviour
 {
+    public enum TileType { Land, Water }
+
     public Vector3Int cubeCoords;
+    public TileType type = TileType.Land;
+    public bool hasStructure;
     public SignalNode placedNode;
 
     //  SIGNAL NODE REFERENCE  (System 2)
@@ -31,13 +35,32 @@ public class HexTile : MonoBehaviour
         baseColor = rend.material.color;
     }
 
-    public void Initialize(Vector3Int coords)
+    public void Initialize(Vector3Int coords, TileType tileType = TileType.Land)
     {
         cubeCoords = coords;
-        name = $"Hex {coords.x},{coords.y},{coords.z}";
+        type = tileType;
+        name = $"Hex {coords.x},{coords.y},{coords.z} ({type})";
 
         baseInfluence = Random.Range(1, 11);
-        Debug.Log($"{name} base influence: {baseInfluence}");
+        
+        UpdateAppearance();
+    }
+
+    public void UpdateAppearance()
+    {
+        if (rend == null) rend = GetComponent<Renderer>();
+        
+        if (type == TileType.Water)
+        {
+            rend.material.color = new Color(0.1f, 0.3f, 0.8f, 1f); // Darker Blue
+            baseColor = rend.material.color;
+        }
+        else
+        {
+            // Keep original logic or set a default land color if needed
+            // baseColor is captured in Awake, so we just revert to it
+            rend.material.color = baseColor;
+        }
     }
 
     public int GetTotalInfluence(PlayerData forPlayer)
@@ -68,7 +91,22 @@ public class HexTile : MonoBehaviour
 
     public bool IsOccupied()
     {
-        return placedNode != null || placedUnit != null || placedTower != null;
+        return type == TileType.Water || placedNode != null || placedUnit != null || placedTower != null;
+    }
+
+    public void ClearEnvironmentalStructures()
+    {
+        if (!hasStructure) return;
+
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = transform.GetChild(i);
+            if (child.name.Contains("Env_Structure"))
+            {
+                Destroy(child.gameObject);
+            }
+        }
+        hasStructure = false;
     }
 
     public bool HasWire()
@@ -78,7 +116,8 @@ public class HexTile : MonoBehaviour
 
     public bool IsWalkable()
     {
-        return placedNode == null && placedUnit == null && placedTower == null;
+        // Units cannot swim and cannot walk through structures
+        return type == TileType.Land && !hasStructure && placedNode == null && placedUnit == null && placedTower == null;
     }
 
     public bool HasTower()

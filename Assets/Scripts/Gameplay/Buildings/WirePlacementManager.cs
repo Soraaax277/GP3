@@ -145,7 +145,10 @@ public class WirePlacementManager : MonoBehaviour
         int cost = GetCurrentWireCost();
         bool canAfford = currentSpecialist.owner != null && currentSpecialist.owner.resources >= cost;
 
-        bool valid = isWithinReach && isNextToPower && !tile.IsOccupied() && !tile.HasWire() && canAfford;
+        // Block wires over water
+        bool environmentBlocked = tile.type == HexTile.TileType.Water;
+
+        bool valid = isWithinReach && isNextToPower && !tile.IsOccupied() && !tile.HasWire() && canAfford && !environmentBlocked;
         isTileValid = valid;
 
         // Colour the hologram: yellow = valid, red = invalid

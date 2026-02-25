@@ -148,7 +148,10 @@ public class TowerPlacementManager : MonoBehaviour
         int cost = GetCurrentTowerCost();
         bool canAfford = owner == null || owner.resources >= cost;
 
-        canPlace = !occupied && !isBusinessTile && inRange && canAfford;
+        // Block placement on water. Environmental structures are now clearable.
+        bool environmentBlocked = tile.type == HexTile.TileType.Water;
+
+        canPlace = !occupied && !isBusinessTile && inRange && canAfford && !environmentBlocked;
 
         Color holoColor  = canPlace ? new Color(0f, 1f, 0f, 0.35f) : new Color(1f, 0f, 0f, 0.35f);
         Color rangeColor = canPlace ? new Color(0f, 1f, 0f, 0.25f) : new Color(1f, 0f, 0f, 0.25f);
@@ -184,6 +187,9 @@ public class TowerPlacementManager : MonoBehaviour
             Debug.Log($"[TowerPlacement] Tower placed for {cost} gold. Remaining: {towerOwner.resources}");
         }
 
+        if (hoveredTile.hasStructure)
+            hoveredTile.ClearEnvironmentalStructures();
+
         Destroy(hologram);
 
         GameObject realTower = Instantiate(
@@ -191,8 +197,6 @@ public class TowerPlacementManager : MonoBehaviour
             hoveredTile.transform.position + Vector3.up * 1.2f,
             Quaternion.identity
         );
-
-        HologramUtil.MakeSolid(realTower);
 
         TowerNode node = realTower.GetComponent<TowerNode>();
         node.Initialize(hoveredTile, towerOwner, selectedBusiness);

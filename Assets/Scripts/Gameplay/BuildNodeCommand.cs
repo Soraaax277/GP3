@@ -10,6 +10,10 @@ public class BuildNodeCommand
             return;
         }
 
+        // Clear decorative buildings if they exist
+        if (tile.hasStructure)
+            tile.ClearEnvironmentalStructures();
+
         PlayerData player = TurnManager.Instance.currentPlayer;
 
         GameObject nodeObj = GameObject.Instantiate(

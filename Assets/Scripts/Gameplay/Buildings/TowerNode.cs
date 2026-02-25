@@ -95,11 +95,12 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         // System 3: towers begin as Holograms
         state = TowerState.Hologram;
 
-        CreateRangeIndicator();
-        ShowRange(false);
+        // VISUALS: Start as an actual hologram (transparent blue)
+        HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
 
-        // Apply minimal hologram influence immediately
-        ApplyInfluence();
+        CreateRangeIndicator();
+        SetRangeColor(new Color(0f, 0.5f, 1f, 0.25f));
+        ShowRange(false);
 
         if (PowerGridManager.Instance != null)
         {
@@ -152,7 +153,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
         rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         rangeIndicator.transform.SetParent(transform);
-        rangeIndicator.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+        rangeIndicator.transform.localPosition = new Vector3(0f, 0.05f, 0f); // Reverted to original height
         rangeIndicator.transform.localRotation = Quaternion.identity;
 
         UpdateRangeVisuals();
@@ -189,6 +190,10 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         }
 
         state = TowerState.Constructed;
+
+        // VISUALS: Transition from hologram to solid
+        HologramUtil.MakeSolid(gameObject);
+        SetRangeColor(new Color(0f, 1f, 0f, 0.25f)); // Green when built
 
         // Reset durability on fresh build
         currentDurability = baseDurability;
@@ -262,14 +267,12 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
     private void OnMouseEnter()
     {
-        if (state == TowerState.Constructed || state == TowerState.Powered)
-            ShowRange(true);
+        ShowRange(true);
     }
 
     private void OnMouseExit()
     {
-        if (state == TowerState.Constructed || state == TowerState.Powered)
-            ShowRange(false);
+        ShowRange(false);
     }
 
     //  INFLUENCE  (System 1 + 2 + 3)
@@ -344,7 +347,8 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         }
         else
         {
-            SetRangeColor(new Color(1f, 0.5f, 0f, 0.25f));
+            // Set to Green instead of Orange/Red as requested
+            SetRangeColor(new Color(0f, 0.8f, 0f, 0.2f)); // Dimmer green for unpowered
             if (wasPowered) RemoveInfluence();
         }
     }
@@ -436,6 +440,9 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         // Repaired to Constructed — Technician needs to re-wire for full power
         state = TowerState.Constructed;
         
+        // VISUALS: Restore solid appearance
+        HologramUtil.MakeSolid(gameObject);
+
         // Apply repair efficiency from tech upgrades
         // Base repair restores to 100 HP, efficiency upgrades increase this
         // e.g., +50% efficiency = 150 HP restored

@@ -30,6 +30,7 @@ public class GridManager : MonoBehaviour
 
     [Header("References")]
     public GameObject hexTilePrefab;
+    public GameObject waterTilePrefab;
 
     public Dictionary<Vector3Int, HexTile> tiles =
         new Dictionary<Vector3Int, HexTile>();
@@ -91,11 +92,105 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // STEP 2: POST-PROCESSING (REMOVE DETACHED ISLANDS)
+        // STEP 2: ASSIGN WATER AND STRUCTURES
+        AssignEnvironmentFeatures();
+
+        // STEP 3: POST-PROCESSING (REMOVE DETACHED ISLANDS)
         RemoveDisconnectedIslands();
 
         IsReady = true;
         Debug.Log($"Generated {tiles.Count} hex tiles forming a single contiguous continent.");
+    }
+
+    private Material structureMaterial;
+
+    private void AssignEnvironmentFeatures()
+    {
+        List<HexTile> allTiles = new List<HexTile>(tiles.Values);
+        
+        int waterCount = Mathf.RoundToInt(allTiles.Count * 0.10f);
+        for (int i = 0; i < waterCount; i++)
+        {
+            if (allTiles.Count == 0) break;
+            int index = Random.Range(0, allTiles.Count);
+            HexTile tile = allTiles[index];
+            
+            Vector3 pos = tile.transform.position;
+            Vector3Int coords = tile.cubeCoords;
+            allTiles.RemoveAt(index);
+
+            if (waterTilePrefab != null)
+            {
+                tiles.Remove(coords);
+                Destroy(tile.gameObject);
+
+                GameObject waterObj = Instantiate(waterTilePrefab, pos, hexTilePrefab.transform.rotation, transform);
+                HexTile waterTile = waterObj.GetComponent<HexTile>();
+                waterTile.Initialize(coords, HexTile.TileType.Water);
+                
+                tiles.Add(coords, waterTile);
+            }
+            else
+            {
+                tile.type = HexTile.TileType.Water;
+                tile.UpdateAppearance();
+            }
+        }
+
+        if (structureMaterial == null)
+        {
+            Shader structShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (structShader == null) structShader = Shader.Find("Sprites/Default");
+            
+            structureMaterial = new Material(structShader);
+            structureMaterial.color = new Color(0.8f, 0.8f, 0.85f);
+        }
+
+        int landTilesWithStructures = Mathf.RoundToInt(allTiles.Count * 0.70f);
+        for (int i = 0; i < landTilesWithStructures; i++)
+        {
+            if (allTiles.Count == 0) break;
+            int index = Random.Range(0, allTiles.Count);
+            HexTile tile = allTiles[index];
+            SpawnStructures(tile);
+            allTiles.RemoveAt(index);
+        }
+    }
+
+    private void SpawnStructures(HexTile tile)
+    {
+        tile.hasStructure = true;
+        int count = Random.Range(3, 6); // 3-5 structures per tile
+        
+        for (int i = 0; i < count; i++)
+        {
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.name = "Env_Structure";
+            cube.transform.SetParent(tile.transform);
+            
+            // Adjusting for X=90 rotation and 100x scale:
+            // Local X = World X
+            // Local Y = World Z
+            // Local Z = World -Y (So negative Z is UP)
+            float rx = Random.Range(-0.0035f, 0.0035f);
+            float ry = Random.Range(-0.0035f, 0.0035f);
+            
+            float height = Random.Range(0.006f, 0.018f);
+            float width = Random.Range(0.0025f, 0.0045f);
+            
+            // Negative Z local moves the cube "Up" in world space relative to the rotated tile
+            // Added -0.001f extra to ensure it clears the tile face
+            cube.transform.localPosition = new Vector3(rx, ry, -height / 2f - 0.001f);
+            cube.transform.localScale = new Vector3(width, width, height); // Scale Z is building height
+            
+            // Set building rotation to match world up (optional, but looks better)
+            cube.transform.localRotation = Quaternion.identity;
+            
+            cube.GetComponent<Renderer>().sharedMaterial = structureMaterial;
+            
+            if (cube.TryGetComponent<Collider>(out Collider col))
+                Destroy(col);
+        }
     }
 
     private void RemoveDisconnectedIslands()

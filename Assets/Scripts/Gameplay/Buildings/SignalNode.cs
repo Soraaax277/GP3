@@ -75,12 +75,17 @@ public class SignalNode : MonoBehaviour
     public float baseSignalStrength = 50f;
 
     public List<TowerNode> connectedTowers { get; private set; } = new List<TowerNode>();
+    private GameObject rangeIndicator;
 
     //  INITIALIZATION
     public void Initialize(HexTile hexTile, PlayerData player)
     {
         tile  = hexTile;
         owner = player;
+
+        // Ensure the tile is clear of environmental test structures
+        if (tile != null && tile.hasStructure)
+            tile.ClearEnvironmentalStructures();
 
         tile.placedNode       = this;
         tile.placedSignalNode = this;
@@ -90,6 +95,12 @@ public class SignalNode : MonoBehaviour
 
         if (businessBuilding == null)
             businessBuilding = gameObject;
+
+        CreateRangeIndicator();
+        SetRangeColor(new Color(0f, 1f, 0f, 0.25f)); // Green for HQ
+        ShowRange(false);
+
+        ApplyInfluence();
 
         Debug.Log($"[SignalNode] Initialized for {player.playerName} at {hexTile.name}");
     }
@@ -202,5 +213,77 @@ public class SignalNode : MonoBehaviour
         Debug.Log($"[Signal] {owner.playerName}'s HQ propagated " +
                   $"(base: {startSignal}, decay: {decayRate * 100:F0}%/hop, " +
                   $"microwave: {microwaveRelays}, connected towers: {connectedTowers.Count})");
+    }
+
+    // -----------------------------------------------------------------------
+    //  INFLUENCE & VISUALS
+    // -----------------------------------------------------------------------
+
+    public void ApplyInfluence()
+    {
+        if (tile == null || owner == null) return;
+
+        var tilesInRange = GridManager.Instance.GetTilesInRange(tile, CurrentInfluenceRadius);
+        foreach (HexTile t in tilesInRange)
+        {
+            // HQ provides a solid influence boost to its surrounding area
+            t.AddInfluence(owner, t.baseInfluence);
+        }
+
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.NotifyStatusChanged();
+    }
+
+    void CreateRangeIndicator()
+    {
+        if (rangeIndicator != null) return;
+
+        rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        rangeIndicator.transform.SetParent(transform);
+        rangeIndicator.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+        rangeIndicator.transform.localRotation = Quaternion.identity;
+
+        UpdateRangeVisuals();
+
+        Renderer rend = rangeIndicator.GetComponent<Renderer>();
+        rend.material = new Material(Shader.Find("Sprites/Default"));
+
+        Destroy(rangeIndicator.GetComponent<Collider>());
+    }
+
+    public void UpdateRangeVisuals()
+    {
+        if (rangeIndicator == null) return;
+
+        float hexSpacing = GridManager.Instance.hexSize * 1.732f;
+        float visualRadius = CurrentInfluenceRadius * hexSpacing;
+
+        rangeIndicator.transform.localScale = 
+            new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
+    }
+
+    public void SetRangeColor(Color color)
+    {
+        if (rangeIndicator == null) return;
+        rangeIndicator.GetComponent<Renderer>().material.color = color;
+    }
+
+    public void ShowRange(bool show)
+    {
+        if (rangeIndicator != null)
+        {
+            if (show) UpdateRangeVisuals();
+            rangeIndicator.SetActive(show);
+        }
+    }
+
+    private void OnMouseEnter()
+    {
+        ShowRange(true);
+    }
+
+    private void OnMouseExit()
+    {
+        ShowRange(false);
     }
 }

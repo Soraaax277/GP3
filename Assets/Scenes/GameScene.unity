@@ -10009,6 +10009,7 @@ MonoBehaviour:
   landThreshold: -0.1
   edgeFalloff: 1.6
   hexTilePrefab: {fileID: 7627528651135053935, guid: c08c523f97d6bbe4b9199b17fab38981, type: 3}
+  waterTilePrefab: {fileID: 2258295951634393469, guid: 350049b7569c31b4e8ff063e2937dd2f, type: 3}
 --- !u!4 &256503956
 Transform:
   m_ObjectHideFlags: 0
