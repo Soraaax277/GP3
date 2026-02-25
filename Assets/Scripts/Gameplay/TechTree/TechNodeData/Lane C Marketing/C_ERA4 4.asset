@@ -13,19 +13,31 @@ MonoBehaviour:
   m_Name: C_ERA4 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Computer-Powered Propaganda Vehicles
-  description: +50% Salesmen Influence Radius +3 Movement for Salesmen and Businessmen
+  description: +5 Salesmen Influence Radius +3 Movement for Salesmen and Businessmen
   researchCost: 3750
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: efc04800962e833419bc58e2882bc3e3, type: 2}
   unlockEffects:
   - type: 0
     targetUnits: []
-    statToUpgrade: 
-    amount: 50
+    statToUpgrade: DenyRange
+    amount: 5
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 0
     targetUnits: []
-    statToUpgrade: 
+    statToUpgrade: Movement
     amount: 3
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -13,19 +13,31 @@ MonoBehaviour:
   m_Name: C_ERA3 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: 'Upgraded Business Tech '
-  description: +20% Salesmen Influence Radius +1 Movement for Scouts
+  description: "+1 to Salesmen Influence Radius \n+1 Movement for Scouts"
   researchCost: 450
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: 51b4f0c95c50971468fbc5d546bc910e, type: 2}
   unlockEffects:
   - type: 0
     targetUnits: []
-    statToUpgrade: 
-    amount: 20
-    skillName: 
-  - type: 0
-    targetUnits: []
-    statToUpgrade: 
+    statToUpgrade: DenyRange
     amount: 1
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 0
+    targetUnits: []
+    statToUpgrade: Movement
+    amount: 1
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

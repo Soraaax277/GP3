@@ -15,12 +15,19 @@ MonoBehaviour:
   techName: 'Larger Marketing Vehicles '
   description: -1 Turns to produce Salesmen
   researchCost: 250
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: c8e8924009f3c6a4b9e7b486d729b712, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 1
     skillName: 
+    infraStatName: ProductionTimeReduction
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

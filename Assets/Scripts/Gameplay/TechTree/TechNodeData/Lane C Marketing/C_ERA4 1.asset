@@ -16,17 +16,29 @@ MonoBehaviour:
   description: Scouts no longer have movement penalties on Rough Terrain +40% Maintenance
     Cost
   researchCost: 2500
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: c8493bb3a4a9da04581c086c9414e462, type: 2}
   unlockEffects:
-  - type: 2
-    targetUnits: []
-    statToUpgrade: 
-    amount: 0
-    skillName: 
   - type: 0
+    targetUnits: []
+    statToUpgrade: MovementPenalty
+    amount: -0.35
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 40
     skillName: 
+    infraStatName: MaintenanceCost
+    infraValueMod: 0.4
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

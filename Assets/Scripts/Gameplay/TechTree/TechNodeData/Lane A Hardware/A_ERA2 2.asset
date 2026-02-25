@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA2 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Even Taller Towers
-  description: 
+  description: Connections between HQ and Towers no longer require wiring
   researchCost: 285
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 72e66b5cf1f01e44bb6cea27e3b2fb63, type: 2}

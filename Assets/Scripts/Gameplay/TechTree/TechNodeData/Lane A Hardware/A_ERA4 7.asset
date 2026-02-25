@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: A_ERA4 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: State-of-the-Art Telecom Hardware
-  description: 
+  description: '+200% Revenue Gain from Towers
+
+    +200% Additional Final Revenue
+    Gain'
   researchCost: 6000
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 3
   preReqs:
   - {fileID: 11400000, guid: 09b2c1c14d29b7440bdedd276761f565, type: 2}

@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: A_ERA2 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Tower Triangulation
-  description: 
+  description: 'Towers can now reveal Fog of War in a 2-Tile Radius
+
+    Unlocks
+    Signal Jammers and Signal Boosters'
   researchCost: 375
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: fe73be03ffa0bda4a938a7d4a26169eb, type: 2}

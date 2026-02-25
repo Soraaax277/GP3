@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: A_ERA3 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: High-Tech Modern SatComm
-  description: 
+  description: '+20% Tower Influence Radius
+
+    Signal Jammers have a 50% larger
+    radius'
   researchCost: 1200
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: ad6e88df62f1dbb4199e7f72b68de24e, type: 2}

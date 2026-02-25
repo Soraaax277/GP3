@@ -2737,6 +2737,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &64026958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3318,6 +3319,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &88297806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15941,6 +15943,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &364634569
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21966,6 +21969,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &489952846
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -37129,6 +37133,10 @@ MonoBehaviour:
   constructButton: {fileID: 936535893}
   buildWireButton: {fileID: 669497667}
   repairButton: {fileID: 1828339275}
+  denyButton: {fileID: 0}
+  constructCostText: {fileID: 0}
+  buildWireCostText: {fileID: 0}
+  repairCostText: {fileID: 0}
   mainCamera: {fileID: 0}
   menuOffset: {x: 3.75, y: 0.25, z: -3.5}
 --- !u!1 &795102094
@@ -40559,6 +40567,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &867988229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56372,8 +56381,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 186.25, y: -58.437622}
-  m_SizeDelta: {x: 372.5, y: 112.875244}
+  m_AnchoredPosition: {x: 186.25, y: -58.5}
+  m_SizeDelta: {x: 372.5, y: 113}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1263414367
 MonoBehaviour:
@@ -61226,6 +61235,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &1383245005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80070,6 +80080,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
+  costText: {fileID: 0}
 --- !u!1001 &1758341511
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -81731,8 +81742,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 558.75, y: -58.437622}
-  m_SizeDelta: {x: 372.5, y: 112.875244}
+  m_AnchoredPosition: {x: 558.75, y: -58.5}
+  m_SizeDelta: {x: 372.5, y: 113}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1779144069
 MonoBehaviour:
@@ -89732,6 +89743,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &1979726978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94245,6 +94257,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitPurchaseButton
   unitPrefab: {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
+  costText: {fileID: 0}
 --- !u!114 &2071099321
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -97002,6 +97015,9 @@ MonoBehaviour:
   buildWireButton: {fileID: 1567921726}
   towerPlacementButton: {fileID: 1650430744}
   towerPlacementDisabledHelper: {fileID: 1148289544}
+  constructCostText: {fileID: 0}
+  buildWireCostText: {fileID: 0}
+  towerPlacementCostText: {fileID: 0}
 --- !u!4 &2142417076
 Transform:
   m_ObjectHideFlags: 0
@@ -97033,6 +97049,10 @@ MonoBehaviour:
   constructButton: {fileID: 765859865}
   buildWireButton: {fileID: 1567921726}
   repairButton: {fileID: 1303957365}
+  denyButton: {fileID: 0}
+  constructCostText: {fileID: 0}
+  buildWireCostText: {fileID: 0}
+  repairCostText: {fileID: 0}
   mainCamera: {fileID: 330585545}
   menuOffset: {x: 0, y: 0.25, z: -3.5}
 --- !u!114 &2142417078

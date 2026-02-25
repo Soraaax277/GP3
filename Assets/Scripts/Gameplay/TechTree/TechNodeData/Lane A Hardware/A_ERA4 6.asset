@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA4 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: AI-Powered Encryption
-  description: 
+  description: +5 Tower Capacity
   researchCost: 4600
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 5416c083077ebf74ba808ca97d5662ab, type: 2}

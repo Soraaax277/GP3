@@ -10,17 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
-  m_Name: C_ERA4 2
+  m_Name: D_ERA4 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Lethal Subterfuge Training
   description: +30% Degradation on Sabotages for all Units
   researchCost: 4000
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: a280510d743d42840b63456d61be8ac1, type: 2}
   unlockEffects:
   - type: 0
-    targetUnits: []
-    statToUpgrade: 
-    amount: 30
+    targetUnits:
+    - {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
+    - {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
+    statToUpgrade: DamagePercent
+    amount: 0.3
     skillName: Recruit_Opponents
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -8,6 +8,10 @@ public class SalesMarketer : Unit
     public float denyChance = 0.35f;
     public int denyAmount = 5;
 
+    public bool canRecruit = false;
+    
+    
+
     private GameObject rangeIndicator;
 
     public override void Initialize(HexTile spawnTile, PlayerData player)
@@ -15,6 +19,30 @@ public class SalesMarketer : Unit
         base.Initialize(spawnTile, player);
         CreateRangeIndicator();
         ShowRange(true);
+    }
+
+    public override void UnlockSkill(string skillName)
+    {
+        if (skillName == "UnlockRecruiting")
+        {
+            UnlockRecruiting();
+        }
+        else if (skillName == "GuaranteeInfluence")
+        {
+            GuaranteeInfluence();
+        }
+    }
+
+    public void UnlockRecruiting()
+    {
+        canRecruit = true;
+        Debug.Log("SalesMarketer can now recruit Enemy Workers");
+    }
+
+    public void GuaranteeInfluence()
+    {
+        denyChance = 1;
+        Debug.Log("SalesMarketer now guarantees influence");
     }
 
     public override void ReceiveStatUpgrade(string statName, float amount)
@@ -46,6 +74,43 @@ public class SalesMarketer : Unit
             // SalesMarketer doesn't have action charges like other units
             // Actions for SalesMarketer might enable multiple denies per turn
             Debug.Log($"SalesMarketer received +{(int)amount} Actions (passive unit)");
+        }
+    }
+
+    public void RecruitNearestWorker()
+    {
+        if (!canAct && !testingMode)
+        {
+            Debug.Log("[Saboteur] Cannot act (turn/action used)");
+            return;
+        }
+
+        if (!canRecruit && !testingMode)
+        {
+            Debug.Log("Recruit ability not Unlocked");
+            return;
+        }
+        Unit targetUnit = null;
+        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+        {
+            //checks if target is owned by enemyAI
+            if (neighbor.placedUnit != null && neighbor.placedUnit.owner != TurnManager.Instance.currentPlayer)
+            {
+                targetUnit = neighbor.placedUnit;
+                break;
+            }
+        }
+
+        if (targetUnit == null)
+        {
+            Debug.Log("No unit adjacent!");
+            return;
+        }
+
+        int procInt = Random.Range(0, 1);
+        if (procInt >= 1) //procInt has a 20% chance of being 4
+        { 
+            targetUnit.Recruit(owner);
         }
     }
 

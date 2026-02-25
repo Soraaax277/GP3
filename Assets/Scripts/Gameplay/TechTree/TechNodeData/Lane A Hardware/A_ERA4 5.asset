@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA4 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Nanomachine Towers
-  description: 
+  description: 100% Revenue refunded when disassembling towers
   researchCost: 4200
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 1d798cf30db092c469f6547252812519, type: 2}

@@ -7,7 +7,11 @@ public class BuilderUnit : Unit
 
     public bool canConstructTower = false;
     public bool canRepairInfrastructure = false; // Unlocked by Versatile Builder Tool Kit
-    public float repairEfficiency = 1.0f; 
+    public bool canSabotage = false;
+    public bool canUseBombs = false;
+    public float repairEfficiency = 1.0f;
+    public float baseDamage = 10;
+    public float damageMultiplier = 1.0f;
 
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
@@ -26,6 +30,17 @@ public class BuilderUnit : Unit
                 TechManager.Instance.IsFeatureUnlocked("Construction"))
             {
                 UnlockConstruction();
+            }
+
+            if (TechManager.Instance.IsFeatureUnlocked("CanSabotage") ||
+                TechManager.Instance.IsFeatureUnlocked("BrainwashedWorkforce"))
+            {
+                UnlockSabotage();
+            }
+
+            if (TechManager.Instance.IsFeatureUnlocked("NeutronBombs"))
+            {
+                UnlockBombs();
             }
         }
     }
@@ -56,6 +71,10 @@ public class BuilderUnit : Unit
             repairEfficiency += amount;
             Debug.Log($"Builder: Repair efficiency increased by {amount * 100}% (now {repairEfficiency * 100}%)");
         }
+        else if (statName == "DamagePercent")
+        {
+            damageMultiplier += amount;
+        }
     }
 
     public override void UnlockSkill(string skillName)
@@ -71,8 +90,25 @@ public class BuilderUnit : Unit
             canRepairInfrastructure = true;
             Debug.Log("Builder learned to repair infrastructure!");
         }
+        else if (skillName == "CanSabotage" || skillName == "BrainwashedWorkforce")
+        {
+            UnlockSabotage();
+        }
     }
 
+    public void UnlockSabotage()
+    {
+        canSabotage = true;
+        Debug.Log("Builder learned to sabotage");
+    }
+
+    public void UnlockBombs()
+    {
+        canUseBombs = true;
+        Debug.Log("Builder now uses Neutron Bombs (20% to fully destroy on sabotage)!");
+    }
+    
+    
     public void ConstructAdjacentTower()
     {
         CheckTechStatus();
@@ -190,6 +226,69 @@ public class BuilderUnit : Unit
         buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
         ConsumeAction();
         Debug.Log($"[Builder] Repair complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}). Builds left: {buildsRemaining}");
+
+        if (buildsRemaining <= 0)
+        {
+            Die();
+            return;
+        }
+
+        if (!owner.isAI)
+        {
+            SetSelected(false);
+            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
+            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+        }
+    }
+    
+    public void DamageAdjacentStructure()
+    {
+        if (!canSabotage && !testingMode)
+        {
+            Debug.Log("Sabotage Ability not unlocked");
+        }
+        if (!canAct && !testingMode)
+        {
+            Debug.Log("[Saboteur] Cannot act (turn/action used)");
+            return;
+        }
+
+        TowerNode targetTower = null;
+        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+        {
+            //checks if target is owned by enemyAI
+            if (neighbor.placedTower != null && neighbor.placedTower.owner.isAI)
+            {
+                targetTower = neighbor.placedTower;
+                break;
+            }
+        }
+
+        if (targetTower == null)
+        {
+            Debug.Log("No structure adjacent!");
+            return;
+        }
+
+        float sabotageDamage = 0;
+        if (canUseBombs) //if Neutron Bombs tech is active, roll destroy chance
+        {
+            int procInt = Random.Range(0, 5);
+            if (procInt >= 4) //procInt has a 20% chance of being 4
+            { 
+                sabotageDamage = targetTower.currentDurability;
+            }  
+        }
+        else
+        {
+            sabotageDamage = baseDamage *  damageMultiplier;
+        }
+        
+        targetTower.TakeDamage(sabotageDamage);
+
+        buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
+        ConsumeAction();
+        Debug.Log($"[Builder] Sabotage complete, dealing {sabotageDamage}. Actions left: {buildsRemaining}");
 
         if (buildsRemaining <= 0)
         {

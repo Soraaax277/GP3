@@ -15,17 +15,29 @@ MonoBehaviour:
   techName: Improved Footwear
   description: -10% Scout Recruitment and Maintenance Cost
   researchCost: 46
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: 296259ff0c79b5f4b8a778e9a8d36376, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: -10
+    amount: 0
     skillName: 
-  - type: 0
+    infraStatName: RecruitmentCost
+    infraValueMod: -0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: -10
+    amount: 0
     skillName: 
+    infraStatName: MaintenanceCost
+    infraValueMod: -0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

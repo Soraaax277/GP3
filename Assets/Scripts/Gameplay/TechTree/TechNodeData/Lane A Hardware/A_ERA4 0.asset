@@ -13,9 +13,20 @@ MonoBehaviour:
   m_Name: A_ERA4 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: New-Age Tech Progression
-  description: 
+  description: '+1 to Company HQ Level
+
+    +50% Revenue Gain from Towers
+
+    25%
+    Final Revenue Gain
+
+    20% Influence Radius for all Structures
+
+    +4 Max
+    Tower Capacity'
   researchCost: 3000
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 581a0d8e1226ed64ca9e302375db8285, type: 2}

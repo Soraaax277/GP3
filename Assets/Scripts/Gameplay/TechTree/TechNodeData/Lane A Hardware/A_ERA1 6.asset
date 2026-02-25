@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: A_ERA1 6
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Coaxial Cables
-  description: "+10% Revenue Gain from Towers Wires length \n+2 Tiles\r\n+10% Wire
+  description: "+10% Revenue Gain from Towers \nWires length +2 Tiles\r\n+10% Wire
     Cost \n+3 Max Tower Capacity"
   researchCost: 70
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 8dc0dc585ec8bd9409c0ee0735d5d77b, type: 2}

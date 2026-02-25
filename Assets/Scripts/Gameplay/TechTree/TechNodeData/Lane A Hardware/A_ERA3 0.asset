@@ -13,7 +13,12 @@ MonoBehaviour:
   m_Name: A_ERA3 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Retro Tech Progression
-  description: 
+  description: '+1 to Company HQ Level
+
+    +25% Final Revenue Gain
+
+    +2 Max
+    Tower Capacity'
   researchCost: 600
   goldCost: 0
   unlocksSabotageTab: 1

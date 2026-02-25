@@ -16,12 +16,20 @@ MonoBehaviour:
   description: Salesmen Influence now guarantees affected buildings to connect to
     network
   researchCost: 3250
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: c8493bb3a4a9da04581c086c9414e462, type: 2}
   unlockEffects:
   - type: 2
-    targetUnits: []
+    targetUnits:
+    - {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
     statToUpgrade: 
     amount: 0
-    skillName: 
+    skillName: GuaranteeInfluence
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: A_ERA2 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Durable Tower Electronics
-  description: 
+  description: '+20% Tower Durability
+
+    +15% Wire Durability'
   researchCost: 310
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: bd3c049b4b928204bbf70ba369bd8118, type: 2}

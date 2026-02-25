@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: A_ERA3 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: 4G Connection
-  description: 
+  description: '+30% Revenue Gain from Towers
+
+    -20% Tower Influence Radius'
   researchCost: 1080
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 36bcb09851339d147b733a142739cf46, type: 2}

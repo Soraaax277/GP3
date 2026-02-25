@@ -10,36 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
-  m_Name: A_ERA3 3
+  m_Name: D_ERA4 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
-  techName: Fiber Optic Cables
-  description: '+30% Revenue Gain from Towers
-
-    +20% Wire Cost'
-  researchCost: 1050
+  techName: Portable Brainwashing Gear
+  description: Salesmen can recruit opponent Workers to your side (50% chance of
+    working).
+  researchCost: 3700
   goldCost: 0
   unlocksSabotageTab: 0
-  rpBonusPerTurn: 1
+  rpBonusPerTurn: 0
   preReqs:
-  - {fileID: 11400000, guid: 36bcb09851339d147b733a142739cf46, type: 2}
+  - {fileID: 11400000, guid: a280510d743d42840b63456d61be8ac1, type: 2}
   unlockEffects:
-  - type: 3
-    targetUnits: []
+  - type: 2
+    targetUnits:
+    - {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
     statToUpgrade: 
-    amount: 30
-    skillName: 
-    infraStatName: TowerRevenue
-    infraValueMod: 0.3
-    isMultiplier: 1
-    featureName: 
-    isHardwareEra: 0
-  - type: 4
-    targetUnits: []
-    statToUpgrade: 
-    amount: 20
-    skillName: 
+    amount: 0
+    skillName: UnlockRecruiting
     infraStatName: 
     infraValueMod: 0
     isMultiplier: 0
-    featureName: SignalBoosterRadiusUpgrade
+    featureName: 
     isHardwareEra: 0

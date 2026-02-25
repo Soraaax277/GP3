@@ -10,16 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
-  m_Name: C_ERA3 0
+  m_Name: D_ERA3 3
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
-  techName: Illicit Business Practices
-  description: Unlocks Scouts
-  researchCost: 0
-  researchBonus: 1
-  preReqs: []
+  techName: Intimidation Tactics
+  description: -1 Turns to recruit Saboteurs
+  researchCost: 2000
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
+  preReqs:
+  - {fileID: 11400000, guid: 6517b0bec1718db418a4b254fb6ec3e1, type: 2}
   unlockEffects:
-  - type: 1
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 0
+    amount: -1
     skillName: 
+    infraStatName: ProductionTimeReduction
+    infraValueMod: -1
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

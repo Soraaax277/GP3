@@ -13,10 +13,12 @@ MonoBehaviour:
   m_Name: C_ERA2 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Company Business Division
-  description: Unlocks Salesmen and Businessmen Unlocks Commercial Hubs +10% Final
-    Revenue Gain
+  description: "Unlocks Salesmen and Businessmen \nUnlocks Commercial Hubs +10% Final
+    Revenue Gain"
   researchCost: 150
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: 492684dbbe2da2145b88201b69010d11, type: 2}
   unlockEffects:
@@ -25,8 +27,18 @@ MonoBehaviour:
     statToUpgrade: 
     amount: 0
     skillName: 
-  - type: 0
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 0
     skillName: 
+    infraStatName: FinalRevenueGain
+    infraValueMod: 0.1
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

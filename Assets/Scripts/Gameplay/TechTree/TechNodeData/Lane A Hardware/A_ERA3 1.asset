@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: A_ERA3 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Internet Foundations
-  description: 
+  description: '+30% Revenue Gain from Towers
+
+    +2 Tower Capacity'
   researchCost: 800
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: d9967feafd6c17d42aea1a419ee7ca10, type: 2}

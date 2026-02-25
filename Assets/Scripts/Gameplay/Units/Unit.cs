@@ -9,6 +9,7 @@ public abstract class Unit : MonoBehaviour
 
     public bool canAct;
     public bool isFresh;
+    public bool isRecruited = false;
     public bool testingMode = false;
 
     private Renderer[] renderers;
@@ -17,7 +18,7 @@ public abstract class Unit : MonoBehaviour
     public int moveRange = 3;
     public int movementRemaining;
     public bool isMoving;
-
+    
     public bool forceCanAct = false;
 
     //  UPKEEP  (System 3)
@@ -188,6 +189,15 @@ public abstract class Unit : MonoBehaviour
             goldUpkeep = Mathf.Max(0, goldUpkeep - (int)amount);
             Debug.Log($"{name} upkeep reduced by {(int)amount}, now {goldUpkeep}");
         }
+    }
+
+    public void Recruit(PlayerData newOwner)
+    {
+        if (!isRecruited)
+        {
+            owner = newOwner;
+        }
+        isRecruited = true;
     }
 
     public virtual void UnlockSkill(string skillName)

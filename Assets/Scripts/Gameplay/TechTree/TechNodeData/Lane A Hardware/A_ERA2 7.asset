@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA2 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Effiicient Tower Construction
-  description: 
+  description: +4 Max Tower Capacity
   researchCost: 370
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: f7c2ba7e509e3d546b30a38d002c1825, type: 2}

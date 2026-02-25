@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: A_ERA2 8
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: High-Quality Wireless Communications
-  description: 
+  description: '+25% Revenue Gain from Towers
+
+    25% Tower Influence Radius'
   researchCost: 500
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 3
   preReqs:
   - {fileID: 11400000, guid: 69b971449b49f17489fc13acf53bc4f8, type: 2}

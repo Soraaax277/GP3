@@ -4,7 +4,11 @@ public class WireSpecialist : Unit
 {
     public int wiresRemaining = 8;
     public bool canRepairTowers = false; // Unlocked by Versatile Repairmen tech
+    public bool canSabotage = false; //Unlocked by Brainwashed Workforce tech
+    public bool canUseBombs = false; //Unlocked by Neutron Bombs tech
     public float repairEfficiency = 1.0f;
+    public float baseDamage = 10f;
+    public float damageMultiplier = 1.0f;
 
     public override void ReceiveStatUpgrade(string statName, float amount)
     {
@@ -32,6 +36,10 @@ public class WireSpecialist : Unit
             repairEfficiency += amount;
             Debug.Log($"WireSpecialist: Repair efficiency increased by {amount * 100}% (now {repairEfficiency * 100}%)");
         }
+        else if (statName == "DamagePercent")
+        {
+            damageMultiplier += amount;
+        }
     }
 
     public override void UnlockSkill(string skillName)
@@ -43,6 +51,28 @@ public class WireSpecialist : Unit
             canRepairTowers = true;
             Debug.Log("WireSpecialist learned to repair towers!");
         }
+
+        if (skillName == "CanSabotage" || skillName == "BrainwashedWorkforce")
+        {
+            UnlockSabotage();
+        }
+
+        if (skillName == "Neutron Bombs")
+        {
+            UnlockBombs();
+        }
+    }
+    
+    public void UnlockBombs()
+    {
+        canUseBombs = true;
+        Debug.Log("WireSpecialist now uses Neutron Bombs (20% to fully destroy on sabotage)!");
+    }
+    
+    public void UnlockSabotage()
+    {
+        canSabotage = true;
+        Debug.Log("Builder learned to sabotage");
     }
 
     public void BuildWire(HexTile tile, float yRotation = 0f)
@@ -103,6 +133,70 @@ public class WireSpecialist : Unit
         if (wiresRemaining <= 0)
         {
             Die();
+        }
+    }
+
+    public void DamageAdjacentStructure()
+    {
+        if (!canSabotage && !testingMode)
+        {
+            Debug.Log("Sabotage Ability not unlocked");
+        }
+
+        if (!canAct && !testingMode)
+        {
+            Debug.Log("[Saboteur] Cannot act (turn/action used)");
+            return;
+        }
+
+        WireNode targetWire = null;
+        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+        {
+            //checks if target is owned by enemyAI
+            if (neighbor.placedWire != null && neighbor.placedWire.owner != TurnManager.Instance.currentPlayer)
+            {
+                targetWire = neighbor.placedWire;
+                break;
+            }
+        }
+
+        if (targetWire== null)
+        {
+            Debug.Log("No structure adjacent!");
+            return;
+        }
+
+        float sabotageDamage = 0;
+        if (canUseBombs) //if Neutron Bombs tech is active, roll destroy chance
+        {
+            int procInt = Random.Range(0, 5);
+            if (procInt >= 4) //procInt has a 20% chance of being 4
+            {
+                sabotageDamage = targetWire.currentDurability;
+            }
+        }
+        else
+        {
+            sabotageDamage = baseDamage * damageMultiplier;
+        }
+
+        targetWire.TakeDamage(sabotageDamage);
+
+        wiresRemaining = Mathf.Max(0, wiresRemaining - 1); // Uses build charges
+        ConsumeAction();
+        Debug.Log($"[Builder] Sabotage complete, dealing {sabotageDamage}. Actions left: {wiresRemaining}");
+
+        if (wiresRemaining <= 0)
+        {
+            Die();
+            return;
+        }
+
+        if (!owner.isAI)
+        {
+            SetSelected(false);
+            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
+            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
         }
     }
 

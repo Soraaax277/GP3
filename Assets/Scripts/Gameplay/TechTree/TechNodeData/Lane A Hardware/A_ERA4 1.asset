@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA4 1
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Network Quality Specialization
-  description: 
+  description: +100% Revenue Gain from Towers
   researchCost: 3250
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: e5afc6cab42795c44b5c95bd4b376833, type: 2}

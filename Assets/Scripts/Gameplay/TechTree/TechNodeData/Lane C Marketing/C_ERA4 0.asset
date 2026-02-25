@@ -15,12 +15,19 @@ MonoBehaviour:
   techName: Advanced Marketing Research
   description: +30% Additional  Final Revenue Gain
   researchCost: 2500
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: eece714439be9284989c3c1b8bce2af6, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
-    amount: 30
+    amount: 0
     skillName: 
+    infraStatName: FinalRevenueGain
+    infraValueMod: 0.3
+    isMultiplier: 1
+    featureName: 
+    isHardwareEra: 0

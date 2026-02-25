@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: A_ERA2 5
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Early SatComm
-  description: 
+  description: '+20% HQ Influence Radius
+
+    +10% HQ Influence Radius per Tower
+    within Influence'
   researchCost: 350
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: fe73be03ffa0bda4a938a7d4a26169eb, type: 2}

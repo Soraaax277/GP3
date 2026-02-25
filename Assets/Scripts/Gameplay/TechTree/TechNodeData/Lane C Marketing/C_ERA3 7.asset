@@ -16,7 +16,9 @@ MonoBehaviour:
   description: Unlocks Advanced Business Centers (Auto-production of Salesmen, Scouts
     and Businessmen) +1 Max Tower Capacity
   researchCost: 1100
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: ac5551b838598a1468afc30be45e23db, type: 2}
   - {fileID: 11400000, guid: 3fde934239ba02247a2007ecd7437c7e, type: 2}
@@ -27,8 +29,18 @@ MonoBehaviour:
     statToUpgrade: 
     amount: 0
     skillName: 
-  - type: 0
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
+  - type: 3
     targetUnits: []
     statToUpgrade: 
     amount: 1
     skillName: 
+    infraStatName: ToweCapacity
+    infraValueMod: 1
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

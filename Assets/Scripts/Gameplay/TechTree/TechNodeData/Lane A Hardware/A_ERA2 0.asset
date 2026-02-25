@@ -13,9 +13,15 @@ MonoBehaviour:
   m_Name: A_ERA2 0
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: 80's Tech Progression
-  description: 
+  description: '+1 to Company HQ Level
+
+    +25% Final Revenue Gain
+
+    +1 Max
+    Tower Capacity'
   researchCost: 250
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: fac54e2d96e5f4d469c496a1972b6a7c, type: 2}

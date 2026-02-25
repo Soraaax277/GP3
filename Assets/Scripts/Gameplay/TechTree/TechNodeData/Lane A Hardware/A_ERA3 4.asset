@@ -13,9 +13,15 @@ MonoBehaviour:
   m_Name: A_ERA3 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Modern SatComm
-  description: 
+  description: '+30% Tower Influence Radius
+
+    - 20% HQ Influence Radius
+
+    Signal
+    Boosters have a 50% larger radius'
   researchCost: 1065
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 36bcb09851339d147b733a142739cf46, type: 2}

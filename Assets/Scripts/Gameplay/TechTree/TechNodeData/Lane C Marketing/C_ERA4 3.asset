@@ -16,17 +16,29 @@ MonoBehaviour:
   description: Scouts are now drones -100% Maintenance Cost Unlocks Drone Factories
     (Faster Scout Auto-Production)
   researchCost: 3500
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
   - {fileID: 11400000, guid: 141c1c0b9cbcc0e4d8c3a5bf5c2a8623, type: 2}
   unlockEffects:
+  - type: 2
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: Drone
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 1
     targetUnits: []
     statToUpgrade: 
     amount: 0
-    skillName: 
-  - type: 0
-    targetUnits: []
-    statToUpgrade: 
-    amount: -100
-    skillName: 
+    skillName: Drone
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: A_ERA3 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Broadband Communications
-  description: 
+  description: '+10% Revenue Gain from Towers
+
+    +10% Final Revenue Gain'
   researchCost: 970
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: dde6041db1681a54a8b87d75a8a3a2b7, type: 2}

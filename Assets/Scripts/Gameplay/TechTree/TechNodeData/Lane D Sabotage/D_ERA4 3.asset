@@ -10,17 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3086748cfd98ed747ab591eb6ef3c397, type: 3}
-  m_Name: C_ERA3 1
+  m_Name: D_ERA4 3
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
-  techName: Equipment Smuggling
-  description: Saboteurs have +1 Action
-  researchCost: 1500
-  researchBonus: 1
+  techName: Stolen Military Equipment
+  description: Scouts now have permanent vision over revealed areas
+  researchCost: 4700
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs:
-  - {fileID: 11400000, guid: d3a8a73a183dae94db2b892c0f6c4a27, type: 2}
+  - {fileID: 11400000, guid: d3069caab54e3f04b81c46767a7e6e83, type: 2}
   unlockEffects:
-  - type: 0
+  - type: 2
     targetUnits: []
     statToUpgrade: 
-    amount: 1
-    skillName: 
+    amount: 0
+    skillName: PermanentVision
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

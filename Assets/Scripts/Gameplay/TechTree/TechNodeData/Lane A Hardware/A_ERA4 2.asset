@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA4 2
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Wide Reach Specialization
-  description: 
+  description: +100% Tower Influence Radius
   researchCost: 3400
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: e5afc6cab42795c44b5c95bd4b376833, type: 2}

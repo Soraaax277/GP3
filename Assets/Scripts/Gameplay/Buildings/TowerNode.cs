@@ -25,7 +25,8 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
     [Header("Upkeep")]
     public int goldUpkeep = 25; // Base gold subtracted from player per turn (System 3)
-
+    
+    private bool isRecruited = false;
     //  SIGNAL  (System 2)
     // Set each turn by SignalNode.PropagateSignal().
     // Only meaningful when state == Powered.
@@ -449,6 +450,15 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         }
 
         Debug.Log($"Tower repaired to Constructed state (restored {restoredHP} HP with {efficiencyMultiplier * 100}% efficiency). Technician required to restore full power.");
+    }
+
+    public void Recruit(PlayerData newOwner)
+    {
+        if (!isRecruited)
+        {
+            owner = newOwner;
+        }
+        isRecruited = true;
     }
 
     void DestroyTower()

@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: A_ERA4 4
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Quantum Communication
-  description: 
+  description: Total Revenue Gain from Towers is Doubled
   researchCost: 3800
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 2
   preReqs:
   - {fileID: 11400000, guid: 5416c083077ebf74ba808ca97d5662ab, type: 2}

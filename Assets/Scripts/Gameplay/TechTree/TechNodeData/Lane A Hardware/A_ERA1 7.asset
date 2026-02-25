@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: A_ERA1 7
   m_EditorClassIdentifier: Assembly-CSharp::TechNode
   techName: Radio Broadcasting
-  description: "\r\n+10% Revenue Gain from Towers \n+10% Tower Influence Radius \n+10%
+  description: "+10% Revenue Gain from Towers \n+10% Tower Influence Radius \n+10%
     HQ Influence Radius\r\nUnlocks Power Boxes"
   researchCost: 120
   goldCost: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
   preReqs:
   - {fileID: 11400000, guid: 06eca37e3f69c3f4f941d083753b651a, type: 2}
