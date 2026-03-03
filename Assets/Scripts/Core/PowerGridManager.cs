@@ -6,6 +6,12 @@ public class PowerGridManager : MonoBehaviour
     public static PowerGridManager Instance;
 
     private List<SignalNode> sourceNodes = new List<SignalNode>();
+    
+    // TACTICAL VIEW (Phase 2)
+    // HexTile (Child) -> HexTile (Parent source)
+    public Dictionary<HexTile, HexTile> powerFlowMap = new Dictionary<HexTile, HexTile>();
+    // HexTile -> Number of nodes powered downstream through this tile
+    public Dictionary<HexTile, int> powerLoad = new Dictionary<HexTile, int>();
 
     private void Awake()
     {
@@ -32,6 +38,9 @@ public class PowerGridManager : MonoBehaviour
             if (tile.placedWire is IPowerable pWire) pWire.IsPowered = false;
         }
 
+        powerFlowMap.Clear();
+        powerLoad.Clear();
+
         Queue<HexTile> frontier = new Queue<HexTile>();
         HashSet<HexTile> visited = new HashSet<HexTile>();
 
@@ -41,12 +50,16 @@ public class PowerGridManager : MonoBehaviour
             {
                 frontier.Enqueue(source.tile);
                 visited.Add(source.tile);
+                powerLoad[source.tile] = 0; // Initialize root load
             }
         }
+
+        List<HexTile> traversalOrder = new List<HexTile>();
 
         while (frontier.Count > 0)
         {
             HexTile current = frontier.Dequeue();
+            traversalOrder.Add(current);
             UpdatePowerOnTile(current, true);
             poweredCount++;
 
@@ -62,16 +75,33 @@ public class PowerGridManager : MonoBehaviour
                     {
                         visited.Add(neighbor);
                         frontier.Enqueue(neighbor);
+                        powerFlowMap[neighbor] = current; // DACTICAL FLOW
+                        powerLoad[neighbor] = 0; 
                     }
                     else
                     {
-                        // It's not conductive (e.g. unbuilt tower or unactivated wire), 
-                        // but it IS adjacent to power, so it should still be "powered".
+                        // It's not conductive but it IS adjacent to power
                         visited.Add(neighbor);
                         UpdatePowerOnTile(neighbor, true);
                         poweredCount++;
+                        powerFlowMap[neighbor] = current; // Labeled leaf
                     }
                 }
+            }
+        }
+
+        // TWEAK: BOTTLE-NECK ANALYSIS (Propagate load upwards)
+        // Reverse traversal ensures we count all children before adding to parents
+        for (int i = traversalOrder.Count - 1; i >= 0; i--)
+        {
+            HexTile current = traversalOrder[i];
+            if (powerFlowMap.ContainsKey(current))
+            {
+                HexTile parent = powerFlowMap[current];
+                if (!powerLoad.ContainsKey(parent)) powerLoad[parent] = 0;
+                
+                // Add this tile and all its downstream descendants to its parent's load
+                powerLoad[parent] += (1 + (powerLoad.ContainsKey(current) ? powerLoad[current] : 0));
             }
         }
 
@@ -103,6 +133,12 @@ public class PowerGridManager : MonoBehaviour
             }
             InfluenceManager.Instance.RecalculateGlobalInfluence(TurnManager.Instance.players);
             TurnManager.Instance.NotifyStatusChanged();
+        }
+
+        // TACTICAL VIEW REFRESH (Phase 2)
+        if (PowerGridOverlay.Instance != null && PowerGridOverlay.Instance.isEnabled)
+        {
+            PowerGridOverlay.Instance.Refresh();
         }
     }
 

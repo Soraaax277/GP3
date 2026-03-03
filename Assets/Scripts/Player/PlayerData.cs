@@ -38,6 +38,8 @@ public class PlayerData
             .Count(t => t.owner == this && t.IsBuilt());
     }
 
+    public UnityEngine.Color playerColor = UnityEngine.Color.white;
+
     public PlayerData(int id, string name, bool ai = false)
     {
         playerId = id;
@@ -46,5 +48,10 @@ public class PlayerData
         resources = 100; // Starting Gold
         researchPoints = 0; // Starting RP
         ownedNodes = new List<SignalNode>();
+
+        // Set default colors
+        if (id == 0) playerColor = new UnityEngine.Color(0f, 0.8f, 1f, 1f); // Neon Cyan
+        else if (id == 1) playerColor = new UnityEngine.Color(1f, 0.1f, 0.5f, 1f); // Fuchsia/Red
+        else playerColor = UnityEngine.Random.ColorHSV(0f, 1f, 0.5f, 1f, 0.8f, 1f);
     }
 }

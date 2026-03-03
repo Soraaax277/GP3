@@ -240,6 +240,11 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     {
         state = TowerState.Destroyed;
         IsPowered = false;
+        
+        // JUICE (Phase 2)
+        if (FeedbackController.Instance != null)
+            FeedbackController.Instance.PlayTowerDestroyed(transform.position);
+
         ShowRange(false);
         SetRangeColor(new Color(1f, 0f, 0f, 0.25f));
     }

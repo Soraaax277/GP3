@@ -88,6 +88,7 @@ public class HexTile : MonoBehaviour
             else
             {
                 targetFowColor = baseTypeColor;
+                // Territory-based tinting removed (Phase 2 refinement)
             }
         }
 
@@ -114,6 +115,36 @@ public class HexTile : MonoBehaviour
             raw += influenceByPlayer[forPlayer];
         
         return Mathf.Max(0, raw);
+    }
+
+    /// <summary>
+    /// Returns the player who currently "owns" this tile based on dominant influence.
+    /// Returns null if no player has influence or if there's a tie (wilderness).
+    /// </summary>
+    public PlayerData GetOwner()
+    {
+        if (influenceByPlayer == null || influenceByPlayer.Count == 0) return null;
+
+        PlayerData bestOwner = null;
+        int maxInf = 0;
+        bool tie = false;
+
+        foreach (var kvp in influenceByPlayer)
+        {
+            if (kvp.Value > maxInf)
+            {
+                maxInf = kvp.Value;
+                bestOwner = kvp.Key;
+                tie = false;
+            }
+            else if (kvp.Value == maxInf && maxInf > 0)
+            {
+                tie = true;
+            }
+        }
+
+        if (maxInf <= 0 || tie) return null;
+        return bestOwner;
     }
 
     public void AddInfluence(PlayerData player, int amount)

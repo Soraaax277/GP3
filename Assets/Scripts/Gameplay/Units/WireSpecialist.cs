@@ -166,6 +166,10 @@ public class WireSpecialist : Unit
             TurnManager.Instance.RegisterWire(wireNode);
         }
 
+        // JUICE (Phase 2)
+        if (FeedbackController.Instance != null)
+            FeedbackController.Instance.PlayWirePlacement(tile.transform.position);
+
         wiresRemaining--;
         ConsumeAction();
 

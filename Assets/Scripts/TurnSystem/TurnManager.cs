@@ -263,6 +263,12 @@ public class TurnManager : MonoBehaviour
         else currentEra = GameEra.Industrial;
         
         Debug.Log($"Game Era: {currentEra}");
+        
+        // JUICE (Phase 2)
+        if (FeedbackController.Instance != null && currentTurn > 1)
+        {
+            FeedbackController.Instance.PlayEraTransition(currentEra.ToString());
+        }
     }
 
     void CheckGameEnd()

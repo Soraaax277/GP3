@@ -54,6 +54,13 @@ public class InfluenceManager : MonoBehaviour
             Debug.LogError("InfluenceManager: GridManager instance not found! Cannot calculate scores.");
         }
 
+        // Reflow visuals for all tiles now that influence has changed
+        if (GridManager.Instance != null)
+        {
+            foreach (var tile in GridManager.Instance.GetAllTiles())
+                tile.UpdateAppearance();
+        }
+
         // Debug Report 
         Debug.Log("--- [Influence Report] ---");
         foreach (var kvp in playerTotalInfluence)
@@ -65,6 +72,12 @@ public class InfluenceManager : MonoBehaviour
             Debug.Log($"Player: {kvp.Key.playerName} | Total Influence: {kvp.Value} | Era Multiplier: {era:F2}");
         }
         Debug.Log("--------------------------");
+
+        // Update territory borders visually
+        if (InfluenceBorderRenderer.Instance != null)
+        {
+            InfluenceBorderRenderer.Instance.UpdateBorders();
+        }
     }
 
     public int GetTotalInfluence(PlayerData player)

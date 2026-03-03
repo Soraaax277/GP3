@@ -69,6 +69,10 @@ public class Technician : Unit
         targetWire.IsTechnicianActivated = true;
         Debug.Log($"[Technician] Successfully activated Wire at {targetWire.ParentTile.cubeCoords}!");
 
+        // JUICE (Phase 2)
+        if (FeedbackController.Instance != null)
+            FeedbackController.Instance.PlayTechnicianAction(targetWire.transform.position);
+
         actionCharges--;
         ConsumeAction();
 

@@ -26,6 +26,11 @@ public class GameManager : MonoBehaviour
         if (GetComponent<EventManager>() == null) gameObject.AddComponent<EventManager>();
         if (GetComponent<HazardManager>() == null) gameObject.AddComponent<HazardManager>();
         if (GetComponent<FieldOfViewManager>() == null) gameObject.AddComponent<FieldOfViewManager>();
+
+        // --- PHASE 2 COMPONENTS ---
+        if (GetComponent<InfluenceBorderRenderer>() == null) gameObject.AddComponent<InfluenceBorderRenderer>();
+        if (GetComponent<PowerGridOverlay>() == null) gameObject.AddComponent<PowerGridOverlay>();
+        if (GetComponent<FeedbackController>() == null) gameObject.AddComponent<FeedbackController>();
     }
 
     private void Start()
