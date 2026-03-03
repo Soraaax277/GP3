@@ -10,7 +10,28 @@ public class SalesMarketer : Unit
 
     public bool canRecruit = false;
     
-    
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            denyChance = 0.75f; // Neural Marketing
+            denyAmount = 10; // High-impact campaigns
+        }
+
+        // 2. TECH TREE FEATURES
+        if (TechManager.Instance.IsFeatureUnlocked("UnlockRecruiting"))
+        {
+            canRecruit = true;
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("GuaranteeInfluence"))
+        {
+            denyChance = 1.0f;
+        }
+    }
 
     private GameObject rangeIndicator;
 

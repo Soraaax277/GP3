@@ -11,6 +11,7 @@ public class UnitActionPanel : MonoBehaviour
     public Button constructButton;
     public Button buildWireButton;
     public Button repairButton;
+    public Button powerButton;
     public Button denyButton;
     
     [Header("Cost UI References")]
@@ -36,6 +37,7 @@ public class UnitActionPanel : MonoBehaviour
         if (constructButton) constructButton.gameObject.SetActive(false);
         if (buildWireButton) buildWireButton.gameObject.SetActive(false);
         if (repairButton) repairButton.gameObject.SetActive(false);
+        if (powerButton) powerButton.gameObject.SetActive(false);
         if (denyButton) denyButton.gameObject.SetActive(false);
     }
 
@@ -65,6 +67,13 @@ public class UnitActionPanel : MonoBehaviour
         
         panel.SetActive(true);
 
+        // RESET ALL BUTTONS FIRST to ensure no leaks from previous unit types
+        if (constructButton) constructButton.gameObject.SetActive(false);
+        if (buildWireButton) buildWireButton.gameObject.SetActive(false);
+        if (repairButton) repairButton.gameObject.SetActive(false);
+        if (powerButton) powerButton.gameObject.SetActive(false);
+        if (denyButton) denyButton.gameObject.SetActive(false);
+
         // LOCK CAMERA
         if (CameraController.Instance != null)
         {
@@ -75,9 +84,9 @@ public class UnitActionPanel : MonoBehaviour
         if (constructButton != null) 
         {
             bool isBuilder = unit is BuilderUnit;
-            constructButton.gameObject.SetActive(isBuilder);
             if (isBuilder) 
             {
+                constructButton.gameObject.SetActive(true);
                 int cost = ((BuilderUnit)unit).GetBuildingCost();
                 if (constructCostText != null) constructCostText.text = $"{cost}G";
                 
@@ -90,9 +99,9 @@ public class UnitActionPanel : MonoBehaviour
         if (buildWireButton != null) 
         {
             bool isWireSpecialist = unit is WireSpecialist;
-            buildWireButton.gameObject.SetActive(isWireSpecialist);
             if (isWireSpecialist) 
             {
+                buildWireButton.gameObject.SetActive(true);
                 int cost = WirePlacementManager.Instance != null ? WirePlacementManager.Instance.GetCurrentWireCost() : 0;
                 if (buildWireCostText != null) buildWireCostText.text = $"{cost}G";
 
@@ -108,9 +117,9 @@ public class UnitActionPanel : MonoBehaviour
             bool isBuilder = unit is BuilderUnit;
             bool canRepair = isTechnician || (isBuilder && ((BuilderUnit)unit).canRepairInfrastructure);
             
-            repairButton.gameObject.SetActive(canRepair);
             if (canRepair) 
             {
+                repairButton.gameObject.SetActive(true);
                 int cost = 0;
                 if (isTechnician) cost = ((Technician)unit).GetRepairCost();
                 else if (isBuilder) cost = ((BuilderUnit)unit).GetRepairCost();
@@ -123,17 +132,37 @@ public class UnitActionPanel : MonoBehaviour
             }
         }
 
+        if (powerButton != null)
+        {
+            bool isTechnician = unit.GetType() == typeof(Technician); // Strict check
+            if (isTechnician)
+            {
+                powerButton.gameObject.SetActive(true);
+                powerButton.interactable = unit.CanAct;
+            }
+        }
+
         if (denyButton != null)
         {
             bool isMarketer = unit is SalesMarketer;
-            denyButton.gameObject.SetActive(isMarketer);
-            if (isMarketer) denyButton.interactable = unit.CanAct;
+            if (isMarketer)
+            {
+                denyButton.gameObject.SetActive(true);
+                denyButton.interactable = unit.CanAct;
+            }
         }
     }
 
     public void Close()
     {
-        if (panel == null || !panel.activeSelf) return;
+        if (currentUnit != null && !currentUnit.isMoving)
+        {
+            currentUnit.SetSelected(false);
+            if (PlayerInput.Instance != null && PlayerInput.Instance.selectedUnit == currentUnit)
+            {
+                PlayerInput.Instance.DeselectUnit();
+            }
+        }
 
         UIAnimator animator = panel.GetComponent<UIAnimator>();
 
@@ -141,7 +170,6 @@ public class UnitActionPanel : MonoBehaviour
         {
             animator.AnimateExit(() => 
             {
-                // Disable the panel after the tween finishes
                 panel.SetActive(false);
                 currentUnit = null;
                 followTarget = null;
@@ -178,6 +206,15 @@ public class UnitActionPanel : MonoBehaviour
         if (currentUnit is Technician technician)
         {
             technician.RepairAdjacentStructure();
+            Close();
+        }
+    }
+
+    public void OnClickPower()
+    {
+        if (currentUnit is Technician technician)
+        {
+            technician.PowerAdjacentStructure();
             Close();
         }
     }

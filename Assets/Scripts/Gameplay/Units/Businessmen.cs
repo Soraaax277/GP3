@@ -7,7 +7,21 @@ public class Businessman: Unit
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
         base.Initialize(spawnTile, player);
-        SetMoveRange(2);
+    }
+
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            recruitCharges = 3; 
+        }
+        else
+        {
+            moveRange = 2;
+        }
     }
     
     public void RecruitNearestWorker()

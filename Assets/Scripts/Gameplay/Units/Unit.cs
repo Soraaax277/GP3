@@ -16,6 +16,7 @@ public abstract class Unit : MonoBehaviour
     private Material[] originalMaterials;
 
     public int moveRange = 3;
+    public int visionRange = 2;
     public int movementRemaining;
     public bool isMoving;
     
@@ -53,14 +54,19 @@ public abstract class Unit : MonoBehaviour
         for (int i = 0; i < renderers.Length; i++)
         {
             if (renderers[i] != null)
-                originalMaterials[i] = renderers[i].material;
+                originalMaterials[i] = renderers[i].sharedMaterial; // Save sharedMaterial to avoid cloning
         }
+
+        CheckTechStatus();
     }
+
+    public virtual void CheckTechStatus() { }
 
     public virtual void OnTurnStart(PlayerData activePlayer)
     {
         if (owner == activePlayer)
         {
+            CheckTechStatus();
             isFresh = false;
             canAct = true;
             movementRemaining = moveRange;
@@ -83,11 +89,14 @@ public abstract class Unit : MonoBehaviour
             {
                 if (selected)
                 {
+                    // Accessing .material creates an instance clone.
+                    // We only do this when selecting to apply the tint.
                     renderers[i].material.color = Color.green; 
                 }
                 else
                 {
-                    renderers[i].material = originalMaterials[i];
+                    // Reassign the original shared material to clear the instance clone
+                    renderers[i].sharedMaterial = originalMaterials[i];
                 }
             }
         }
@@ -97,6 +106,10 @@ public abstract class Unit : MonoBehaviour
     public void MoveTo(HexTile tile, int range)
     {
         if (isMoving) return;
+        
+        // TWEAK: Remove highlight the moment the move starts
+        if (!owner.isAI) SetSelected(false);
+        
         StartCoroutine(MoveRoutine(tile, range));
     }
 
@@ -139,6 +152,13 @@ public abstract class Unit : MonoBehaviour
             
             transform.position = endPos;
             currentTile = nextTile;
+            
+            // Trigger dynamic vision update during movement
+            if (FieldOfViewManager.Instance != null && owner != null && !owner.isAI)
+            {
+                FieldOfViewManager.Instance.UpdateFogOfWar(owner);
+            }
+
             movementRemaining--;
             limit--;
         }
@@ -148,8 +168,10 @@ public abstract class Unit : MonoBehaviour
 
         if (!owner.isAI)
         {
-            SetSelected(false);
-            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
+            if (PlayerInput.Instance != null && PlayerInput.Instance.selectedUnit == this)
+            {
+                PlayerInput.Instance.DeselectUnit();
+            }
         }
     }
 
@@ -158,6 +180,9 @@ public abstract class Unit : MonoBehaviour
         if (isMoving) return false;
         if (!canAct && !testingMode) return false;
         if (movementRemaining <= 0 && !testingMode) return false;
+
+        // Block if target tile is already occupied by ANOTHER unit
+        if (tile.placedUnit != null && tile.placedUnit != this) return false;
 
         List<HexTile> path = GridManager.Instance.FindPath(currentTile, tile);
         if (path == null) return false;

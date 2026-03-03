@@ -10,6 +10,41 @@ public class WireSpecialist : Unit
     public float baseDamage = 10f;
     public float damageMultiplier = 1.0f;
 
+    public override void Initialize(HexTile spawnTile, PlayerData player)
+    {
+        base.Initialize(spawnTile, player);
+    }
+
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            damageMultiplier = 2.0f; // Advanced wire-cutters
+            wiresRemaining = Mathf.Max(wiresRemaining, 12); // Bonus wires for futuristic era if low
+        }
+
+        // 2. TECH TREE FEATURES
+        if (TechManager.Instance.IsFeatureUnlocked("CanRepairTowers") || 
+            TechManager.Instance.IsFeatureUnlocked("VersatileRepairmen"))
+        {
+            canRepairTowers = true;
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("CanSabotage") || 
+            TechManager.Instance.IsFeatureUnlocked("BrainwashedWorkforce"))
+        {
+            canSabotage = true;
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("Neutron Bombs"))
+        {
+            canUseBombs = true;
+        }
+    }
+
     public override void ReceiveStatUpgrade(string statName, float amount)
     {
         base.ReceiveStatUpgrade(statName, amount);

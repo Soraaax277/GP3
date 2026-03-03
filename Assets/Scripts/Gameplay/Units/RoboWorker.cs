@@ -11,9 +11,24 @@ public class RoboWorker : Unit
 
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
+        goldUpkeep = 0;
         base.Initialize(spawnTile, player);
-        SetMoveRange(4); // Highly mobile
-        goldUpkeep = 0; // ZERO upkeep - key advantage of robots
+    }
+
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            buildsRemaining = 12; // Mass production builds
+            moveRange = 6;
+        }
+        else
+        {
+            moveRange = 4;
+        }
     }
 
     public override void ReceiveStatUpgrade(string statName, float amount)

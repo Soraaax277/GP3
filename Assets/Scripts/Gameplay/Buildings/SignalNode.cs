@@ -102,7 +102,16 @@ public class SignalNode : MonoBehaviour
 
         ApplyInfluence();
 
-        Debug.Log($"[SignalNode] Initialized for {player.playerName} at {hexTile.name}");
+        if (PowerGridManager.Instance != null)
+        {
+            PowerGridManager.Instance.RegisterSource(this);
+            PowerGridManager.Instance.RefreshGrid();
+        }
+
+        // VISUALS: HQs are ALWAYS powered and active
+        SetRangeColor(new Color(0f, 1f, 0f, 0.4f)); 
+
+        Debug.Log($"[SignalNode] Initialized and Registered as Power Source for {player.playerName} at {hexTile.name}");
     }
 
     //  BASE SIGNAL
@@ -166,10 +175,11 @@ public class SignalNode : MonoBehaviour
             {
                 if (neighbor == null || visited.Contains(neighbor)) continue;
 
-                bool hasOwnedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == owner;
-                bool hasOwnedTower = neighbor.placedTower != null && neighbor.placedTower.owner == owner;
+                // CHECK FOR POWERED INFRASTRUCTURE
+                bool hasPoweredWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == owner && neighbor.placedWire.IsPowered;
+                bool hasPoweredTower = neighbor.placedTower != null && neighbor.placedTower.owner == owner && neighbor.placedTower.IsPowered;
 
-                if (hasOwnedWire || hasOwnedTower)
+                if (hasPoweredWire || hasPoweredTower)
                     queue.Enqueue((neighbor, startSignal * (1f - decayRate)));
             }
 
@@ -182,7 +192,7 @@ public class SignalNode : MonoBehaviour
                 if (visited.Contains(current)) continue;
                 visited.Add(current);
 
-                if (current.placedTower != null && current.placedTower.owner == owner)
+                if (current.placedTower != null && current.placedTower.owner == owner && current.placedTower.IsPowered)
                 {
                     TowerNode tower = current.placedTower;
                     if (signal > tower.receivedSignalStrength)
@@ -194,16 +204,16 @@ public class SignalNode : MonoBehaviour
                         connectedTowers.Add(tower);
                 }
 
-                if (current.placedWire != null && current.placedWire.owner == owner)
+                if (current.placedWire != null && current.placedWire.owner == owner && current.placedWire.IsPowered)
                 {
                     foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(current))
                     {
                         if (neighbor == null || visited.Contains(neighbor)) continue;
 
-                        bool hasOwnedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == owner;
-                        bool hasOwnedTower = neighbor.placedTower != null && neighbor.placedTower.owner == owner;
+                        bool hasPoweredWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == owner && neighbor.placedWire.IsPowered;
+                        bool hasPoweredTower = neighbor.placedTower != null && neighbor.placedTower.owner == owner && neighbor.placedTower.IsPowered;
 
-                        if (hasOwnedWire || hasOwnedTower)
+                        if (hasPoweredWire || hasPoweredTower)
                             queue.Enqueue((neighbor, signal * (1f - decayRate)));
                     }
                 }

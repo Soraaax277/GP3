@@ -11,9 +11,26 @@ public class Foremen : Unit
 
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
+        goldUpkeep = 20; 
         base.Initialize(spawnTile, player);
-        SetMoveRange(3); // More mobile than regular builders
-        goldUpkeep = 20; // Higher upkeep for specialized unit
+    }
+
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            buildsRemaining = 10; // AI Management boost
+            moveRange = 5; // Hyper-commuter pods
+        }
+        else
+        {
+            moveRange = 3;
+        }
+
+        // 2. TECH TREE FEATURES (Foremen already has tower construction)
     }
 
     public override void ReceiveStatUpgrade(string statName, float amount)

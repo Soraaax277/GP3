@@ -8,6 +8,14 @@ public class UnitSpawner : MonoBehaviour
     public GameObject builderPrefab;
     public GameObject salesMarketerPrefab;
     public GameObject technicianPrefab;
+    public GameObject scoutPrefab;
+    public GameObject maintenanceCrewPrefab;
+    public GameObject foremenPrefab;
+    public GameObject itPersonnelPrefab;
+    public GameObject businessmanPrefab;
+    public GameObject roboMarshallPrefab;
+    public GameObject roboWorkerPrefab;
+    public GameObject saboteurPrefab;
 
     private void Awake()
     {
@@ -62,6 +70,9 @@ public class UnitSpawner : MonoBehaviour
             // Set base costs based on unit type
             switch (unitType)
             {
+                case "ScoutUnit":
+                    baseCost = 45;
+                    break;
                 case "BuilderUnit":
                     baseCost = 50;
                     break;
@@ -73,6 +84,12 @@ public class UnitSpawner : MonoBehaviour
                     break;
                 case "SalesMarketer":
                     baseCost = 70;
+                    break;
+                case "Businessman":
+                    baseCost = 90;
+                    break;
+                case "Saboteurs":
+                    baseCost = 110;
                     break;
                 case "MaintenanceCrew":
                     baseCost = 80;

@@ -5,6 +5,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     public HexTile    ParentTile { get; private set; }
     public PlayerData owner      { get; private set; }
     public bool       IsPowered  { get; set; }
+    public bool       IsTechnicianActivated { get; set; }
 
     [Header("Stats")]
     public float baseDurability = 100f;
@@ -35,7 +36,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         }
     }
 
-    private GameObject visual;
+    private Renderer[] visualRenderers;
 
     //  INITIALIZATION
     public void Initialize(HexTile tile, PlayerData player)
@@ -47,7 +48,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         // Start with full health based on current Tech
         currentDurability = MaxDurability;
 
-        CreateVisual();
+        CacheRenderers();
         UpdatePowerState(false);
 
         if (PowerGridManager.Instance != null)
@@ -56,31 +57,50 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         }
     }
 
-    void CreateVisual()
+    void CacheRenderers()
     {
-        if (transform.childCount > 0)
-        {
-            visual = transform.GetChild(0).gameObject;
-            return;
-        }
-
-        visual = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        visual.transform.SetParent(transform);
-        visual.transform.localPosition = Vector3.zero;
-        visual.transform.localScale    = new Vector3(0.2f, 0.05f, 0.2f);
+        visualRenderers = GetComponentsInChildren<Renderer>();
         
-        Destroy(visual.GetComponent<Collider>());
+        // If no children discovered (e.g. freshly instantiated without child mesh yet), 
+        // create the emergency cylinder
+        if (visualRenderers == null || visualRenderers.Length == 0)
+        {
+            GameObject cyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            cyl.transform.SetParent(transform);
+            cyl.transform.localPosition = Vector3.zero;
+            cyl.transform.localScale = new Vector3(0.3f, 0.05f, 0.3f);
+            Destroy(cyl.GetComponent<Collider>());
+            visualRenderers = new Renderer[] { cyl.GetComponent<Renderer>() };
+        }
     }
 
     //  POWER STATE
     public void UpdatePowerState(bool powered)
     {
+        if (isDestroyed) return;
+        
         IsPowered = powered;
         
-        if (visual != null)
+        if (visualRenderers != null)
         {
-            Renderer rend = visual.GetComponent<Renderer>();
-            rend.material.color = powered ? Color.yellow : Color.gray;
+            Color targetColor = Color.gray;
+            if (powered && IsTechnicianActivated)
+            {
+                targetColor = Color.yellow; // Grid power + Licensed tech = Active
+            }
+            else if (IsTechnicianActivated)
+            {
+                targetColor = new Color(0.4f, 0.4f, 1.0f); // Blue/Cyan = Licensed but NO GRID power
+            }
+            else if (powered)
+            {
+                targetColor = new Color(0.75f, 0.75f, 0.75f); // Grid power but NO license
+            }
+            
+            foreach (Renderer r in visualRenderers)
+            {
+                if (r != null) r.material.color = targetColor;
+            }
         }
     }
 
@@ -118,11 +138,24 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         CheckDestruction();
     }
 
+    public bool isDestroyed { get; private set; }
+
     private void CheckDestruction()
     {
-        if (currentDurability <= 0)
+        if (currentDurability <= 0 && !isDestroyed)
         {
+            isDestroyed = true;
+            IsPowered = false;
             Debug.Log($"[WireDecay] {name} destroyed!");
+            
+            if (visualRenderers != null)
+            {
+                foreach (Renderer r in visualRenderers)
+                {
+                    if (r != null) r.material.color = Color.black;
+                }
+            }
+
             // Notify grid to recalculate
             if (PowerGridManager.Instance != null)
                 PowerGridManager.Instance.RefreshGrid();

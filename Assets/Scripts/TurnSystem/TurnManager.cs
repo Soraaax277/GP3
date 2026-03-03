@@ -17,7 +17,7 @@ public class TurnManager : MonoBehaviour
 
     public PlayerData currentPlayer { get; private set; }
 
-    public List<PlayerData> players;
+    public List<PlayerData> players = new List<PlayerData>();
     private int currentPlayerIndex;
 
     private List<Unit>       allUnits  = new List<Unit>();
@@ -108,6 +108,19 @@ public class TurnManager : MonoBehaviour
         {
             Debug.LogError("TurnManager: Missing EconomyManager!");
         }
+
+        // --- PHASE 1: GLOBAL EVENTS & HAZARDS ---
+        // Process global events and hazards only ONCE at the start of each turn cycle.
+        // This usually triggers on the human player's turn (index 0).
+        if (currentPlayerIndex == 0)
+        {
+            if (EventManager.Instance != null)
+                EventManager.Instance.ProcessTurnEvents();
+            
+            if (HazardManager.Instance != null)
+                HazardManager.Instance.ProcessTurnHazards();
+        }
+        // ----------------------------------------
         
         // UPDATE GAME WORLD 
         OnGameStatusChanged?.Invoke();
@@ -145,6 +158,12 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // UPDATE FOG OF WAR (Always for the human player)
+        if (FieldOfViewManager.Instance != null)
+        {
+            FieldOfViewManager.Instance.UpdateFogOfWar(players[0]);
+        }
+
         // CAMERA TRACKING
         HandleCameraFocus(currentPlayer);
 
@@ -159,18 +178,13 @@ public class TurnManager : MonoBehaviour
     {
         if (CameraController.Instance == null) return;
 
-        Vector3 focusPoint = GetPlayerFocusPoint(player);
-
-        if (player.isAI)
+        // Release Cutscene Mode regardless of player type
+        // This stops the camera from sliding to the AI automatically.
+        CameraController.Instance.cutsceneMode = false;
+        
+        if (!player.isAI)
         {
-            // Lock controls and pan to enemy (Cutscene Mode)
-            CameraController.Instance.cutsceneMode = true;
-            CameraController.Instance.FocusOnPosition(focusPoint);
-        }
-        else
-        {
-            // Release Cutscene Mode (Player Turn)
-            CameraController.Instance.cutsceneMode = false;
+            Vector3 focusPoint = GetPlayerFocusPoint(player);
             CameraController.Instance.FocusOnPosition(focusPoint);
         }
     }

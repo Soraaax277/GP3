@@ -3,100 +3,100 @@ using UnityEngine.Serialization;
 
 public class ScoutUnit: Unit
 {
-    public int visionRange;
-    public int baseVision;
-    public bool permanentVision;
-    public bool canTelescope = false;
-    public float movementPenalty = 0.25f;
-    public bool isDrone;
+    private bool permanentVision;
+    private bool canTelescope = false;
+    private bool isDrone;
+    private int baseVisionDefault = 4;
     
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
+        visionRange = baseVisionDefault;
+        SetMoveRange(3); // Scouts start more mobile
         base.Initialize(spawnTile, player);
-        SetMoveRange(2);
-        CheckTechStatus();
     }
     
-    private void CheckTechStatus()
+    public override void CheckTechStatus()
     {
-        if (TechManager.Instance != null)
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
-            if (TechManager.Instance.IsFeatureUnlocked("PermanentVision"))
-            {
-                UnlockPermaVision();
-            }
-
-            if (TechManager.Instance.IsFeatureUnlocked("Drone"))
-            {
-                BeDrone();
-            }
-
-            if (TechManager.Instance.IsFeatureUnlocked("Telescope"))
-            {
-                UnlockTelescope();
-            }
+            visionRange = baseVisionDefault + 2; // Advanced Sensor Array
+            moveRange = 4; // High-tech propulsion
         }
-        
-        
+        else
+        {
+            visionRange = baseVisionDefault;
+            moveRange = 3;
+        }
+
+        // 2. TECH TREE FEATURES
+        if (TechManager.Instance.IsFeatureUnlocked("PermanentVision"))
+        {
+            permanentVision = true;
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("Drone") && !isDrone)
+        {
+            BeDrone();
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("Telescope"))
+        {
+            canTelescope = true;
+        }
+
+        CheckForTelescope();
     }
 
     public override void ReceiveStatUpgrade(string statName, float amount)
     {
         base.ReceiveStatUpgrade(statName, amount);
 
-        if (statName == "Vision" || statName == "Actions")
+        if (statName == "Vision")
         {
             visionRange += (int)amount;
-            baseVision = visionRange;
-            Debug.Log($"Builder received +{(int)amount} Build Charges");
+            Debug.Log($"Scout vision upgraded by {(int)amount}");
         }
-        else if (statName == "Movement")
-        {
-            moveRange =  (int)amount;
-        }
-        else if (statName == "MovementPenalty")
-        {
-            movementPenalty += (int)amount;
-        }
-    }
-
-    public void UnlockPermaVision()
-    {
-        permanentVision = true;
-        Debug.Log("Scout unlocked Permanent Vision");
     }
 
     public void BeDrone()
     {
+        if (isDrone) return;
         isDrone = true;
-        //insert code to convert scout to drone
-        Debug.Log("Scout is now drone");
-    }
-    
-    public void UnlockTelescope()
-    {
-        canTelescope = true;
-        Debug.Log("Scout can now use Telescope");
+        
+        // Visual indicator of drone mode
+        Renderer[] rends = GetComponentsInChildren<Renderer>();
+        foreach (var r in rends) r.material.color = new Color(0.3f, 0.8f, 1f, 1f); // Cyan tech look
+        
+        Debug.Log("Scout is now a Drone - vision across the map!");
     }
 
     public void CheckForTelescope()
     {
-        if (!canTelescope)
-        {
-            Debug.Log("No Telescope Upgrade");
-            return;
-        }
+        if (!canTelescope || currentTile == null) return;
+
+        bool nearTower = false;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            //checks if target is owned by enemyAI
-            if (neighbor.placedTower != null && neighbor.placedTower.owner == TurnManager.Instance.currentPlayer)
+            if (neighbor.placedTower != null && neighbor.placedTower.owner == owner)
             {
-                visionRange += 4;
-            }
-            else
-            {
-                visionRange = baseVision;
+                nearTower = true;
+                break;
             }
         }
+
+        if (nearTower)
+        {
+            visionRange += 2; // Telescope bonus
+        }
+    }
+
+    public override void OnTurnStart(PlayerData activePlayer)
+    {
+        base.OnTurnStart(activePlayer);
+        // If permanent vision is active, some games keep vision revealed. 
+        // In our FOV system, UpdateFogOfWar handles the current visibility.
     }
 }

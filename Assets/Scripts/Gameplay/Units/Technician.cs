@@ -1,11 +1,27 @@
 using UnityEngine;
-using System.Linq;
 
 public class Technician : Unit
 {
-    public int repairCharges = 2;
-    public float repairEfficiency = 1.0f; // Multiplier for durability restored
-    public bool canRepairWires = false; // Unlocked by Versatile Repairmen tech
+    public int actionCharges = 10;
+    public float repairEfficiency = 1.0f;
+    public bool canRepairWires = false;
+
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            repairEfficiency = 2.0f;
+            actionCharges = Mathf.Max(actionCharges, 15); // Bonus charges in futuristic era
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("CanRepairWires") || 
+            TechManager.Instance.IsFeatureUnlocked("VersatileRepairmen"))
+        {
+            canRepairWires = true;
+        }
+    }
 
     public override void ReceiveStatUpgrade(string statName, float amount)
     {
@@ -13,42 +29,62 @@ public class Technician : Unit
 
         if (statName == "RepairCharges" || statName == "Actions")
         {
-            repairCharges += (int)amount;
-            Debug.Log($"Technician received +{(int)amount} Repair Charges");
-        }
-        else if (statName == "RepairEfficiency")
-        {
-            // +50% Durability restored from Repairs, etc.
-            repairEfficiency += amount;
-            Debug.Log($"Technician: Repair efficiency increased by {amount * 100}% (now {repairEfficiency * 100}%)");
-        }
-        else if (statName == "CanRepairWires")
-        {
-            // Versatile Repairman: can now do repairs to wiring
-            Debug.Log($"Technician: Can now repair wires (feature upgrade)");
+            actionCharges += (int)amount;
+            Debug.Log($"Technician received +{(int)amount} Action Charges");
         }
     }
-    
-    public override void UnlockSkill(string skillName)
+
+    public void PowerAdjacentStructure()
     {
-        base.UnlockSkill(skillName);
+        if (!canAct && !testingMode) return;
+
+        WireNode targetWire = null;
         
-        if (skillName == "CanRepairWires" || skillName == "VersatileRepairmen")
+        // 1. Check current tile first!
+        if (currentTile != null && currentTile.placedWire != null && 
+            currentTile.placedWire.owner == owner && !currentTile.placedWire.IsTechnicianActivated)
         {
-            canRepairWires = true;
-            Debug.Log("Technician learned to repair wires!");
+            targetWire = currentTile.placedWire;
         }
+
+        // 2. Check neighbors
+        if (targetWire == null)
+        {
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+            {
+                if (neighbor.placedWire != null && neighbor.placedWire.owner == owner && !neighbor.placedWire.IsTechnicianActivated)
+                {
+                    targetWire = neighbor.placedWire;
+                    break;
+                }
+            }
+        }
+
+        if (targetWire == null)
+        {
+            Debug.Log("[Technician] No unactivated wire adjacent to power up!");
+            return;
+        }
+
+        targetWire.IsTechnicianActivated = true;
+        Debug.Log($"[Technician] Successfully activated Wire at {targetWire.ParentTile.cubeCoords}!");
+
+        actionCharges--;
+        ConsumeAction();
+
+        if (PowerGridManager.Instance != null)
+        {
+            Debug.Log("[Technician] Refreshing Power Grid after wire activation...");
+            PowerGridManager.Instance.RefreshGrid();
+        }
+
+        if (actionCharges <= 0) Die();
     }
 
     public void RepairAdjacentStructure()
     {
-        if (!canAct && !testingMode)
-        {
-            Debug.Log("[Technician] Cannot act (turn/action used)");
-            return;
-        }
+        if (!canAct && !testingMode) return;
 
-        // Try to find a tower first
         TowerNode targetTower = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
@@ -59,7 +95,6 @@ public class Technician : Unit
             }
         }
 
-        // If no tower, try to find a wire (if skill is unlocked)
         WireNode targetWire = null;
         if (targetTower == null && canRepairWires)
         {
@@ -73,97 +108,27 @@ public class Technician : Unit
             }
         }
 
-        if (targetTower == null && targetWire == null)
-        {
-            Debug.Log("[Technician] No damaged structure adjacent!");
-            return;
-        }
+        if (targetTower == null && targetWire == null) return;
 
-        // Deduct repair cost with tech modifier
         int repairCost = GetRepairCost();
-        if (owner.resources < repairCost)
-        {
-            Debug.Log($"[Technician] Not enough gold to repair! Need {repairCost}, have {owner.resources}");
-            return;
-        }
+        if (owner.resources < repairCost) return;
 
         owner.resources -= repairCost;
-
-        // Check for full restore chance (Untested Stimulants tech)
-        bool fullRestore = false;
-        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("UntestedStimulants"))
-        {
-            if (Random.value <= 0.10f) // 10% chance
-            {
-                fullRestore = true;
-                Debug.Log("[Technician] Untested Stimulants triggered - FULL RESTORE!");
-            }
-        }
-
-        // Check for first-time repair bonus (Advanced Repair Tools tech)
-        float finalEfficiency = repairEfficiency;
-        bool isFirstTimeRepair = false;
-        
-        if (targetTower != null)
-        {
-            // Check if this tower has been repaired before
-            if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("AdvancedRepairTools"))
-            {
-                if (!targetTower.HasBeenRepairedBefore())
-                {
-                    finalEfficiency += 0.25f; // +25% bonus for first repair
-                    isFirstTimeRepair = true;
-                    targetTower.MarkAsRepaired(); // Track that it's been repaired
-                    Debug.Log("[Technician] First-time repair bonus applied (+25%)!");
-                }
-            }
-
-            // Apply repair
-            if (fullRestore)
-            {
-                // Full restore: repair with maximum efficiency to fully heal
-                targetTower.Repair(100.0f); // Very high multiplier ensures full HP
-            }
-            else
-            {
-                targetTower.Repair(finalEfficiency);
-            }
-            Debug.Log($"[Technician] Tower repair complete with {finalEfficiency * 100}% efficiency (cost: {repairCost}, first-time: {isFirstTimeRepair}, full restore: {fullRestore}).");
-        }
+        if (targetTower != null) targetTower.Repair(repairEfficiency);
         else if (targetWire != null)
         {
-            if (fullRestore)
-            {
-                targetWire.currentDurability = targetWire.MaxDurability;
-            }
-            else
-            {
-                float healAmount = targetWire.MaxDurability * finalEfficiency;
-                targetWire.currentDurability = Mathf.Min(targetWire.currentDurability + healAmount, targetWire.MaxDurability);
-            }
-            Debug.Log($"[Technician] Wire repair complete, restored {finalEfficiency * 100}% HP (cost: {repairCost}, full restore: {fullRestore}).");
+            float healAmount = targetWire.MaxDurability * repairEfficiency;
+            targetWire.currentDurability = Mathf.Min(targetWire.currentDurability + healAmount, targetWire.MaxDurability);
         }
 
-        repairCharges--;
+        actionCharges--;
         ConsumeAction();
-        Debug.Log($"[Technician] Charges left: {repairCharges}");
-
-        if (repairCharges <= 0)
-        {
-            Die();
-            return;
-        }
-
-        if (!owner.isAI)
-        {
-            SetSelected(false);
-            if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
-        }
+        if (actionCharges <= 0) Die();
     }
 
     public int GetRepairCost()
     {
-        int baseCost = 50; // Base repair cost
+        int baseCost = 50;
         if (TechManager.Instance != null)
         {
             float multiplier = TechManager.Instance.GetInfraMultiplier("RepairCost");
@@ -175,6 +140,7 @@ public class Technician : Unit
     void Die()
     {
         if (currentTile != null) currentTile.placedUnit = null;
+        if (TurnManager.Instance != null) TurnManager.Instance.UnregisterUnit(this);
         Destroy(gameObject);
     }
 }

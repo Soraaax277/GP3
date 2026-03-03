@@ -6,7 +6,7 @@ public class PlayerInput : MonoBehaviour
 {
     public static PlayerInput Instance;
 
-    private Unit selectedUnit;
+    public Unit selectedUnit;
     private List<HexTile> highlightedTiles = new List<HexTile>();
     private HexTile hoveredTile;
 
@@ -35,10 +35,19 @@ public class PlayerInput : MonoBehaviour
                 Unit unit = hit.collider.GetComponentInParent<Unit>();
                 if (unit != null)
                 {
-                    SelectUnit(unit);
-                    UnitActionPanel.Instance.Open(unit);
-                    BuildUIManager.Instance.CloseBuildMenu();
-                    return;
+                    // BLOCK: Only select units if it's the player's turn 
+                    if (TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null && !TurnManager.Instance.currentPlayer.isAI)
+                    {
+                        SelectUnit(unit);
+                        UnitActionPanel.Instance.Open(unit);
+                        BuildUIManager.Instance.CloseBuildMenu();
+                        return;
+                    }
+                    else
+                    {
+                        Debug.Log("[PlayerInput] Cannot select unit: It is currently the AI's turn!");
+                        return;
+                    }
                 }
 
                 SignalNode business = hit.collider.GetComponentInParent<SignalNode>();
@@ -69,10 +78,14 @@ public class PlayerInput : MonoBehaviour
             HexTile tile = hit.collider.GetComponent<HexTile>();
             if (tile != null)
             {
-            if (tile != null)
-            {
-                selectedUnit.MoveTo(tile, selectedUnit.movementRemaining);
-            }
+                if (selectedUnit.CanMoveTo(tile, selectedUnit.movementRemaining))
+                {
+                    selectedUnit.MoveTo(tile, selectedUnit.movementRemaining);
+                }
+                else
+                {
+                    Debug.Log($"[PlayerInput] Cannot move {selectedUnit.name} to {tile.name} (blocked or too far)");
+                }
             }
         }
     }

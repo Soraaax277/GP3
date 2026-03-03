@@ -390,7 +390,7 @@ public class GridManager : MonoBehaviour
 
             foreach (HexTile next in GetNeighbors(current))
             {
-                if (!cameFrom.ContainsKey(next) && (!next.IsOccupied() || next == end))
+                if (!cameFrom.ContainsKey(next) && (!next.IsBuildingBlocked() || next == end))
                 {
                     cameFrom[next] = current;
                     frontier.Enqueue(next);

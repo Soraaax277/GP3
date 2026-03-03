@@ -21,6 +21,11 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // --- PHASE 1 COMPONENTS ---
+        if (GetComponent<EventManager>() == null) gameObject.AddComponent<EventManager>();
+        if (GetComponent<HazardManager>() == null) gameObject.AddComponent<HazardManager>();
+        if (GetComponent<FieldOfViewManager>() == null) gameObject.AddComponent<FieldOfViewManager>();
     }
 
     private void Start()

@@ -20,28 +20,39 @@ public class BuilderUnit : Unit
         CheckTechStatus();
     }
 
-    private void CheckTechStatus()
+    public override void CheckTechStatus()
     {
-        if (canConstructTower) return;
+        if (TechManager.Instance == null || owner == null) return;
 
-        if (TechManager.Instance != null)
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
-            if (TechManager.Instance.IsFeatureUnlocked("MinimumWageContract") || 
-                TechManager.Instance.IsFeatureUnlocked("Construction"))
-            {
-                UnlockConstruction();
-            }
+            damageMultiplier = 1.5f; // Futuristic tools deal more damage
+            repairEfficiency = 1.5f; // Nano-repairs
+        }
 
-            if (TechManager.Instance.IsFeatureUnlocked("CanSabotage") ||
-                TechManager.Instance.IsFeatureUnlocked("BrainwashedWorkforce"))
-            {
-                UnlockSabotage();
-            }
+        // 2. TECH TREE FEATURES
+        if (TechManager.Instance.IsFeatureUnlocked("MinimumWageContract") || 
+            TechManager.Instance.IsFeatureUnlocked("Construction"))
+        {
+            UnlockConstruction();
+        }
 
-            if (TechManager.Instance.IsFeatureUnlocked("NeutronBombs"))
-            {
-                UnlockBombs();
-            }
+        if (TechManager.Instance.IsFeatureUnlocked("CanSabotage") ||
+            TechManager.Instance.IsFeatureUnlocked("BrainwashedWorkforce"))
+        {
+            UnlockSabotage();
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("NeutronBombs"))
+        {
+            UnlockBombs();
+        }
+
+        if (TechManager.Instance.IsFeatureUnlocked("CanRepair") || 
+            TechManager.Instance.IsFeatureUnlocked("VersatileBuilderToolKit"))
+        {
+            canRepairInfrastructure = true;
         }
     }
 

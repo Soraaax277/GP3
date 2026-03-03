@@ -25,6 +25,9 @@ public class HexTile : MonoBehaviour
     public int baseInfluence;
     public Dictionary<PlayerData, int> influenceByPlayer = new Dictionary<PlayerData, int>();
     public int influenceSuppression;
+    public float hazardImpact; // 0.0 to 1.0 percentage for environmental hazards
+    public bool isExplored;   // For Fog of War: Has the player ever seen this?
+    public bool isVisible;    // For Fog of War: Is the player currently seeing this?
 
     private Renderer rend;
     private Color baseColor;
@@ -42,24 +45,65 @@ public class HexTile : MonoBehaviour
         name = $"Hex {coords.x},{coords.y},{coords.z} ({type})";
 
         baseInfluence = Random.Range(1, 11);
+        hazardImpact = Random.value; // Random impact percentage for this tile
+        isExplored = false;
+        isVisible = false;
         
         UpdateAppearance();
+    }
+
+    private Color targetFowColor;
+    public float transitionSpeed = 2f;
+
+    private void Update()
+    {
+        if (rend != null)
+        {
+            rend.material.color = Color.Lerp(rend.material.color, targetFowColor, Time.deltaTime * transitionSpeed);
+        }
     }
 
     public void UpdateAppearance()
     {
         if (rend == null) rend = GetComponent<Renderer>();
         
-        if (type == TileType.Water)
+        // --- FOG OF WAR VISUALS ---
+        if (!isExplored)
         {
-            rend.material.color = new Color(0.1f, 0.3f, 0.8f, 1f); // Darker Blue
-            baseColor = rend.material.color;
+            targetFowColor = Color.black; // The Shroud
         }
         else
         {
-            // Keep original logic or set a default land color if needed
-            // baseColor is captured in Awake, so we just revert to it
-            rend.material.color = baseColor;
+            Color baseTypeColor;
+            if (type == TileType.Water)
+                baseTypeColor = new Color(0.1f, 0.3f, 0.8f, 1f);
+            else
+                baseTypeColor = baseColor;
+
+            if (!isVisible)
+            {
+                // The Fog: Greyed out version of the original color
+                targetFowColor = Color.Lerp(baseTypeColor, Color.black, 0.6f);
+            }
+            else
+            {
+                targetFowColor = baseTypeColor;
+            }
+        }
+
+        UpdateStructureVisibility();
+    }
+
+    public void UpdateStructureVisibility()
+    {
+        // Toggle environmental structures based on current visibility
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            Transform child = transform.GetChild(i);
+            if (child.name.Contains("Env_Structure"))
+            {
+                child.gameObject.SetActive(isVisible);
+            }
         }
     }
 
@@ -92,6 +136,11 @@ public class HexTile : MonoBehaviour
     public bool IsOccupied()
     {
         return type == TileType.Water || placedNode != null || placedUnit != null || placedTower != null;
+    }
+
+    public bool IsBuildingBlocked()
+    {
+        return type == TileType.Water || placedNode != null || placedTower != null;
     }
 
     public void ClearEnvironmentalStructures()

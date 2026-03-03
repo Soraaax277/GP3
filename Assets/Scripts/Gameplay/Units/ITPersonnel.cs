@@ -12,8 +12,24 @@ public class ITPersonnel : Unit
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
         base.Initialize(spawnTile, player);
-        SetMoveRange(3);
-        goldUpkeep = 18; // Higher upkeep for elite unit
+        goldUpkeep = 18; 
+    }
+
+    public override void CheckTechStatus()
+    {
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+        {
+            repairEfficiency = 2.5f; // Cryo-repair technology
+            repairCharges = 6;
+            moveRange = 5;
+        }
+        else
+        {
+            moveRange = 3;
+        }
     }
 
     public override void ReceiveStatUpgrade(string statName, float amount)

@@ -201,6 +201,12 @@ public class TowerPlacementManager : MonoBehaviour
         TowerNode node = realTower.GetComponent<TowerNode>();
         node.Initialize(hoveredTile, towerOwner, selectedBusiness);
         
+        // Update Fog of War immediately when a tower is placed
+        if (FieldOfViewManager.Instance != null && towerOwner != null && !towerOwner.isAI)
+        {
+            FieldOfViewManager.Instance.UpdateFogOfWar(towerOwner);
+        }
+
         if (selectedBusiness != null)
         {
             if (BuildUIManager.Instance != null && BuildUIManager.Instance.buildPanel.activeSelf)
@@ -233,6 +239,11 @@ public class TowerPlacementManager : MonoBehaviour
 
         TowerNode node = realTower.GetComponent<TowerNode>();
         node.Initialize(tile, owner, parentNode);
+
+        if (FieldOfViewManager.Instance != null && owner != null && !owner.isAI)
+        {
+            FieldOfViewManager.Instance.UpdateFogOfWar(owner);
+        }
 
         return node;
     }

@@ -18,15 +18,21 @@ public class MaintenanceCrew : Unit
         CheckTechStatus();
     }
 
-    private void CheckTechStatus()
+    public override void CheckTechStatus()
     {
-        if (TechManager.Instance != null)
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
-            // Check if Versatile Repairmen tech is researched
-            if (TechManager.Instance.IsFeatureUnlocked("VersatileRepairmen"))
-            {
-                canRepairTowers = true;
-            }
+            repairEfficiency = 2.0f; // Rapid nanite maintenance
+            maintenanceCharges = 8; // Ultra-long-life fuel cells
+        }
+
+        // 2. TECH TREE FEATURES
+        if (TechManager.Instance.IsFeatureUnlocked("VersatileRepairmen"))
+        {
+            canRepairTowers = true;
         }
     }
 

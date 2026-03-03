@@ -16,7 +16,7 @@ public static class SaveSystem
             state.currentEra = TurnManager.Instance.GetCurrentEra();
         }
 
-        if (TurnManager.Instance != null && TurnManager.Instance.players.Count >= 2)
+        if (TurnManager.Instance != null && TurnManager.Instance.players != null && TurnManager.Instance.players.Count >= 2)
         {
             state.playerResources = TurnManager.Instance.players[0].resources;
             state.enemyResources = TurnManager.Instance.players[1].resources;
@@ -51,7 +51,7 @@ public static class SaveSystem
             TurnManager.Instance.currentTurn = state.currentTurn;
         }
 
-        if (TurnManager.Instance != null && TurnManager.Instance.players.Count >= 2)
+        if (TurnManager.Instance != null && TurnManager.Instance.players != null && TurnManager.Instance.players.Count >= 2)
         {
             TurnManager.Instance.players[0].resources = state.playerResources;
             TurnManager.Instance.players[1].resources = state.enemyResources;
@@ -196,6 +196,11 @@ public static class SaveSystem
         ClearAllUnits();
 
         if (TurnManager.Instance == null || UnitSpawner.Instance == null) return;
+        if (TurnManager.Instance.players == null || TurnManager.Instance.players.Count < 2) 
+        {
+            Debug.LogWarning("SaveSystem: Could not load units because players are not yet initialized.");
+            return;
+        }
 
         foreach (var unitData in state.playerUnits)
         {

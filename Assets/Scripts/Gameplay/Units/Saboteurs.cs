@@ -15,14 +15,21 @@ public class Saboteurs: Unit
         CheckTechStatus();
     }
     
-    private void CheckTechStatus()
+    public override void CheckTechStatus()
     {
-        if (TechManager.Instance != null)
+        if (TechManager.Instance == null || owner == null) return;
+
+        // 1. ERA SPECIFIC UPGRADES (Futuristic)
+        if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
-            if (TechManager.Instance.IsFeatureUnlocked("NeutronBombs"))
-            {
-                UnlockBombs();
-            }
+            sabotageCharges = Mathf.Max(sabotageCharges, 5); 
+            damageMultiplier = 2.0f;
+        }
+
+        // 2. TECH TREE FEATURES
+        if (TechManager.Instance.IsFeatureUnlocked("NeutronBombs"))
+        {
+            UnlockBombs();
         }
     }
     
