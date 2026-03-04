@@ -7,18 +7,53 @@ public class EnemyAI : MonoBehaviour
 {
     public static EnemyAI Instance;
 
-    [Header("Prefabs")]
+    [Header("Core Prefabs")]
     public GameObject wireSpecialistPrefab;
     public GameObject builderPrefab;
     public GameObject towerPrefab;
     public GameObject salesMarketerPrefab;
     public GameObject technicianPrefab;
+    public GameObject scoutPrefab;
+
+    [Header("Workforce Prefabs (Service Center)")]
+    public GameObject foremenPrefab;
+    public GameObject maintenanceCrewPrefab;
+    public GameObject itPersonnelPrefab;
+
+    [Header("Marketing Prefabs")]
+    public GameObject businessmanPrefab;
+    public GameObject saboteurPrefab;
+
+    [Header("Late-Game Prefabs")]
+    public GameObject roboWorkerPrefab;
+    public GameObject roboMarshallPrefab;
+
+    [Header("Structure Prefabs")]
+    public GameObject serviceCenterPrefab;
+    public GameObject bpoCenterPrefab;
+    public GameObject commercialHubPrefab;
+    public GameObject businessCenterPrefab;
+    public GameObject signalBoosterPrefab;
+    public GameObject signalJammerPrefab;
+    public GameObject tesseractPrefab;
+    public GameObject workerFactoryPrefab;
 
     [Header("Costs")]
     public int wireSpecialistCost  = 25;
     public int builderCost         = 50;
     public int salesMarketerCost   = 30;
     public int technicianCost      = 20;
+    public int scoutCost           = 45;
+    public int foremenCost         = 100;
+    public int maintenanceCrewCost = 80;
+    public int itPersonnelCost     = 120;
+    public int businessmanCost     = 90;
+    public int saboteurCost        = 110;
+    public int roboWorkerCost      = 150;
+    public int roboMarshallCost    = 180;
+
+    [Header("Tech Research")]
+    public TechNode[] allTechNodes;
 
     private void Awake()
     {
@@ -30,11 +65,18 @@ public class EnemyAI : MonoBehaviour
         StartCoroutine(AITurnRoutine(aiPlayer));
     }
 
+    // =========================================================================
+    //  MAIN AI TURN ROUTINE
+    // =========================================================================
     private IEnumerator AITurnRoutine(PlayerData aiPlayer)
     {
         Debug.Log($"[EnemyAI] {aiPlayer.playerName} turn start. Resources: {aiPlayer.resources}");
         yield return new WaitForSeconds(1.0f);
 
+        // --- PHASE 0: RESEARCH TECH ---
+        yield return StartCoroutine(ResearchPhase(aiPlayer));
+
+        // --- PHASE 1: PLACE TOWER BLUEPRINTS ---
         foreach (SignalNode node in aiPlayer.ownedNodes)
         {
             if (node.CanPlaceTower())
@@ -49,99 +91,289 @@ public class EnemyAI : MonoBehaviour
             }
         }
 
-        List<Unit> myUnits = TurnManager.Instance.GetAllUnits().Where(u => u.owner == aiPlayer).ToList();
-        int specialistCount = myUnits.Count(u => u is WireSpecialist);
-        int builderCount    = myUnits.Count(u => u is BuilderUnit);
+        // --- PHASE 2: PLACE STRUCTURES ---
+        yield return StartCoroutine(StructurePlacementPhase(aiPlayer));
 
-        bool needsBuilder = GetUnbuiltTowers(aiPlayer).Any();
-        
-        if (needsBuilder && builderCount == 0 && aiPlayer.resources >= builderCost)
-        {
-            SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
-            Unit u = UnitSpawner.Instance.SpawnUnit(builderPrefab, spawnNode);
-            if (u != null) aiPlayer.resources -= builderCost;
-            yield return new WaitForSeconds(0.5f);
-        }
+        // --- PHASE 3: RECRUIT UNITS ---
+        yield return StartCoroutine(RecruitmentPhase(aiPlayer));
 
-        if (specialistCount < 2 && aiPlayer.resources >= wireSpecialistCost)
-        {
-            SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
-            Unit u = UnitSpawner.Instance.SpawnUnit(wireSpecialistPrefab, spawnNode);
-            if (u != null) aiPlayer.resources -= wireSpecialistCost;
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        int marketerCount = myUnits.Count(u => u is SalesMarketer);
-        if (marketerCount < 1 && aiPlayer.resources >= salesMarketerCost)
-        {
-            SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
-            Unit u = UnitSpawner.Instance.SpawnUnit(salesMarketerPrefab, spawnNode);
-            if (u != null) aiPlayer.resources -= salesMarketerCost;
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        int technicianCount = myUnits.Count(u => u is Technician);
-        bool needsRepair = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
-            .Any(t => t.owner == aiPlayer && t.IsDestroyed());
-        
-        Debug.Log($"[EnemyAI] Technician Check - Count: {technicianCount}, NeedsRepair: {needsRepair}, " +
-                  $"Resources: {aiPlayer.resources}, Cost: {technicianCost}, Prefab: {technicianPrefab != null}");
-        
-        if (needsRepair && technicianCount < 1 && aiPlayer.resources >= technicianCost)
-        {
-            if (technicianPrefab == null)
-            {
-                Debug.LogError("[EnemyAI] Technician Prefab is NULL! Please assign it in the Inspector.");
-                yield return new WaitForSeconds(0.5f);
-            }
-            else
-            {
-                SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
-                Unit u = UnitSpawner.Instance.SpawnUnit(technicianPrefab, spawnNode);
-                if (u != null)
-                {
-                    aiPlayer.resources -= technicianCost;
-                    Debug.Log($"[EnemyAI] Successfully recruited Technician! Remaining resources: {aiPlayer.resources}");
-                }
-                else
-                {
-                    Debug.LogError("[EnemyAI] Failed to spawn Technician unit!");
-                }
-                yield return new WaitForSeconds(0.5f);
-            }
-        }
-
-        myUnits = TurnManager.Instance.GetAllUnits().Where(u => u.owner == aiPlayer).ToList();
-
-        foreach (var builder in myUnits.OfType<BuilderUnit>().Where(u => u.CanAct))
-        {
-            yield return StartCoroutine(HandleBuilder(builder));
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        foreach (var specialist in myUnits.OfType<WireSpecialist>().Where(u => u.CanAct))
-        {
-            yield return StartCoroutine(HandleWireSpecialist(specialist));
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        foreach (var marketer in myUnits.OfType<SalesMarketer>().Where(u => u.CanAct))
-        {
-            yield return StartCoroutine(HandleSalesMarketer(marketer));
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        foreach (var technician in myUnits.OfType<Technician>().Where(u => u.CanAct))
-        {
-            yield return StartCoroutine(HandleTechnician(technician));
-            yield return new WaitForSeconds(0.5f);
-        }
+        // --- PHASE 4: COMMAND UNITS ---
+        yield return StartCoroutine(CommandPhase(aiPlayer));
 
         Debug.Log("[EnemyAI] Turn complete.");
         yield return new WaitForSeconds(1.0f);
         TurnManager.Instance.EndTurn();
     }
 
+    // =========================================================================
+    //  PHASE 0: TECH RESEARCH
+    // =========================================================================
+    private IEnumerator ResearchPhase(PlayerData aiPlayer)
+    {
+        if (TechManager.Instance == null || allTechNodes == null) yield break;
+
+        // AI researches up to 2 techs per turn, prioritizing affordable ones
+        int researchedThisTurn = 0;
+        foreach (TechNode tech in allTechNodes)
+        {
+            if (tech == null || tech.IsUnlocked) continue;
+            if (!tech.CanUnlock()) continue;
+            if (researchedThisTurn >= 2) break;
+
+            if (aiPlayer.researchPoints >= tech.researchCost && aiPlayer.resources >= tech.goldCost)
+            {
+                TechManager.Instance.ResearchTech(tech);
+                researchedThisTurn++;
+                Debug.Log($"[EnemyAI] Researched: {tech.techName}");
+                yield return new WaitForSeconds(0.3f);
+            }
+        }
+    }
+
+    // =========================================================================
+    //  PHASE 2: STRUCTURE PLACEMENT
+    // =========================================================================
+    private IEnumerator StructurePlacementPhase(PlayerData aiPlayer)
+    {
+        if (TechManager.Instance == null) yield break;
+
+        // Try to place one structure per turn if unlocked and affordable
+        var structurePriority = new List<(GameObject prefab, string feature, int cost)>
+        {
+            (serviceCenterPrefab,   "ServiceCenter",          200),
+            (commercialHubPrefab,   "CommercialHubs",         250),
+            (businessCenterPrefab,  "BusinessCenters",        300),
+            (signalBoosterPrefab,   "SignalBooster",          150),
+            (signalJammerPrefab,    "SignalJammers",          150),
+            (bpoCenterPrefab,       "BPOCenters",             400),
+            (workerFactoryPrefab,   "WorkerFactories",        500),
+            (tesseractPrefab,       "Tesseract",              600),
+        };
+
+        foreach (var (prefab, feature, cost) in structurePriority)
+        {
+            if (prefab == null) continue;
+            if (!TechManager.Instance.IsFeatureUnlocked(feature)) continue;
+            if (aiPlayer.resources < cost) continue;
+
+            HexTile bestTile = FindBestStructureSpot(aiPlayer);
+            if (bestTile != null)
+            {
+                aiPlayer.resources -= cost;
+                GameObject structure = Instantiate(prefab, bestTile.transform.position + Vector3.up * 1f, Quaternion.identity);
+                StructureNode node = structure.GetComponent<StructureNode>();
+                if (node != null) node.Initialize(bestTile, aiPlayer);
+                Debug.Log($"[EnemyAI] Placed {feature} at {bestTile.name} for {cost} gold");
+                yield return new WaitForSeconds(0.5f);
+                break; // Only place one structure per turn
+            }
+        }
+    }
+
+    private HexTile FindBestStructureSpot(PlayerData aiPlayer)
+    {
+        // Find a tile adjacent to the AI's owned network that is not occupied
+        foreach (var tile in GridManager.Instance.tiles.Values)
+        {
+            if (tile.IsOccupied() || tile.placedStructure != null) continue;
+            if (tile.type == HexTile.TileType.Water) continue;
+
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
+            {
+                if (neighbor.placedNode != null && neighbor.placedNode.owner == aiPlayer) return tile;
+                if (neighbor.placedTower != null && neighbor.placedTower.owner == aiPlayer && neighbor.placedTower.IsBuilt()) return tile;
+                if (neighbor.placedWire != null && neighbor.placedWire.owner == aiPlayer) return tile;
+            }
+        }
+        return null;
+    }
+
+    // =========================================================================
+    //  PHASE 3: UNIT RECRUITMENT
+    // =========================================================================
+    private IEnumerator RecruitmentPhase(PlayerData aiPlayer)
+    {
+        List<Unit> myUnits = TurnManager.Instance.GetAllUnits().Where(u => u != null && u.owner == aiPlayer).ToList();
+        int builderCount     = myUnits.Count(u => u is BuilderUnit);
+        int specialistCount  = myUnits.Count(u => u is WireSpecialist);
+        int marketerCount    = myUnits.Count(u => u is SalesMarketer);
+        int technicianCount  = myUnits.Count(u => u is Technician);
+        int scoutCount       = myUnits.Count(u => u is ScoutUnit);
+        int foremenCount     = myUnits.Count(u => u is Foremen);
+        int maintenanceCount = myUnits.Count(u => u is MaintenanceCrew);
+        int itCount          = myUnits.Count(u => u is ITPersonnel);
+        int businessmanCount = myUnits.Count(u => u is Businessman);
+        int saboteurCount    = myUnits.Count(u => u is Saboteurs);
+        int roboWorkerCount  = myUnits.Count(u => u is RoboWorker);
+        int roboMarshallCount= myUnits.Count(u => u is RoboMarshall);
+
+        bool needsBuilder = GetUnbuiltTowers(aiPlayer).Any();
+        bool needsRepair  = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Any(t => t.owner == aiPlayer && t.IsDestroyed());
+
+        // ---- CORE UNITS (always needed) ----
+
+        // Builder (if unbuilt towers exist)
+        if (needsBuilder && builderCount == 0)
+            yield return TryRecruit(builderPrefab, aiPlayer, builderCost, "Builder");
+
+        // Wire Specialist (keep 2)
+        if (specialistCount < 2)
+            yield return TryRecruit(wireSpecialistPrefab, aiPlayer, wireSpecialistCost, "WireSpecialist");
+
+        // Sales Marketer (keep 1)
+        if (marketerCount < 1 && TechManager.Instance != null && TechManager.Instance.unlockedUnitNames.Contains("SalesMarketer"))
+            yield return TryRecruit(salesMarketerPrefab, aiPlayer, salesMarketerCost, "SalesMarketer");
+
+        // Technician (if repairs needed and no Tesseract)
+        bool hasTesseract = PowerGridManager.Instance != null && PowerGridManager.Instance.HasTesseract(aiPlayer);
+        if (needsRepair && technicianCount < 1 && !hasTesseract)
+            yield return TryRecruit(technicianPrefab, aiPlayer, technicianCost, "Technician");
+
+        // ---- SCOUTS (if unlocked) ----
+        if (scoutCount < 1 && scoutPrefab != null)
+            yield return TryRecruit(scoutPrefab, aiPlayer, scoutCost, "Scout");
+
+        // ---- WORKFORCE UNITS (if Service Center feature is unlocked) ----
+        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("ServiceCenter"))
+        {
+            if (foremenCount < 1 && needsBuilder && foremenPrefab != null)
+                yield return TryRecruit(foremenPrefab, aiPlayer, foremenCost, "Foremen");
+
+            if (maintenanceCount < 1 && needsRepair && maintenanceCrewPrefab != null)
+                yield return TryRecruit(maintenanceCrewPrefab, aiPlayer, maintenanceCrewCost, "MaintenanceCrew");
+
+            if (itCount < 1 && needsRepair && itPersonnelPrefab != null)
+                yield return TryRecruit(itPersonnelPrefab, aiPlayer, itPersonnelCost, "ITPersonnel");
+        }
+
+        // ---- SABOTEUR (Lane D) ----
+        if (saboteurCount < 1 && saboteurPrefab != null && TechManager.Instance != null && TechManager.Instance.IsSabotageTabUnlocked())
+            yield return TryRecruit(saboteurPrefab, aiPlayer, saboteurCost, "Saboteur");
+
+        // ---- BUSINESSMAN (Lane C) ----
+        if (businessmanCount < 1 && businessmanPrefab != null && TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("CommercialHubs"))
+            yield return TryRecruit(businessmanPrefab, aiPlayer, businessmanCost, "Businessman");
+
+        // ---- LATE GAME ROBO UNITS ----
+        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("WorkerFactories"))
+        {
+            if (roboWorkerCount < 2 && roboWorkerPrefab != null)
+                yield return TryRecruit(roboWorkerPrefab, aiPlayer, roboWorkerCost, "RoboWorker");
+
+            if (roboMarshallCount < 1 && roboMarshallPrefab != null)
+                yield return TryRecruit(roboMarshallPrefab, aiPlayer, roboMarshallCost, "RoboMarshall");
+        }
+    }
+
+    private IEnumerator TryRecruit(GameObject prefab, PlayerData aiPlayer, int cost, string label)
+    {
+        if (prefab == null || aiPlayer.resources < cost) yield break;
+
+        SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
+        Unit u = UnitSpawner.Instance.SpawnUnit(prefab, spawnNode.tile, aiPlayer);
+        if (u != null)
+        {
+            Debug.Log($"[EnemyAI] Recruited {label}. Remaining: {aiPlayer.resources}");
+        }
+        yield return new WaitForSeconds(0.5f);
+    }
+
+    // =========================================================================
+    //  PHASE 4: COMMAND ALL UNITS
+    // =========================================================================
+    private IEnumerator CommandPhase(PlayerData aiPlayer)
+    {
+        List<Unit> myUnits = TurnManager.Instance.GetAllUnits().Where(u => u != null && u.owner == aiPlayer).ToList();
+
+        // --- Builders ---
+        foreach (var builder in myUnits.OfType<BuilderUnit>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleBuilder(builder));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Foremen (also construct towers) ---
+        foreach (var foreman in myUnits.OfType<Foremen>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleForemen(foreman));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- RoboWorkers (also construct towers) ---
+        foreach (var robo in myUnits.OfType<RoboWorker>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleRoboWorker(robo));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Wire Specialists ---
+        foreach (var specialist in myUnits.OfType<WireSpecialist>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleWireSpecialist(specialist));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Technicians (power wires + repair) ---
+        foreach (var technician in myUnits.OfType<Technician>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleTechnician(technician));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Sales Marketers ---
+        foreach (var marketer in myUnits.OfType<SalesMarketer>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleSalesMarketer(marketer));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Scouts (move toward unexplored territory) ---
+        foreach (var scout in myUnits.OfType<ScoutUnit>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleScout(scout));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- IT Personnel (repair) ---
+        foreach (var it in myUnits.OfType<ITPersonnel>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleITPersonnel(it));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Maintenance Crew (repair) ---
+        foreach (var crew in myUnits.OfType<MaintenanceCrew>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleMaintenanceCrew(crew));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- RoboMarshall (repair) ---
+        foreach (var marshall in myUnits.OfType<RoboMarshall>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleRoboMarshall(marshall));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Saboteurs (damage enemy structures) ---
+        foreach (var sab in myUnits.OfType<Saboteurs>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleSaboteur(sab));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // --- Businessmen (recruit enemy towers) ---
+        foreach (var biz in myUnits.OfType<Businessman>().Where(u => u.CanAct))
+        {
+            yield return StartCoroutine(HandleBusinessman(biz));
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    // =========================================================================
+    //  TOWER / STRUCTURE HELPERS
+    // =========================================================================
     private HexTile FindBestTowerSpot(SignalNode node)
     {
         var tilesInRange = GridManager.Instance.GetTilesInRange(node.tile, node.CurrentInfluenceRadius)
@@ -163,12 +395,23 @@ public class EnemyAI : MonoBehaviour
 
     private List<TowerNode> GetUnbuiltTowers(PlayerData owner)
     {
-        // TowerState.Unbuilt was renamed to TowerState.Hologram (System 3 three-phase build).
-        // A Hologram is the newly-placed blueprint that a Builder must Construct.
         return FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner == owner && t.state == TowerNode.TowerState.Hologram).ToList();
     }
 
+    private HexTile GetCloserTile(HexTile start, HexTile goal, int range)
+    {
+        return GridManager.Instance.GetTilesInRange(start, range)
+            .Where(t => !t.IsOccupied())
+            .OrderBy(t => GridManager.Instance.CubeDistance(t.cubeCoords, goal.cubeCoords))
+            .FirstOrDefault();
+    }
+
+    // =========================================================================
+    //  UNIT HANDLERS
+    // =========================================================================
+
+    // --- BUILDER ---
     private IEnumerator HandleBuilder(BuilderUnit builder)
     {
         TowerNode target = GetUnbuiltTowers(builder.owner)
@@ -200,6 +443,67 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // --- FOREMEN (similar to builder but with their own ConstructAdjacentTower) ---
+    private IEnumerator HandleForemen(Foremen foreman)
+    {
+        TowerNode target = GetUnbuiltTowers(foreman.owner)
+            .OrderBy(t => GridManager.Instance.CubeDistance(foreman.currentTile.cubeCoords, t.tile.cubeCoords))
+            .FirstOrDefault();
+
+        if (target == null) yield break;
+
+        if (GridManager.Instance.GetNeighbors(foreman.currentTile).Contains(target.tile))
+        {
+            foreman.ConstructAdjacentTower();
+        }
+        else
+        {
+            HexTile moveTarget = GetCloserTile(foreman.currentTile, target.tile, foreman.moveRange);
+            if (moveTarget != null)
+            {
+                foreman.MoveTo(moveTarget, foreman.moveRange);
+                yield return new WaitForSeconds(0.5f);
+
+                if (foreman != null && foreman.CanAct &&
+                    GridManager.Instance.GetNeighbors(foreman.currentTile).Contains(target.tile))
+                {
+                    foreman.ConstructAdjacentTower();
+                }
+            }
+        }
+    }
+
+    // --- ROBOWORKER (same construct pattern) ---
+    private IEnumerator HandleRoboWorker(RoboWorker robo)
+    {
+        TowerNode target = GetUnbuiltTowers(robo.owner)
+            .OrderBy(t => GridManager.Instance.CubeDistance(robo.currentTile.cubeCoords, t.tile.cubeCoords))
+            .FirstOrDefault();
+
+        if (target == null) yield break;
+
+        if (GridManager.Instance.GetNeighbors(robo.currentTile).Contains(target.tile))
+        {
+            robo.ConstructAdjacentTower();
+        }
+        else
+        {
+            HexTile moveTarget = GetCloserTile(robo.currentTile, target.tile, robo.moveRange);
+            if (moveTarget != null)
+            {
+                robo.MoveTo(moveTarget, robo.moveRange);
+                yield return new WaitForSeconds(0.5f);
+
+                if (robo != null && robo.CanAct &&
+                    GridManager.Instance.GetNeighbors(robo.currentTile).Contains(target.tile))
+                {
+                    robo.ConstructAdjacentTower();
+                }
+            }
+        }
+    }
+
+    // --- WIRE SPECIALIST ---
     private IEnumerator HandleWireSpecialist(WireSpecialist specialist)
     {
         TowerNode powerTarget = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
@@ -239,20 +543,11 @@ public class EnemyAI : MonoBehaviour
             foreach (HexTile n in GridManager.Instance.GetNeighbors(tile))
             {
                 if (n.placedNode is SignalNode sn && sn.owner == specialist.owner)
-                {
-                    isNextToOwnPower = true;
-                    break;
-                }
+                { isNextToOwnPower = true; break; }
                 if (n.placedTower is TowerNode tn && tn.owner == specialist.owner && tn.IsPowered)
-                {
-                    isNextToOwnPower = true;
-                    break;
-                }
+                { isNextToOwnPower = true; break; }
                 if (n.placedWire is WireNode wn && wn.owner == specialist.owner && wn.IsPowered)
-                {
-                    isNextToOwnPower = true;
-                    break;
-                }
+                { isNextToOwnPower = true; break; }
             }
 
             if (isNextToOwnPower)
@@ -303,14 +598,45 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private HexTile GetCloserTile(HexTile start, HexTile goal, int range)
+    // --- TECHNICIAN ---
+    private IEnumerator HandleTechnician(Technician technician)
     {
-        return GridManager.Instance.GetTilesInRange(start, range)
-            .Where(t => !t.IsOccupied())
-            .OrderBy(t => GridManager.Instance.CubeDistance(t.cubeCoords, goal.cubeCoords))
+        // Priority 1: Power adjacent wires
+        technician.PowerAdjacentStructure();
+        if (technician == null) yield break;
+        if (!technician.CanAct) yield break;
+
+        // Priority 2: Repair adjacent structures
+        TowerNode repairTarget = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Where(t => t.owner == technician.owner && t.IsDestroyed())
+            .OrderBy(t => GridManager.Instance.CubeDistance(technician.currentTile.cubeCoords, t.tile.cubeCoords))
             .FirstOrDefault();
+
+        if (repairTarget != null)
+        {
+            if (GridManager.Instance.GetNeighbors(technician.currentTile).Contains(repairTarget.tile))
+            {
+                technician.RepairAdjacentStructure();
+            }
+            else
+            {
+                HexTile moveTarget = GetCloserTile(technician.currentTile, repairTarget.tile, technician.moveRange);
+                if (moveTarget != null && moveTarget != technician.currentTile)
+                {
+                    technician.MoveTo(moveTarget, technician.moveRange);
+                    yield return new WaitForSeconds(0.5f);
+
+                    if (technician != null && technician.CanAct && 
+                        GridManager.Instance.GetNeighbors(technician.currentTile).Contains(repairTarget.tile))
+                    {
+                        technician.RepairAdjacentStructure();
+                    }
+                }
+            }
+        }
     }
 
+    // --- SALES MARKETER ---
     private IEnumerator HandleSalesMarketer(SalesMarketer marketer)
     {
         HexTile target = GridManager.Instance.tiles.Values
@@ -334,32 +660,191 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private IEnumerator HandleTechnician(Technician technician)
+    // --- SCOUT ---
+    private IEnumerator HandleScout(ScoutUnit scout)
+    {
+        // Move toward furthest un-explored area from HQ
+        HexTile farthestTile = GridManager.Instance.tiles.Values
+            .Where(t => !t.IsOccupied() && t.type == HexTile.TileType.Land)
+            .OrderByDescending(t =>
+            {
+                int minDist = 999;
+                foreach (var node in scout.owner.ownedNodes)
+                {
+                    int d = GridManager.Instance.CubeDistance(t.cubeCoords, node.tile.cubeCoords);
+                    if (d < minDist) minDist = d;
+                }
+                return minDist;
+            })
+            .ThenBy(t => GridManager.Instance.CubeDistance(scout.currentTile.cubeCoords, t.cubeCoords))
+            .FirstOrDefault();
+
+        if (farthestTile != null)
+        {
+            HexTile moveTarget = GetCloserTile(scout.currentTile, farthestTile, scout.moveRange);
+            if (moveTarget != null && moveTarget != scout.currentTile)
+            {
+                scout.MoveTo(moveTarget, scout.moveRange);
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+    }
+
+    // --- IT PERSONNEL ---
+    private IEnumerator HandleITPersonnel(ITPersonnel it)
     {
         TowerNode target = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
-            .Where(t => t.owner == technician.owner && t.IsDestroyed())
-            .OrderBy(t => GridManager.Instance.CubeDistance(technician.currentTile.cubeCoords, t.tile.cubeCoords))
+            .Where(t => t.owner == it.owner && t.IsDestroyed())
+            .OrderBy(t => GridManager.Instance.CubeDistance(it.currentTile.cubeCoords, t.tile.cubeCoords))
             .FirstOrDefault();
 
         if (target != null)
         {
-            if (GridManager.Instance.GetNeighbors(technician.currentTile).Contains(target.tile))
+            if (GridManager.Instance.GetNeighbors(it.currentTile).Contains(target.tile))
             {
-                technician.RepairAdjacentStructure();
+                it.RepairAdjacentStructure();
             }
             else
             {
-                HexTile moveTarget = GetCloserTile(technician.currentTile, target.tile, technician.moveRange);
-                if (moveTarget != null && moveTarget != technician.currentTile)
+                HexTile moveTarget = GetCloserTile(it.currentTile, target.tile, it.moveRange);
+                if (moveTarget != null && moveTarget != it.currentTile)
                 {
-                    technician.MoveTo(moveTarget, technician.moveRange);
+                    it.MoveTo(moveTarget, it.moveRange);
                     yield return new WaitForSeconds(0.5f);
 
-                    if (technician != null && technician.CanAct && 
-                        GridManager.Instance.GetNeighbors(technician.currentTile).Contains(target.tile))
+                    if (it != null && it.CanAct &&
+                        GridManager.Instance.GetNeighbors(it.currentTile).Contains(target.tile))
                     {
-                        technician.RepairAdjacentStructure();
+                        it.RepairAdjacentStructure();
                     }
+                }
+            }
+        }
+    }
+
+    // --- MAINTENANCE CREW ---
+    private IEnumerator HandleMaintenanceCrew(MaintenanceCrew crew)
+    {
+        TowerNode target = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Where(t => t.owner == crew.owner && t.IsDestroyed())
+            .OrderBy(t => GridManager.Instance.CubeDistance(crew.currentTile.cubeCoords, t.tile.cubeCoords))
+            .FirstOrDefault();
+
+        if (target != null)
+        {
+            if (GridManager.Instance.GetNeighbors(crew.currentTile).Contains(target.tile))
+            {
+                crew.PerformMaintenance();
+            }
+            else
+            {
+                HexTile moveTarget = GetCloserTile(crew.currentTile, target.tile, crew.moveRange);
+                if (moveTarget != null && moveTarget != crew.currentTile)
+                {
+                    crew.MoveTo(moveTarget, crew.moveRange);
+                    yield return new WaitForSeconds(0.5f);
+
+                    if (crew != null && crew.CanAct &&
+                        GridManager.Instance.GetNeighbors(crew.currentTile).Contains(target.tile))
+                    {
+                        crew.PerformMaintenance();
+                    }
+                }
+            }
+        }
+    }
+
+    // --- ROBO MARSHALL ---
+    private IEnumerator HandleRoboMarshall(RoboMarshall marshall)
+    {
+        TowerNode target = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Where(t => t.owner == marshall.owner && t.IsDestroyed())
+            .OrderBy(t => GridManager.Instance.CubeDistance(marshall.currentTile.cubeCoords, t.tile.cubeCoords))
+            .FirstOrDefault();
+
+        if (target != null)
+        {
+            if (GridManager.Instance.GetNeighbors(marshall.currentTile).Contains(target.tile))
+            {
+                marshall.RepairAdjacentStructure();
+            }
+            else
+            {
+                HexTile moveTarget = GetCloserTile(marshall.currentTile, target.tile, marshall.moveRange);
+                if (moveTarget != null && moveTarget != marshall.currentTile)
+                {
+                    marshall.MoveTo(moveTarget, marshall.moveRange);
+                    yield return new WaitForSeconds(0.5f);
+
+                    if (marshall != null && marshall.CanAct &&
+                        GridManager.Instance.GetNeighbors(marshall.currentTile).Contains(target.tile))
+                    {
+                        marshall.RepairAdjacentStructure();
+                    }
+                }
+            }
+        }
+    }
+
+    // --- SABOTEUR ---
+    private IEnumerator HandleSaboteur(Saboteurs saboteur)
+    {
+        // Find nearest enemy tower to sabotage
+        TowerNode enemyTower = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Where(t => t.owner != saboteur.owner && !t.IsDestroyed())
+            .OrderBy(t => GridManager.Instance.CubeDistance(saboteur.currentTile.cubeCoords, t.tile.cubeCoords))
+            .FirstOrDefault();
+
+        if (enemyTower == null) yield break;
+
+        if (GridManager.Instance.GetNeighbors(saboteur.currentTile).Contains(enemyTower.tile))
+        {
+            saboteur.DamageAdjacentStructure();
+        }
+        else
+        {
+            HexTile moveTarget = GetCloserTile(saboteur.currentTile, enemyTower.tile, saboteur.moveRange);
+            if (moveTarget != null && moveTarget != saboteur.currentTile)
+            {
+                saboteur.MoveTo(moveTarget, saboteur.moveRange);
+                yield return new WaitForSeconds(0.5f);
+
+                if (saboteur != null && saboteur.CanAct &&
+                    GridManager.Instance.GetNeighbors(saboteur.currentTile).Contains(enemyTower.tile))
+                {
+                    saboteur.DamageAdjacentStructure();
+                }
+            }
+        }
+    }
+
+    // --- BUSINESSMAN ---
+    private IEnumerator HandleBusinessman(Businessman biz)
+    {
+        // Find nearest enemy tower to recruit
+        TowerNode enemyTower = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Where(t => t.owner != biz.owner && !t.IsDestroyed())
+            .OrderBy(t => GridManager.Instance.CubeDistance(biz.currentTile.cubeCoords, t.tile.cubeCoords))
+            .FirstOrDefault();
+
+        if (enemyTower == null) yield break;
+
+        if (GridManager.Instance.GetNeighbors(biz.currentTile).Contains(enemyTower.tile))
+        {
+            biz.RecruitNearestWorker();
+        }
+        else
+        {
+            HexTile moveTarget = GetCloserTile(biz.currentTile, enemyTower.tile, biz.moveRange);
+            if (moveTarget != null && moveTarget != biz.currentTile)
+            {
+                biz.MoveTo(moveTarget, biz.moveRange);
+                yield return new WaitForSeconds(0.5f);
+
+                if (biz != null && biz.CanAct &&
+                    GridManager.Instance.GetNeighbors(biz.currentTile).Contains(enemyTower.tile))
+                {
+                    biz.RecruitNearestWorker();
                 }
             }
         }

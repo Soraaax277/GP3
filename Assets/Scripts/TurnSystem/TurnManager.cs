@@ -21,8 +21,9 @@ public class TurnManager : MonoBehaviour
     private int currentPlayerIndex;
 
     private List<Unit>       allUnits  = new List<Unit>();
-    private List<TowerNode>  allTowers = new List<TowerNode>();
-    private List<WireNode>   allWires  = new List<WireNode>();
+    private List<TowerNode>     allTowers     = new List<TowerNode>();
+    private List<WireNode>      allWires      = new List<WireNode>();
+    private List<StructureNode> allStructures = new List<StructureNode>();
 
     public event System.Action OnGameStatusChanged;
 
@@ -158,6 +159,16 @@ public class TurnManager : MonoBehaviour
             }
         }
 
+        // STRUCTURE TURN START
+        for (int i = allStructures.Count - 1; i >= 0; i--)
+        {
+            if (allStructures[i] == null) { allStructures.RemoveAt(i); continue; }
+            if (allStructures[i].owner == currentPlayer)
+            {
+                allStructures[i].OnTurnStart();
+            }
+        }
+
         // UPDATE FOG OF WAR (Always for the human player)
         if (FieldOfViewManager.Instance != null)
         {
@@ -234,8 +245,9 @@ public class TurnManager : MonoBehaviour
 
     //  ACCESSORS
     public List<Unit>      GetAllUnits()  => allUnits;
-    public List<TowerNode> GetAllTowers() => allTowers;   
-    public List<WireNode>  GetAllWires()  => allWires;    
+    public List<TowerNode>     GetAllTowers()     => allTowers;   
+    public List<WireNode>      GetAllWires()      => allWires;    
+    public List<StructureNode> GetAllStructures() => allStructures;
     public List<PlayerData> GetPlayers()  => players;
 
     //  END TURN
@@ -307,6 +319,17 @@ public class TurnManager : MonoBehaviour
     {
         if (!allWires.Contains(wire))
             allWires.Add(wire);
+    }
+
+    public void RegisterStructure(StructureNode structure)
+    {
+        if (!allStructures.Contains(structure))
+            allStructures.Add(structure);
+    }
+
+    public void UnregisterStructure(StructureNode structure)
+    {
+        allStructures.Remove(structure);
     }
 
     public string GetCurrentEra()

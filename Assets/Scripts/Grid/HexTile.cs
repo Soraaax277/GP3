@@ -20,6 +20,7 @@ public class HexTile : MonoBehaviour
 
     public TowerNode placedTower;
     public WireNode placedWire;
+    public StructureNode placedStructure;
     public Unit placedUnit;
 
     public int baseInfluence;

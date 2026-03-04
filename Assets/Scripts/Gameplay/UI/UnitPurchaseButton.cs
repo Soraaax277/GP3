@@ -41,6 +41,17 @@ public class UnitPurchaseButton : MonoBehaviour
                 isUnlocked = TechManager.Instance.unlockedUnitNames.Contains("SalesMarketer");
             }
 
+            // SERVICE CENTER RESTRICTIONS
+            if (UnitPurchaseUI.Instance != null && UnitPurchaseUI.Instance.GetServiceCenter() != null)
+            {
+                bool isWorkforce = unitPrefab.name.Contains("Foremen") || unitPrefab.name.Contains("Maintenance") || unitPrefab.name.Contains("ITPersonnel");
+                if (!isWorkforce)
+                {
+                    gameObject.SetActive(false);
+                    return;
+                }
+            }
+
             gameObject.SetActive(isUnlocked);
             if (!isUnlocked) return;
 
@@ -62,10 +73,12 @@ public class UnitPurchaseButton : MonoBehaviour
             return;
         }
 
-        SignalNode business = UnitPurchaseUI.Instance.GetBusiness();
-        if (business == null) return;
+        PlayerData owner = UnitPurchaseUI.Instance.GetCurrentOwner();
+        HexTile spawnTile = UnitPurchaseUI.Instance.GetSpawnTile();
 
-        Unit spawned = UnitSpawner.Instance.SpawnUnit(unitPrefab, business);
+        if (owner == null || spawnTile == null) return;
+
+        Unit spawned = UnitSpawner.Instance.SpawnUnit(unitPrefab, spawnTile, owner);
         if (spawned != null)
         {
             UpdateUI(); // Refresh after purchase

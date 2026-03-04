@@ -13,8 +13,8 @@ public class CameraController : MonoBehaviour
     [Header("Movement Settings")]
     public float panSpeed = 20f;  
     public float scrollSpeed = 20f;
-    public float minY = 10f; 
-    public float maxY = 80f; 
+    public float minY = 8f; 
+    public float maxY = 35f; 
 
     [Header("Build Mode (Focus) Settings")]
     public float buildHeight = 25f;     

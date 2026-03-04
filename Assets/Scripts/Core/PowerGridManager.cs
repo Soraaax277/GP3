@@ -142,12 +142,26 @@ public class PowerGridManager : MonoBehaviour
         }
     }
 
+    public bool HasTesseract(PlayerData player)
+    {
+        if (TurnManager.Instance == null) return false;
+        foreach (var structure in TurnManager.Instance.GetAllStructures())
+        {
+            if (structure is Tesseract && structure.owner == player) return true;
+        }
+        return false;
+    }
+
     private bool HasConductiveInfrastructure(HexTile tile)
     {
         if (tile.placedSignalNode != null) return true; // HQs are always conductive
         
-        // Wires MUST be activated by a Technician to conduct
-        if (tile.placedWire != null && tile.placedWire.IsTechnicianActivated) return true;
+        // Wires MUST be activated by a Technician to conduct, UNLESS a Tesseract is active
+        if (tile.placedWire != null)
+        {
+            if (tile.placedWire.IsTechnicianActivated) return true;
+            if (HasTesseract(tile.placedWire.owner)) return true;
+        }
 
         // Towers conduct IF they have been finished by a Builder (even if not currently powered)
         if (tile.placedTower != null && tile.placedTower.IsBuilt()) return true;
@@ -158,6 +172,11 @@ public class PowerGridManager : MonoBehaviour
     private void UpdatePowerOnTile(HexTile tile, bool powered)
     {
         if (tile.placedTower is IPowerable pTower) pTower.UpdatePowerState(powered);
-        if (tile.placedWire is IPowerable pWire) pWire.UpdatePowerState(powered);
+        if (tile.placedWire is IPowerable pWire) 
+        {
+            // If Tesseract is active, force IsTechnicianActivated to true visually as well
+            if (powered && HasTesseract(tile.placedWire.owner)) pWire.IsTechnicianActivated = true;
+            pWire.UpdatePowerState(powered);
+        }
     }
 }

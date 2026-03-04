@@ -22,9 +22,9 @@ public class UnitSpawner : MonoBehaviour
         Instance = this;
     }
 
-    public Unit SpawnUnit(GameObject unitPrefab, SignalNode business)
+    public Unit SpawnUnit(GameObject unitPrefab, HexTile centerTile, PlayerData owner)
     {
-        HexTile spawnTile = GetAdjacentFreeTile(business.tile);
+        HexTile spawnTile = GetAdjacentFreeTile(centerTile);
 
         if (spawnTile == null)
         {
@@ -35,19 +35,19 @@ public class UnitSpawner : MonoBehaviour
         // Calculate recruitment cost with tech modifier
         int recruitmentCost = GetRecruitmentCost(unitPrefab);
         
-        if (business.owner.resources < recruitmentCost)
+        if (owner.resources < recruitmentCost)
         {
-            Debug.LogWarning($"Not enough gold to recruit unit! Need {recruitmentCost}, have {business.owner.resources}");
+            Debug.LogWarning($"Not enough gold to recruit unit! Need {recruitmentCost}, have {owner.resources}");
             return null;
         }
 
         // Deduct recruitment cost
-        business.owner.resources -= recruitmentCost;
-        Debug.Log($"[UnitSpawner] Unit recruited for {recruitmentCost} gold. Remaining: {business.owner.resources}");
+        owner.resources -= recruitmentCost;
+        Debug.Log($"[UnitSpawner] Unit recruited for {recruitmentCost} gold. Remaining: {owner.resources}");
 
         GameObject unitObj = Instantiate(unitPrefab);
         Unit unit = unitObj.GetComponent<Unit>();
-        unit.Initialize(spawnTile, business.owner);
+        unit.Initialize(spawnTile, owner);
 
         if (TechManager.Instance != null)
         {
