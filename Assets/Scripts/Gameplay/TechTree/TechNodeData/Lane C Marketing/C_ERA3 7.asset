@@ -39,7 +39,7 @@ MonoBehaviour:
     statToUpgrade: 
     amount: 1
     skillName: 
-    infraStatName: ToweCapacity
+    infraStatName: TowerCapacity
     infraValueMod: 1
     isMultiplier: 0
     featureName: 

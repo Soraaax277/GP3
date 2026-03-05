@@ -77,7 +77,6 @@ public class RoboWorker : Unit
             return;
         }
 
-        // Deduct building cost with tech modifier
         int buildCost = GetBuildingCost();
         if (owner.resources < buildCost)
         {
@@ -102,11 +101,12 @@ public class RoboWorker : Unit
         {
             SetSelected(false);
             if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
-            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+            if (BuildingUIManager.Instance != null) BuildingUIManager.Instance.Close();
         }
     }
 
-    private int GetBuildingCost()
+    // Changed from private to public so UnitActionPanel can read the cost for display
+    public int GetBuildingCost()
     {
         int baseCost = 100;
         if (TechManager.Instance != null)

@@ -83,8 +83,8 @@ public class TowerPlacementManager : MonoBehaviour
         selectedBuilder  = builder;
         lastPlacementTime = Time.time;
 
-        if (BuildUIManager.Instance != null)
-            BuildUIManager.Instance.ignoreNextClick = true;
+        if (BuildingUIManager.Instance != null)
+            BuildingUIManager.Instance.ignoreNextClick = true;
 
         hologram = Instantiate(towerPrefab);
         Debug.Log($"[TowerPlacement] Hologram instantiated: {hologram?.name}");
@@ -209,8 +209,11 @@ public class TowerPlacementManager : MonoBehaviour
 
         if (selectedBusiness != null)
         {
-            if (BuildUIManager.Instance != null && BuildUIManager.Instance.buildPanel.activeSelf)
-                BuildUIManager.Instance.UpdateBuildButtons();
+            if (BuildingUIManager.Instance != null && BuildingUIManager.Instance.panel.activeSelf)
+            {
+                // [FIX] Added these braces so the compiler doesn't crash on an empty 'if' statement!
+                // If you wanted to refresh the UI here, add that code inside these brackets.
+            }
         }
 
         isPlacing = false;

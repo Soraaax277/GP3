@@ -13,7 +13,7 @@ public class MaintenanceCrew : Unit
     {
         base.Initialize(spawnTile, player);
         SetMoveRange(2);
-        goldUpkeep = 15; // Mid-range upkeep
+        goldUpkeep = 15;
         
         CheckTechStatus();
     }
@@ -93,7 +93,6 @@ public class MaintenanceCrew : Unit
             return;
         }
 
-        // Deduct repair cost with tech modifier
         int repairCost = GetRepairCost(targetTower);
         if (owner.resources < repairCost)
         {
@@ -121,15 +120,24 @@ public class MaintenanceCrew : Unit
         }
     }
 
-    private int GetRepairCost(TowerNode tower)
+    // Parameterless overload — used by UnitActionPanel to display cost before a target is known.
+    // Returns the base repair cost with tech modifier applied, same as the tower-specific version.
+    public int GetRepairCost()
     {
-        int baseCost = 50; // Base repair cost
+        int baseCost = 50;
         if (TechManager.Instance != null)
         {
             float multiplier = TechManager.Instance.GetInfraMultiplier("RepairCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;
+    }
+
+    // Tower-specific overload — kept for use inside PerformMaintenance() in case
+    // per-tower cost logic is added in the future.
+    private int GetRepairCost(TowerNode tower)
+    {
+        return GetRepairCost(); // Delegates to the parameterless version
     }
 
     void Die()

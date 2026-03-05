@@ -5,7 +5,7 @@ using UnityEngine;
 /// Can repair both towers and wires with superior performance.
 public class RoboMarshall : Unit
 {
-    public int repairCharges = 5; // Many charges
+    public int repairCharges = 5;
     public float repairEfficiency = 1.5f; // Superior efficiency
     public bool canRepairWires = true;
     public bool canRepairTowers = true;
@@ -93,7 +93,6 @@ public class RoboMarshall : Unit
             return;
         }
 
-        // Deduct repair cost
         int repairCost = GetRepairCost();
         if (owner.resources < repairCost)
         {
@@ -103,11 +102,11 @@ public class RoboMarshall : Unit
 
         owner.resources -= repairCost;
 
-        // Check for full restore chance (if tech is unlocked)
+        // Check for full restore chance (UntestedStimulants tech)
         bool fullRestore = false;
         if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("UntestedStimulants"))
         {
-            if (Random.value <= 0.10f) // 10% chance
+            if (Random.value <= 0.10f)
             {
                 fullRestore = true;
                 Debug.Log("[RoboMarshall] Untested Stimulants triggered - FULL RESTORE!");
@@ -116,23 +115,13 @@ public class RoboMarshall : Unit
 
         if (targetTower != null)
         {
-            if (fullRestore)
-            {
-                // Full restore: repair with maximum efficiency to fully heal
-                targetTower.Repair(100.0f); // Very high multiplier ensures full HP
-            }
-            else
-            {
-                targetTower.Repair(repairEfficiency);
-            }
-            Debug.Log($"[RoboMarshall] Tower repair complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}, full restore: {fullRestore}).");
+            targetTower.Repair(fullRestore ? 100.0f : repairEfficiency);
+            Debug.Log($"[RoboMarshall] Tower repair complete (efficiency: {repairEfficiency * 100}%, cost: {repairCost}, full restore: {fullRestore}).");
         }
         else if (targetWire != null)
         {
             if (fullRestore)
-            {
                 targetWire.currentDurability = targetWire.MaxDurability;
-            }
             else
             {
                 float healAmount = targetWire.MaxDurability * repairEfficiency;
@@ -158,7 +147,8 @@ public class RoboMarshall : Unit
         }
     }
 
-    private int GetRepairCost()
+    // Changed from private to public so UnitActionPanel can read the cost for display
+    public int GetRepairCost()
     {
         int baseCost = 30; // Cheaper than human units
         if (TechManager.Instance != null)

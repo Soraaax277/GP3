@@ -111,7 +111,7 @@ public class Saboteurs: Unit
         {
             SetSelected(false);
             if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
-            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+            if (BuildingUIManager.Instance != null) BuildingUIManager.Instance.Close();
         }
     }
     

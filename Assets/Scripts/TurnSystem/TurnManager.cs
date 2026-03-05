@@ -63,8 +63,8 @@ public class TurnManager : MonoBehaviour
 
         // CLEANUP UI
         // Ensure no old menus are stuck open from the previous player
-        if (BuildUIManager.Instance != null) 
-            BuildUIManager.Instance.CloseBuildMenu();
+        if (BuildingUIManager.Instance != null) 
+            BuildingUIManager.Instance.Close();
 
         // SIGNAL PROPAGATION
         // Propagate signal from every player's HQs before influence is recalculated,

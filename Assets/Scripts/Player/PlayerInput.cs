@@ -40,7 +40,8 @@ public class PlayerInput : MonoBehaviour
                     {
                         SelectUnit(unit);
                         UnitActionPanel.Instance.Open(unit);
-                        BuildUIManager.Instance.CloseBuildMenu();
+                        BuildingUIManager.Instance.Close();
+                        if (DetailPanel.Instance != null) DetailPanel.Instance.ShowUnit(unit);
                         return;
                     }
                     else
@@ -54,7 +55,7 @@ public class PlayerInput : MonoBehaviour
                 if (business != null)
                 {
                     DeselectUnit();
-                    BuildUIManager.Instance.OpenBuildMenu(business);
+                    BuildingUIManager.Instance.Open(business);
                     UnitActionPanel.Instance.Close();
                     return;
                 }
@@ -103,8 +104,9 @@ public class PlayerInput : MonoBehaviour
         else
         {
             DeselectUnit();
-            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+            if (BuildingUIManager.Instance != null) BuildingUIManager.Instance.Close();
             if (UnitActionPanel.Instance != null) UnitActionPanel.Instance.Close();
+            if (DetailPanel.Instance != null) DetailPanel.Instance.Close();
         }
     }
 

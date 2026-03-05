@@ -5,22 +5,91 @@ public class TechManager : MonoBehaviour
 {
     public static TechManager Instance;
 
-    private List<TechEffect> activeEffects = new List<TechEffect>();
-    public HashSet<string> unlockedUnitNames  = new HashSet<string>();
-    public HashSet<string> unlockedFeatures   = new HashSet<string>();
+    // Per-player active (persistent) effects — previously a single shared list,
+    // which caused AI tech buffs to be applied to the human player's units.
+    private Dictionary<PlayerData, List<TechEffect>> _playerActiveEffects
+        = new Dictionary<PlayerData, List<TechEffect>>();
 
-    // Accumulated flat RP bonus from all unlocked TechNodes that have rpBonusPerTurn > 0.
-    // Read by EconomyManager.ProcessTurnIncome() each turn.
-    private int _totalRPBonusPerTurn = 0;
-    public int GetTotalRPBonus() => _totalRPBonusPerTurn;
+    private List<TechEffect> GetActiveEffectsFor(PlayerData player)
+    {
+        if (player == null) return new List<TechEffect>();
+        if (!_playerActiveEffects.ContainsKey(player))
+            _playerActiveEffects[player] = new List<TechEffect>();
+        return _playerActiveEffects[player];
+    }
 
-    // Set to true permanently once any TechNode with unlocksSabotageTab=true is researched.
-    private bool _sabotageTabUnlocked = false;
+    // Legacy property kept so any code referencing activeEffects still compiles.
+    private List<TechEffect> activeEffects => GetActiveEffectsFor(TurnManager.Instance?.currentPlayer);
 
-    // Returns true if the Sabotage tech tree tab has been unlocked by researching
-    // at least one TechNode that has unlocksSabotageTab = true.
-    // Read by TechTreeWindowManager to enable/disable btnSabotage.
-    public bool IsSabotageTabUnlocked() => _sabotageTabUnlocked;
+    // -----------------------------------------------------------------------
+    //  PER-PLAYER UNLOCK STATE
+    //  TechNode is a ScriptableObject — one shared asset instance for all
+    //  players.  We store which nodes each player has unlocked here so that
+    //  the AI researching a tech does not also unlock it for the human player.
+    //  Key: PlayerData reference  |  Value: set of unlocked TechNode assets.
+    // -----------------------------------------------------------------------
+    private Dictionary<PlayerData, HashSet<TechNode>> _playerUnlocks
+        = new Dictionary<PlayerData, HashSet<TechNode>>();
+
+    /// Returns true if the given player has already unlocked this node.
+    public bool IsNodeUnlocked(PlayerData player, TechNode node)
+    {
+        if (player == null || node == null) return false;
+        return _playerUnlocks.TryGetValue(player, out var set) && set.Contains(node);
+    }
+
+    /// Records that the given player has unlocked this node.
+    public void MarkNodeUnlocked(PlayerData player, TechNode node)
+    {
+        if (player == null || node == null) return;
+        if (!_playerUnlocks.ContainsKey(player))
+            _playerUnlocks[player] = new HashSet<TechNode>();
+        _playerUnlocks[player].Add(node);
+    }
+
+    // Per-player unit unlock names (previously a single shared HashSet)
+    private Dictionary<PlayerData, HashSet<string>> _playerUnlockedUnitNames
+        = new Dictionary<PlayerData, HashSet<string>>();
+
+    // Per-player feature unlocks (previously a single shared HashSet)
+    private Dictionary<PlayerData, HashSet<string>> _playerUnlockedFeatures
+        = new Dictionary<PlayerData, HashSet<string>>();
+
+    // Per-player RP bonus (previously a single global int)
+    private Dictionary<PlayerData, int> _playerRPBonusPerTurn
+        = new Dictionary<PlayerData, int>();
+
+    // Per-player sabotage tab unlock flag (previously a single global bool)
+    private Dictionary<PlayerData, bool> _playerSabotageTabUnlocked
+        = new Dictionary<PlayerData, bool>();
+
+    // Legacy accessors — resolve to the current player so existing callers compile unchanged.
+    // Where possible, prefer the explicit-player overloads below.
+    public HashSet<string> unlockedUnitNames =>
+        GetOrCreateSet(_playerUnlockedUnitNames, TurnManager.Instance?.currentPlayer);
+    public HashSet<string> unlockedFeatures =>
+        GetOrCreateSet(_playerUnlockedFeatures, TurnManager.Instance?.currentPlayer);
+
+    private HashSet<string> GetOrCreateSet(Dictionary<PlayerData, HashSet<string>> dict, PlayerData player)
+    {
+        if (player == null) return new HashSet<string>();
+        if (!dict.ContainsKey(player)) dict[player] = new HashSet<string>();
+        return dict[player];
+    }
+
+    public int GetTotalRPBonus() => GetTotalRPBonusFor(TurnManager.Instance?.currentPlayer);
+    public int GetTotalRPBonusFor(PlayerData player)
+    {
+        if (player == null) return 0;
+        return _playerRPBonusPerTurn.TryGetValue(player, out int v) ? v : 0;
+    }
+
+    public bool IsSabotageTabUnlocked() => IsSabotageTabUnlockedFor(TurnManager.Instance?.currentPlayer);
+    public bool IsSabotageTabUnlockedFor(PlayerData player)
+    {
+        if (player == null) return false;
+        return _playerSabotageTabUnlocked.TryGetValue(player, out bool v) && v;
+    }
 
     private Dictionary<string, float> infraMultipliers  = new Dictionary<string, float>();
     private Dictionary<string, float> infraFlatBonuses  = new Dictionary<string, float>();
@@ -97,7 +166,7 @@ public class TechManager : MonoBehaviour
         }
 
         if (player == null) return;
-        if (tech.IsUnlocked) return;
+        if (tech.IsUnlockedBy(player)) return;
 
         // COST CHECKS
         // Skipped entirely when freeResearchMode is on. ScriptableObject data is untouched.
@@ -118,7 +187,7 @@ public class TechManager : MonoBehaviour
             }
         }
 
-        if (!tech.CanUnlock()) 
+        if (!tech.CanUnlockFor(player)) 
         {
             Debug.Log("Prerequisites not met!");
             return;
@@ -137,7 +206,7 @@ public class TechManager : MonoBehaviour
         }
 
         // UNLOCK
-        tech.UnlockTech(); 
+        tech.UnlockFor(player); 
         
         if (GameStatusUI.Instance != null)
         {
@@ -167,19 +236,20 @@ public class TechManager : MonoBehaviour
                     // and remember for units spawned later.
                     case EffectType.UpgradeUnitStat:
                     case EffectType.UnlockSkill:
-                        activeEffects.Add(effect);
+                        GetActiveEffectsFor(player).Add(effect);
                         ApplyEffectToExistingUnits(effect, player);
                         break;
 
                     // UnlockUnit: register the unit name AND apply to existing units.
                     case EffectType.UnlockUnit:
-                        activeEffects.Add(effect);
+                        GetActiveEffectsFor(player).Add(effect);
                         ApplyEffectToExistingUnits(effect, player);
                         if (effect.targetUnits != null)
                         {
+                            var unitNames = GetOrCreateSet(_playerUnlockedUnitNames, player);
                             foreach (var unit in effect.targetUnits)
                             {
-                                if (unit != null) unlockedUnitNames.Add(unit.name);
+                                if (unit != null) unitNames.Add(unit.name);
                             }
                         }
                         break;
@@ -190,25 +260,28 @@ public class TechManager : MonoBehaviour
         // Accumulate passive RP bonus from this node
         if (tech.rpBonusPerTurn > 0)
         {
-            _totalRPBonusPerTurn += tech.rpBonusPerTurn;
-            Debug.Log($"[TechManager] {player.playerName} passive RP bonus is now +{_totalRPBonusPerTurn}/turn");
+            if (!_playerRPBonusPerTurn.ContainsKey(player)) _playerRPBonusPerTurn[player] = 0;
+            _playerRPBonusPerTurn[player] += tech.rpBonusPerTurn;
+            Debug.Log($"[TechManager] {player.playerName} passive RP bonus is now +{_playerRPBonusPerTurn[player]}/turn");
         }
 
         // Unlock Sabotage tab if this node is flagged for it
-        if (tech.unlocksSabotageTab && !_sabotageTabUnlocked)
+        if (tech.unlocksSabotageTab && !IsSabotageTabUnlockedFor(player))
         {
-            _sabotageTabUnlocked = true;
-            Debug.Log($"[TechManager] Sabotage tab unlocked by '{tech.techName}'!");
+            _playerSabotageTabUnlocked[player] = true;
+            Debug.Log($"[TechManager] Sabotage tab unlocked by '{tech.techName}' for {player.playerName}!");
 
-            // Notify TechTreeWindowManager to refresh button states immediately
-            if (TechTreeWindowManager.Instance != null)
+            // Only refresh the UI button if this is the human player's unlock
+            if (!player.isAI && TechTreeWindowManager.Instance != null)
                 TechTreeWindowManager.Instance.RefreshSabotageButton();
         }
 
-        // Refresh Build UI
-        if (BuildUIManager.Instance != null && BuildUIManager.Instance.buildPanel.activeSelf)
+        // Refresh Build UI — reopen the current building panel so costs/availability update immediately
+        if (BuildingUIManager.Instance != null && BuildingUIManager.Instance.panel.activeSelf)
         {
-             BuildUIManager.Instance.UpdateBuildButtons();
+            SignalNode current = BuildingUIManager.Instance.GetCurrentBusiness();
+            if (current != null)
+                BuildingUIManager.Instance.Open(current);
         }
         
         Debug.Log($"Successfully researched {tech.techName}. " +
@@ -270,14 +343,26 @@ public class TechManager : MonoBehaviour
     //  FEATURE / INFRA LOGIC 
     public void UnlockFeature(string featureName)
     {
-        if (!unlockedFeatures.Contains(featureName))
+        PlayerData player = TurnManager.Instance?.currentPlayer;
+        if (player == null) return;
+        var set = GetOrCreateSet(_playerUnlockedFeatures, player);
+        if (!set.Contains(featureName))
         {
-            unlockedFeatures.Add(featureName);
-            Debug.Log($"Feature Unlocked: {featureName}");
+            set.Add(featureName);
+            Debug.Log($"Feature Unlocked: {featureName} for {player.playerName}");
         }
     }
 
-    public bool IsFeatureUnlocked(string featureName) => unlockedFeatures.Contains(featureName);
+    public bool IsFeatureUnlocked(string featureName)
+    {
+        PlayerData player = TurnManager.Instance?.currentPlayer;
+        return player != null && GetOrCreateSet(_playerUnlockedFeatures, player).Contains(featureName);
+    }
+
+    public bool IsFeatureUnlockedFor(PlayerData player, string featureName)
+    {
+        return player != null && GetOrCreateSet(_playerUnlockedFeatures, player).Contains(featureName);
+    }
 
     public void ApplyInfrastructureUpgrade(string statName, float value, bool isMultiplier)
     {
@@ -300,7 +385,7 @@ public class TechManager : MonoBehaviour
     public float GetInfraFlatBonus(string statName) =>
         infraFlatBonuses.ContainsKey(statName) ? infraFlatBonuses[statName] : 0f;
 
-    //  UNIT EFFECT APPLICATION  (unchanged)
+    //  UNIT EFFECT APPLICATION  
     private void ApplyEffectToExistingUnits(TechEffect effect, PlayerData player)
     {
         if (TurnManager.Instance == null) return;
@@ -318,7 +403,8 @@ public class TechManager : MonoBehaviour
 
     public void ApplyEffectsToNewUnit(Unit unit)
     {
-        foreach (var effect in activeEffects)
+        if (unit == null || unit.owner == null) return;
+        foreach (var effect in GetActiveEffectsFor(unit.owner))
         {
             if (IsUnitTarget(unit, effect.targetUnits))
             {

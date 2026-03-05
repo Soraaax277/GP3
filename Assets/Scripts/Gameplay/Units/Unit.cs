@@ -106,7 +106,12 @@ public abstract class Unit : MonoBehaviour
     public void MoveTo(HexTile tile, int range)
     {
         if (isMoving) return;
-        
+        if (!gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning($"[Unit] MoveTo called on inactive GameObject: {name}. Skipping.");
+            return;
+        }
+
         // TWEAK: Remove highlight the moment the move starts
         if (!owner.isAI) SetSelected(false);
         

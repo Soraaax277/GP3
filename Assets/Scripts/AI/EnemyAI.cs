@@ -414,6 +414,7 @@ public class EnemyAI : MonoBehaviour
     // --- BUILDER ---
     private IEnumerator HandleBuilder(BuilderUnit builder)
     {
+        if (builder == null || !builder.gameObject.activeInHierarchy || !builder.CanAct) yield break;
         TowerNode target = GetUnbuiltTowers(builder.owner)
             .OrderBy(t => GridManager.Instance.CubeDistance(builder.currentTile.cubeCoords, t.tile.cubeCoords))
             .FirstOrDefault();
@@ -446,6 +447,7 @@ public class EnemyAI : MonoBehaviour
     // --- FOREMEN (similar to builder but with their own ConstructAdjacentTower) ---
     private IEnumerator HandleForemen(Foremen foreman)
     {
+        if (foreman == null || !foreman.gameObject.activeInHierarchy || !foreman.CanAct) yield break;
         TowerNode target = GetUnbuiltTowers(foreman.owner)
             .OrderBy(t => GridManager.Instance.CubeDistance(foreman.currentTile.cubeCoords, t.tile.cubeCoords))
             .FirstOrDefault();
@@ -476,6 +478,7 @@ public class EnemyAI : MonoBehaviour
     // --- ROBOWORKER (same construct pattern) ---
     private IEnumerator HandleRoboWorker(RoboWorker robo)
     {
+        if (robo == null || !robo.gameObject.activeInHierarchy || !robo.CanAct) yield break;
         TowerNode target = GetUnbuiltTowers(robo.owner)
             .OrderBy(t => GridManager.Instance.CubeDistance(robo.currentTile.cubeCoords, t.tile.cubeCoords))
             .FirstOrDefault();
@@ -506,6 +509,7 @@ public class EnemyAI : MonoBehaviour
     // --- WIRE SPECIALIST ---
     private IEnumerator HandleWireSpecialist(WireSpecialist specialist)
     {
+        if (specialist == null || !specialist.gameObject.activeInHierarchy || !specialist.CanAct) yield break;
         TowerNode powerTarget = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner == specialist.owner && (!t.IsBuilt() || !t.IsPowered))
             .OrderBy(t => GridManager.Instance.CubeDistance(specialist.currentTile.cubeCoords, t.tile.cubeCoords))
@@ -585,11 +589,12 @@ public class EnemyAI : MonoBehaviour
             {
                 if (moveTarget != specialist.currentTile)
                 {
+                    if (specialist == null || !specialist.gameObject.activeInHierarchy) yield break;
                     specialist.MoveTo(moveTarget, specialist.moveRange);
                     yield return new WaitForSeconds(0.5f);
                 }
                 
-                if (specialist.CanAct)
+                if (specialist != null && specialist.gameObject.activeInHierarchy && specialist.CanAct)
                 {
                     specialist.BuildWire(bestWireTile);
                     Debug.Log($"[EnemyAI] Specialist built wire at {bestWireTile.name} seeking {target.name}");
@@ -601,6 +606,7 @@ public class EnemyAI : MonoBehaviour
     // --- TECHNICIAN ---
     private IEnumerator HandleTechnician(Technician technician)
     {
+        if (technician == null || !technician.gameObject.activeInHierarchy || !technician.CanAct) yield break;
         // Priority 1: Power adjacent wires
         technician.PowerAdjacentStructure();
         if (technician == null) yield break;
@@ -639,6 +645,7 @@ public class EnemyAI : MonoBehaviour
     // --- SALES MARKETER ---
     private IEnumerator HandleSalesMarketer(SalesMarketer marketer)
     {
+        if (marketer == null || !marketer.gameObject.activeInHierarchy || !marketer.CanAct) yield break;
         HexTile target = GridManager.Instance.tiles.Values
             .Where(t => t.influenceByPlayer.Any(kvp => kvp.Key != marketer.owner && kvp.Value > 0))
             .OrderBy(t => GridManager.Instance.CubeDistance(marketer.currentTile.cubeCoords, t.cubeCoords))
@@ -663,7 +670,7 @@ public class EnemyAI : MonoBehaviour
     // --- SCOUT ---
     private IEnumerator HandleScout(ScoutUnit scout)
     {
-        // Move toward furthest un-explored area from HQ
+        if (scout == null || !scout.gameObject.activeInHierarchy || !scout.CanAct) yield break;
         HexTile farthestTile = GridManager.Instance.tiles.Values
             .Where(t => !t.IsOccupied() && t.type == HexTile.TileType.Land)
             .OrderByDescending(t =>
@@ -684,6 +691,7 @@ public class EnemyAI : MonoBehaviour
             HexTile moveTarget = GetCloserTile(scout.currentTile, farthestTile, scout.moveRange);
             if (moveTarget != null && moveTarget != scout.currentTile)
             {
+                if (scout == null || !scout.gameObject.activeInHierarchy) yield break;
                 scout.MoveTo(moveTarget, scout.moveRange);
                 yield return new WaitForSeconds(0.5f);
             }
@@ -693,6 +701,7 @@ public class EnemyAI : MonoBehaviour
     // --- IT PERSONNEL ---
     private IEnumerator HandleITPersonnel(ITPersonnel it)
     {
+        if (it == null || !it.gameObject.activeInHierarchy || !it.CanAct) yield break;
         TowerNode target = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner == it.owner && t.IsDestroyed())
             .OrderBy(t => GridManager.Instance.CubeDistance(it.currentTile.cubeCoords, t.tile.cubeCoords))
@@ -725,6 +734,7 @@ public class EnemyAI : MonoBehaviour
     // --- MAINTENANCE CREW ---
     private IEnumerator HandleMaintenanceCrew(MaintenanceCrew crew)
     {
+        if (crew == null || !crew.gameObject.activeInHierarchy || !crew.CanAct) yield break;
         TowerNode target = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner == crew.owner && t.IsDestroyed())
             .OrderBy(t => GridManager.Instance.CubeDistance(crew.currentTile.cubeCoords, t.tile.cubeCoords))
@@ -757,6 +767,7 @@ public class EnemyAI : MonoBehaviour
     // --- ROBO MARSHALL ---
     private IEnumerator HandleRoboMarshall(RoboMarshall marshall)
     {
+        if (marshall == null || !marshall.gameObject.activeInHierarchy || !marshall.CanAct) yield break;
         TowerNode target = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner == marshall.owner && t.IsDestroyed())
             .OrderBy(t => GridManager.Instance.CubeDistance(marshall.currentTile.cubeCoords, t.tile.cubeCoords))
@@ -789,6 +800,7 @@ public class EnemyAI : MonoBehaviour
     // --- SABOTEUR ---
     private IEnumerator HandleSaboteur(Saboteurs saboteur)
     {
+        if (saboteur == null || !saboteur.gameObject.activeInHierarchy || !saboteur.CanAct) yield break;
         // Find nearest enemy tower to sabotage
         TowerNode enemyTower = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner != saboteur.owner && !t.IsDestroyed())
@@ -821,6 +833,7 @@ public class EnemyAI : MonoBehaviour
     // --- BUSINESSMAN ---
     private IEnumerator HandleBusinessman(Businessman biz)
     {
+        if (biz == null || !biz.gameObject.activeInHierarchy || !biz.CanAct) yield break;
         // Find nearest enemy tower to recruit
         TowerNode enemyTower = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Where(t => t.owner != biz.owner && !t.IsDestroyed())

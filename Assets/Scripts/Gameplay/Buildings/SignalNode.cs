@@ -287,6 +287,14 @@ public class SignalNode : MonoBehaviour
         }
     }
 
+    private void OnMouseDown()
+    {
+        if (owner == null) return;
+        if (TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
+        if (owner.isAI) return;
+        BuildingUIManager.Instance?.Open(this);
+    }
+
     private void OnMouseEnter()
     {
         ShowRange(true);

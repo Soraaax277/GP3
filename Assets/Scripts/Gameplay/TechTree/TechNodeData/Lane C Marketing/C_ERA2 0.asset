@@ -23,7 +23,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 492684dbbe2da2145b88201b69010d11, type: 2}
   unlockEffects:
   - type: 1
-    targetUnits: []
+    targetUnits:
+    - {fileID: 4853573965242364229, guid: cf11ed92eb23fd04fb599ce308f012e3, type: 3}
     statToUpgrade: 
     amount: 0
     skillName: 

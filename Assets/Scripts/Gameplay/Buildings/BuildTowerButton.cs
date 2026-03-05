@@ -10,8 +10,8 @@ public class BuildTowerButton : MonoBehaviour
     }
 
     public void OnClickBuildTower()
-{
-    SignalNode business = BuildUIManager.Instance.GetCurrentBusiness();
-    placementManager.StartTowerPlacement(business);
-}
+    {
+        SignalNode business = BuildingUIManager.Instance.GetCurrentBusiness();
+        placementManager.StartTowerPlacement(business);
+    }
 }

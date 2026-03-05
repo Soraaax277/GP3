@@ -1,156 +1,130 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class UnitActionPanel : MonoBehaviour
 {
     public static UnitActionPanel Instance;
-    
+
     [Header("UI References")]
     public GameObject panel;
-    public Button constructButton;
-    public Button buildWireButton;
-    public Button repairButton;
-    public Button powerButton;
-    public Button denyButton;
-    
-    [Header("Cost UI References")]
-    public TextMeshProUGUI constructCostText;
-    public TextMeshProUGUI buildWireCostText;
-    public TextMeshProUGUI repairCostText;
-    
-    public Camera mainCamera; 
+
+    [Tooltip("Prefab: Button root + 'ActionLabel' TMP + 'CostLabel' TMP children.")]
+    public GameObject actionButtonPrefab;
+
+    [Tooltip("The Content transform that owns the Vertical/Horizontal Layout Group.")]
+    public Transform buttonContainer;
+
+    [Tooltip("TMP Text at the top of the container that shows the unit type header.")]
+    public TextMeshProUGUI headerText;
+
+    public Camera mainCamera;
 
     [Header("World Space Settings")]
-    public Vector3 menuOffset = new Vector3(3.75f, 0.25f, -3.5f); 
-    private Transform followTarget; 
+    public Vector3 menuOffset = new Vector3(3.75f, 0.25f, -3.5f);
 
+    [Header("Button Text Colors")]
+    [Tooltip("Label color when the player can afford the action.")]
+    public Color colorCanAfford = Color.white;
+
+    [Tooltip("Label color when the player cannot afford the action.")]
+    public Color colorCannotAfford = Color.red;
+
+    [Tooltip("Label color when the button is not interactable (action already used etc).")]
+    public Color colorNotInteractable = Color.grey;
+
+    // ── Private state ─────────────────────────────────────────────────────────
+    private Transform followTarget;
     private Unit currentUnit;
+    private readonly List<GameObject> spawnedButtons = new List<GameObject>();
+
+    // ── Internal data ─────────────────────────────────────────────────────────
+    private struct ActionConfig
+    {
+        public string label;
+        public int cost;           // 0 = free; cost text hidden when 0
+        public bool interactable;
+        public System.Action onClick;
+    }
+
+    // ── Unit type display names ───────────────────────────────────────────────
+    private static readonly Dictionary<System.Type, string> UnitDisplayNames = new Dictionary<System.Type, string>
+    {
+        { typeof(BuilderUnit),     "BUILDER"           },
+        { typeof(WireSpecialist),  "WIRE SPECIALIST"   },
+        { typeof(Technician),      "TECHNICIAN"        },
+        { typeof(Foremen),         "FOREMAN"           },
+        { typeof(RoboWorker),      "ROBO WORKER"       },
+        { typeof(ITPersonnel),     "IT PERSONNEL"      },
+        { typeof(MaintenanceCrew), "MAINTENANCE CREW"  },
+        { typeof(RoboMarshall),    "ROBO MARSHALL"     },
+        { typeof(Saboteurs),       "SABOTEUR"          },
+        { typeof(SalesMarketer),   "SALES MARKETER"    },
+        { typeof(Businessman),     "BUSINESSMAN"       },
+        { typeof(ScoutUnit),       "SCOUT"             },
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Lifecycle
+    // ─────────────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
         Instance = this;
         if (panel != null) panel.SetActive(false);
         if (mainCamera == null) mainCamera = Camera.main;
-        
-        // Hide buttons initially
-        if (constructButton) constructButton.gameObject.SetActive(false);
-        if (buildWireButton) buildWireButton.gameObject.SetActive(false);
-        if (repairButton) repairButton.gameObject.SetActive(false);
-        if (powerButton) powerButton.gameObject.SetActive(false);
-        if (denyButton) denyButton.gameObject.SetActive(false);
     }
 
     private void Update()
     {
-        if (panel.activeSelf && followTarget != null)
+        if (!panel.activeSelf || followTarget == null) return;
+
+        if (mainCamera != null)
         {
-            if (mainCamera != null)
-            {
-                Vector3 cameraRelativeOffset = mainCamera.transform.rotation * menuOffset;
-                panel.transform.position = followTarget.position + cameraRelativeOffset;
-                panel.transform.rotation = mainCamera.transform.rotation;
-            }
-            else
-            {
-                panel.transform.position = followTarget.position + menuOffset;
-            }
+            Vector3 offset = mainCamera.transform.rotation * menuOffset;
+            panel.transform.position = followTarget.position + offset;
+            panel.transform.rotation = mainCamera.transform.rotation;
+        }
+        else
+        {
+            panel.transform.position = followTarget.position + menuOffset;
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Open / Close
+    // ─────────────────────────────────────────────────────────────────────────
 
     public void Open(Unit unit)
     {
         if (unit == null) return;
 
         currentUnit = unit;
-        followTarget = unit.transform; 
-        
+        followTarget = unit.transform;
+
+        ClearButtons();
+
+        List<ActionConfig> actions = BuildActionsFor(unit);
+        if (actions.Count == 0) return;
+
+        // Set header text
+        if (headerText != null)
+        {
+            string displayName = UnitDisplayNames.ContainsKey(unit.GetType())
+                ? UnitDisplayNames[unit.GetType()]
+                : unit.GetType().Name.ToUpper();
+
+            headerText.text = $"SELECT AN ACTION:";
+        }
+
+        foreach (ActionConfig action in actions)
+            SpawnButton(action);
+
         panel.SetActive(true);
 
-        // RESET ALL BUTTONS FIRST to ensure no leaks from previous unit types
-        if (constructButton) constructButton.gameObject.SetActive(false);
-        if (buildWireButton) buildWireButton.gameObject.SetActive(false);
-        if (repairButton) repairButton.gameObject.SetActive(false);
-        if (powerButton) powerButton.gameObject.SetActive(false);
-        if (denyButton) denyButton.gameObject.SetActive(false);
-
-        // LOCK CAMERA
         if (CameraController.Instance != null)
-        {
             CameraController.Instance.SetBuildModeLock(true, followTarget.position);
-        }
-
-        // Setup Buttons
-        if (constructButton != null) 
-        {
-            bool isBuilder = unit is BuilderUnit;
-            if (isBuilder) 
-            {
-                constructButton.gameObject.SetActive(true);
-                int cost = ((BuilderUnit)unit).GetBuildingCost();
-                if (constructCostText != null) constructCostText.text = $"{cost}G";
-                
-                bool canAfford = unit.owner.resources >= cost;
-                constructButton.interactable = unit.CanAct && canAfford;
-                if (constructCostText != null) constructCostText.color = canAfford ? Color.white : Color.red;
-            }
-        }
-        
-        if (buildWireButton != null) 
-        {
-            bool isWireSpecialist = unit is WireSpecialist;
-            if (isWireSpecialist) 
-            {
-                buildWireButton.gameObject.SetActive(true);
-                int cost = WirePlacementManager.Instance != null ? WirePlacementManager.Instance.GetCurrentWireCost() : 0;
-                if (buildWireCostText != null) buildWireCostText.text = $"{cost}G";
-
-                bool canAfford = unit.owner.resources >= cost;
-                buildWireButton.interactable = unit.CanAct && canAfford;
-                if (buildWireCostText != null) buildWireCostText.color = canAfford ? Color.white : Color.red;
-            }
-        }
-        
-        if (repairButton != null)
-        {
-            bool isTechnician = unit is Technician;
-            bool isBuilder = unit is BuilderUnit;
-            bool canRepair = isTechnician || (isBuilder && ((BuilderUnit)unit).canRepairInfrastructure);
-            
-            if (canRepair) 
-            {
-                repairButton.gameObject.SetActive(true);
-                int cost = 0;
-                if (isTechnician) cost = ((Technician)unit).GetRepairCost();
-                else if (isBuilder) cost = ((BuilderUnit)unit).GetRepairCost();
-
-                if (repairCostText != null) repairCostText.text = $"{cost}G";
-
-                bool canAfford = unit.owner.resources >= cost;
-                repairButton.interactable = unit.CanAct && canAfford;
-                if (repairCostText != null) repairCostText.color = canAfford ? Color.white : Color.red;
-            }
-        }
-
-        if (powerButton != null)
-        {
-            bool isTechnician = unit.GetType() == typeof(Technician); // Strict check
-            if (isTechnician)
-            {
-                powerButton.gameObject.SetActive(true);
-                powerButton.interactable = unit.CanAct;
-            }
-        }
-
-        if (denyButton != null)
-        {
-            bool isMarketer = unit is SalesMarketer;
-            if (isMarketer)
-            {
-                denyButton.gameObject.SetActive(true);
-                denyButton.interactable = unit.CanAct;
-            }
-        }
     }
 
     public void Close()
@@ -159,72 +133,171 @@ public class UnitActionPanel : MonoBehaviour
         {
             currentUnit.SetSelected(false);
             if (PlayerInput.Instance != null && PlayerInput.Instance.selectedUnit == currentUnit)
-            {
                 PlayerInput.Instance.DeselectUnit();
-            }
         }
 
         UIAnimator animator = panel.GetComponent<UIAnimator>();
-
         if (animator != null)
         {
-            animator.AnimateExit(() => 
+            animator.AnimateExit(() =>
             {
                 panel.SetActive(false);
+                ClearButtons();
                 currentUnit = null;
                 followTarget = null;
             });
         }
         else
         {
+            ClearButtons();
             panel.SetActive(false);
             currentUnit = null;
             followTarget = null;
         }
     }
 
-    public void OnClickConstruct()
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Action builder  –  one branch per unit type
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private List<ActionConfig> BuildActionsFor(Unit unit)
     {
-        if (currentUnit is BuilderUnit builder)
+        var actions = new List<ActionConfig>();
+        bool canAct = unit.CanAct;
+        int  gold   = unit.owner.resources;
+
+        if (unit is BuilderUnit builder)
         {
-            builder.ConstructAdjacentTower();
-            Close();
+            if (builder.canConstructTower)
+            {
+                int cost = builder.GetBuildingCost();
+                actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.ConstructAdjacentTower(); Close(); } });
+            }
+            if (builder.canRepairInfrastructure)
+            {
+                int cost = builder.GetRepairCost();
+                actions.Add(new ActionConfig { label = "Repair", cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.RepairAdjacentStructure(); Close(); } });
+            }
+            if (builder.canSabotage)
+                actions.Add(new ActionConfig { label = "Sabotage", cost = 0, interactable = canAct, onClick = () => { builder.DamageAdjacentStructure(); Close(); } });
+        }
+        else if (unit is WireSpecialist specialist)
+        {
+            int wireCost = WirePlacementManager.Instance != null ? WirePlacementManager.Instance.GetCurrentWireCost() : 0;
+            actions.Add(new ActionConfig { label = "Lay Wire", cost = wireCost, interactable = canAct && gold >= wireCost, onClick = () => { WirePlacementManager.Instance.StartWirePlacement(specialist); Close(); } });
+            if (specialist.canRepairTowers)
+            {
+                int cost = specialist.GetRepairCost();
+                actions.Add(new ActionConfig { label = "Repair Tower", cost = cost, interactable = canAct && gold >= cost, onClick = () => { specialist.RepairAdjacentTower(); Close(); } });
+            }
+            if (specialist.canSabotage)
+                actions.Add(new ActionConfig { label = "Sabotage", cost = 0, interactable = canAct, onClick = () => { specialist.DamageAdjacentStructure(); Close(); } });
+        }
+        else if (unit is Technician technician)
+        {
+            int repairCost = technician.GetRepairCost();
+            actions.Add(new ActionConfig { label = "Repair", cost = repairCost, interactable = canAct && gold >= repairCost, onClick = () => { technician.RepairAdjacentStructure(); Close(); } });
+            actions.Add(new ActionConfig { label = "Power", cost = 0, interactable = canAct, onClick = () => { technician.PowerAdjacentStructure(); Close(); } });
+        }
+        else if (unit is Foremen foremen)
+        {
+            int cost = foremen.GetBuildingCost();
+            actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { foremen.ConstructAdjacentTower(); Close(); } });
+        }
+        else if (unit is RoboWorker roboWorker)
+        {
+            int cost = roboWorker.GetBuildingCost();
+            actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { roboWorker.ConstructAdjacentTower(); Close(); } });
+        }
+        else if (unit is ITPersonnel itPersonnel)
+        {
+            int cost = itPersonnel.GetRepairCost();
+            actions.Add(new ActionConfig { label = "Repair", cost = cost, interactable = canAct && gold >= cost, onClick = () => { itPersonnel.RepairAdjacentStructure(); Close(); } });
+        }
+        else if (unit is MaintenanceCrew maintenanceCrew)
+        {
+            if (maintenanceCrew.canRepairTowers)
+            {
+                int cost = maintenanceCrew.GetRepairCost();
+                actions.Add(new ActionConfig { label = "Maintain", cost = cost, interactable = canAct && gold >= cost, onClick = () => { maintenanceCrew.PerformMaintenance(); Close(); } });
+            }
+        }
+        else if (unit is RoboMarshall roboMarshall)
+        {
+            int cost = roboMarshall.GetRepairCost();
+            actions.Add(new ActionConfig { label = "Repair", cost = cost, interactable = canAct && gold >= cost, onClick = () => { roboMarshall.RepairAdjacentStructure(); Close(); } });
+        }
+        else if (unit is Saboteurs saboteur)
+        {
+            actions.Add(new ActionConfig { label = "Sabotage", cost = 0, interactable = canAct, onClick = () => { saboteur.DamageAdjacentStructure(); Close(); } });
+        }
+        else if (unit is SalesMarketer marketer)
+        {
+            actions.Add(new ActionConfig { label = "Deny", cost = 0, interactable = canAct, onClick = () => { marketer.PerformDeny(); Close(); } });
+            if (marketer.canRecruit)
+                actions.Add(new ActionConfig { label = "Recruit", cost = 0, interactable = canAct, onClick = () => { marketer.RecruitNearestWorker(); Close(); } });
+        }
+        else if (unit is Businessman businessman)
+        {
+            actions.Add(new ActionConfig { label = "Convert", cost = 0, interactable = canAct, onClick = () => { businessman.RecruitNearestWorker(); Close(); } });
+        }
+
+        return actions;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Button helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void SpawnButton(ActionConfig config)
+    {
+        if (actionButtonPrefab == null || buttonContainer == null)
+        {
+            Debug.LogError("[UnitActionPanel] actionButtonPrefab or buttonContainer is not assigned!");
+            return;
+        }
+
+        GameObject go = Instantiate(actionButtonPrefab, buttonContainer);
+        spawnedButtons.Add(go);
+
+        TextMeshProUGUI[] texts = go.GetComponentsInChildren<TextMeshProUGUI>(true);
+
+        if (texts.Length >= 1)
+        {
+            texts[0].text  = config.label;
+            texts[0].color = config.interactable ? colorCanAfford : colorNotInteractable;
+        }
+
+        if (texts.Length >= 2)
+        {
+            if (config.cost > 0)
+            {
+                bool canAfford     = currentUnit != null && currentUnit.owner.resources >= config.cost;
+                texts[1].text      = $"{config.cost}G";
+                texts[1].color     = canAfford ? colorCanAfford : colorCannotAfford;
+                texts[1].gameObject.SetActive(true);
+            }
+            else
+            {
+                texts[1].gameObject.SetActive(false);
+            }
+        }
+
+        Button btn = go.GetComponent<Button>();
+        if (btn != null)
+        {
+            btn.interactable = config.interactable;
+            System.Action cachedAction = config.onClick;
+            btn.onClick.AddListener(() => cachedAction?.Invoke());
         }
     }
 
-    public void OnClickBuildWire()
+    private void ClearButtons()
     {
-        if (currentUnit is WireSpecialist specialist)
+        foreach (GameObject go in spawnedButtons)
         {
-            WirePlacementManager.Instance.StartWirePlacement(specialist);
-            Close();
+            if (go != null) Destroy(go);
         }
-    }
-
-    public void OnClickRepair()
-    {
-        if (currentUnit is Technician technician)
-        {
-            technician.RepairAdjacentStructure();
-            Close();
-        }
-    }
-
-    public void OnClickPower()
-    {
-        if (currentUnit is Technician technician)
-        {
-            technician.PowerAdjacentStructure();
-            Close();
-        }
-    }
-
-    public void OnClickDeny()
-    {
-        if (currentUnit is SalesMarketer marketer)
-        {
-            marketer.PerformDeny();
-            Close();
-        }
+        spawnedButtons.Clear();
     }
 }

@@ -4,8 +4,8 @@ public class WireSpecialist : Unit
 {
     public int wiresRemaining = 8;
     public bool canRepairTowers = false; // Unlocked by Versatile Repairmen tech
-    public bool canSabotage = false; //Unlocked by Brainwashed Workforce tech
-    public bool canUseBombs = false; //Unlocked by Neutron Bombs tech
+    public bool canSabotage = false;     // Unlocked by Brainwashed Workforce tech
+    public bool canUseBombs = false;     // Unlocked by Neutron Bombs tech
     public float repairEfficiency = 1.0f;
     public float baseDamage = 10f;
     public float damageMultiplier = 1.0f;
@@ -22,8 +22,8 @@ public class WireSpecialist : Unit
         // 1. ERA SPECIFIC UPGRADES (Futuristic)
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
-            damageMultiplier = 2.0f; // Advanced wire-cutters
-            wiresRemaining = Mathf.Max(wiresRemaining, 12); // Bonus wires for futuristic era if low
+            damageMultiplier = 2.0f;
+            wiresRemaining = Mathf.Max(wiresRemaining, 12);
         }
 
         // 2. TECH TREE FEATURES
@@ -56,14 +56,10 @@ public class WireSpecialist : Unit
         }
         else if (statName == "WireLength")
         {
-            // Wire Length is handled globally by TechManager via GetInfraFlatBonus("WireLength")
-            // This is already implemented in WireNode.GetMaxWireLength() and WirePlacementManager.MaxWireLength
             Debug.Log($"WireSpecialist: Wire Length upgraded by +{(int)amount}");
         }
         else if (statName == "WireDurability")
         {
-            // Wire Durability is handled globally by TechManager via GetInfraMultiplier("WireDurability")
-            // This is already implemented in WireNode.MaxDurability
             Debug.Log($"WireSpecialist: Wire Durability upgraded by {amount * 100}%");
         }
         else if (statName == "RepairEfficiency")
@@ -107,16 +103,14 @@ public class WireSpecialist : Unit
     public void UnlockSabotage()
     {
         canSabotage = true;
-        Debug.Log("Builder learned to sabotage");
+        Debug.Log("WireSpecialist learned to sabotage");
     }
 
     public void BuildWire(HexTile tile, float yRotation = 0f)
     {
         if (!canAct && !testingMode) return;
-
         if (tile == null || tile.IsOccupied() || tile.HasWire()) return;
 
-        // Clear decorative buildings if they exist
         if (tile.hasStructure)
             tile.ClearEnvironmentalStructures();
 
@@ -145,13 +139,9 @@ public class WireSpecialist : Unit
 
         GameObject wireObj;
         if (WirePlacementManager.Instance != null && WirePlacementManager.Instance.wirePrefab != null)
-        {
             wireObj = Instantiate(WirePlacementManager.Instance.wirePrefab);
-        }
         else
-        {
             wireObj = new GameObject("Wire_" + tile.name);
-        }
 
         wireObj.transform.position = tile.transform.position + Vector3.up * 0.84f;
         wireObj.transform.rotation = Quaternion.Euler(0, yRotation, 90);
@@ -162,11 +152,8 @@ public class WireSpecialist : Unit
         wireNode.Initialize(tile, owner);
         
         if (TurnManager.Instance != null)
-        {
             TurnManager.Instance.RegisterWire(wireNode);
-        }
 
-        // JUICE (Phase 2)
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayWirePlacement(tile.transform.position);
 
@@ -174,9 +161,7 @@ public class WireSpecialist : Unit
         ConsumeAction();
 
         if (wiresRemaining <= 0)
-        {
             Die();
-        }
     }
 
     public void DamageAdjacentStructure()
@@ -184,18 +169,18 @@ public class WireSpecialist : Unit
         if (!canSabotage && !testingMode)
         {
             Debug.Log("Sabotage Ability not unlocked");
+            return;
         }
 
         if (!canAct && !testingMode)
         {
-            Debug.Log("[Saboteur] Cannot act (turn/action used)");
+            Debug.Log("[WireSpecialist] Cannot act (turn/action used)");
             return;
         }
 
         WireNode targetWire = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            //checks if target is owned by enemyAI
             if (neighbor.placedWire != null && neighbor.placedWire.owner != TurnManager.Instance.currentPlayer)
             {
                 targetWire = neighbor.placedWire;
@@ -203,20 +188,17 @@ public class WireSpecialist : Unit
             }
         }
 
-        if (targetWire== null)
+        if (targetWire == null)
         {
-            Debug.Log("No structure adjacent!");
+            Debug.Log("No enemy wire adjacent!");
             return;
         }
 
-        float sabotageDamage = 0;
-        if (canUseBombs) //if Neutron Bombs tech is active, roll destroy chance
+        float sabotageDamage;
+        if (canUseBombs)
         {
             int procInt = Random.Range(0, 5);
-            if (procInt >= 4) //procInt has a 20% chance of being 4
-            {
-                sabotageDamage = targetWire.currentDurability;
-            }
+            sabotageDamage = procInt >= 4 ? targetWire.currentDurability : baseDamage * damageMultiplier;
         }
         else
         {
@@ -225,9 +207,9 @@ public class WireSpecialist : Unit
 
         targetWire.TakeDamage(sabotageDamage);
 
-        wiresRemaining = Mathf.Max(0, wiresRemaining - 1); // Uses build charges
+        wiresRemaining = Mathf.Max(0, wiresRemaining - 1);
         ConsumeAction();
-        Debug.Log($"[Builder] Sabotage complete, dealing {sabotageDamage}. Actions left: {wiresRemaining}");
+        Debug.Log($"[WireSpecialist] Sabotage complete, dealing {sabotageDamage}. Wires left: {wiresRemaining}");
 
         if (wiresRemaining <= 0)
         {
@@ -239,7 +221,7 @@ public class WireSpecialist : Unit
         {
             SetSelected(false);
             if (PlayerInput.Instance != null) PlayerInput.Instance.ClearHighlights();
-            if (BuildUIManager.Instance != null) BuildUIManager.Instance.CloseBuildMenu();
+            if (BuildingUIManager.Instance != null) BuildingUIManager.Instance.Close();
         }
     }
 
@@ -247,7 +229,7 @@ public class WireSpecialist : Unit
     {
         if (!canRepairTowers && !testingMode)
         {
-            Debug.Log("[WireSpecialist] Tower repair capability not unlocked yet - need 'Versatile Repairmen and Electricians' tech!");
+            Debug.Log("[WireSpecialist] Tower repair capability not unlocked yet!");
             return;
         }
 
@@ -273,7 +255,6 @@ public class WireSpecialist : Unit
             return;
         }
 
-        // Deduct repair cost
         int repairCost = GetRepairCost();
         if (owner.resources < repairCost)
         {
@@ -284,25 +265,18 @@ public class WireSpecialist : Unit
         owner.resources -= repairCost;
         targetTower.Repair(repairEfficiency);
 
-        wiresRemaining = Mathf.Max(0, wiresRemaining - 1); // Uses wire charges
+        wiresRemaining = Mathf.Max(0, wiresRemaining - 1);
         ConsumeAction();
-        Debug.Log($"[WireSpecialist] Tower repair complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}). Wires left: {wiresRemaining}");
+        Debug.Log($"[WireSpecialist] Tower repair complete (efficiency: {repairEfficiency * 100}%, cost: {repairCost}). Wires left: {wiresRemaining}");
 
         if (wiresRemaining <= 0)
-        {
             Die();
-            return;
-        }
-
-        if (!owner.isAI)
-        {
-            // Removed: Stop deselecting so units can move after actions
-        }
     }
 
-    private int GetRepairCost()
+    // Changed from private to public so UnitActionPanel can read the cost for display
+    public int GetRepairCost()
     {
-        int baseCost = 45; // Base repair cost for electricians
+        int baseCost = 45;
         if (TechManager.Instance != null)
         {
             float multiplier = TechManager.Instance.GetInfraMultiplier("RepairCost");

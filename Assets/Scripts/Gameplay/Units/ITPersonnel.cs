@@ -92,7 +92,6 @@ public class ITPersonnel : Unit
             return;
         }
 
-        // Deduct repair cost
         int repairCost = GetRepairCost();
         if (owner.resources < repairCost)
         {
@@ -131,7 +130,8 @@ public class ITPersonnel : Unit
         }
     }
 
-    private int GetRepairCost()
+    // Changed from private to public so UnitActionPanel can read the cost for display
+    public int GetRepairCost()
     {
         int baseCost = 40;
         if (TechManager.Instance != null)

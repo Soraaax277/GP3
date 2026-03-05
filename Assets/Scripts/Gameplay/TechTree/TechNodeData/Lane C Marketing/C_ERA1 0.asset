@@ -15,11 +15,19 @@ MonoBehaviour:
   techName: Company Surveillance Division
   description: Unlocks Scouts
   researchCost: 0
-  researchBonus: 1
+  goldCost: 0
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
   preReqs: []
   unlockEffects:
   - type: 1
-    targetUnits: []
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: 2d2ee0b577c67c449837030858617fb2, type: 3}
     statToUpgrade: 
     amount: 0
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

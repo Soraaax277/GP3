@@ -42,7 +42,7 @@ public class BlueprintButton : MonoBehaviour
     public void OnClickPlaceBlueprint()
     {
         Debug.Log("[BlueprintButton] Clicked");
-        SignalNode business = UnitPurchaseUI.Instance.GetBusiness();
+        SignalNode business = BuildingUIManager.Instance.GetCurrentBusiness();
         if (business == null) 
         {
             Debug.LogError("[BlueprintButton] No business context found!");
@@ -52,8 +52,8 @@ public class BlueprintButton : MonoBehaviour
         if (business.CanPlaceTower())
         {
             Debug.Log("[BlueprintButton] Starting placement...");
-            BuildUIManager.Instance.BuildTower();
-            BuildUIManager.Instance.CloseBuildMenu();
+            if (TowerPlacementManager.Instance != null) TowerPlacementManager.Instance.StartTowerPlacement(business);
+            BuildingUIManager.Instance.Close();
         }
         else
         {

@@ -35,7 +35,7 @@ public class TechEffect
     //    "TowerRevenue"         – multiplier  – gold income per active tower
     //    "TowerRange"           – flat + mult – hex broadcast radius
     //    "TowerDurability"      – multiplier  – reduces incoming decay damage
-    //    "MaxTowers"            – flat        – extra towers per HQ
+    //    "TowerCapacity"            – flat        – extra towers per HQ
     //
     //  WIRES
     //    "WireDurability"       – multiplier  – increases wire max HP

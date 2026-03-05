@@ -174,48 +174,92 @@ public class UIAnimator : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void AnimateExit(System.Action onComplete)
     {
         InitializeTheme();
-        if (uiType == UIType.Button || uiType == UIType.TechNodeButton || activeTheme == null) { onComplete?.Invoke(); return; }
+
+        // ── NULL GUARD ────────────────────────────────────────────────────────
+        // rectTrans can be null if the GameObject was destroyed or OnDisable
+        // already ran before DOTween got to start the tween.  Skip the animation
+        // and invoke the callback immediately so Close() still completes cleanly.
+        if (rectTrans == null || !gameObject.activeInHierarchy)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
+        if (uiType == UIType.Button || uiType == UIType.TechNodeButton || activeTheme == null)
+        {
+            onComplete?.Invoke();
+            return;
+        }
 
         if (currentSequence != null) currentSequence.Kill();
         rectTrans.DOKill();
         if (canvasGroup != null) canvasGroup.DOKill();
 
         if (uiType == UIType.Shutter || activeTheme.windowStyle == UITheme.AnimationStyle.Shutter)
+        {
             StartCoroutine(AnimateShutterExitRoutine(onComplete));
+        }
         else if (activeTheme.windowStyle == UITheme.AnimationStyle.Slide)
         {
             Vector2 exitPos = GetOffScreenPosition();
-            rectTrans.DOAnchorPos(exitPos, activeTheme.slideDuration).SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => onComplete?.Invoke());
-            if (canvasGroup != null) canvasGroup.DOFade(0f, activeTheme.slideDuration).SetUpdate(true);
+            rectTrans.DOAnchorPos(exitPos, activeTheme.slideDuration)
+                     .SetEase(Ease.InBack).SetUpdate(true)
+                     .OnComplete(() => onComplete?.Invoke());
+            if (canvasGroup != null)
+                canvasGroup.DOFade(0f, activeTheme.slideDuration).SetUpdate(true);
         }
         else if (activeTheme.windowStyle == UITheme.AnimationStyle.PopUp || uiType == UIType.WorldSpacePopUp)
         {
             if (canvasGroup != null) canvasGroup.blocksRaycasts = false;
-            rectTrans.DOScale(Vector3.zero, activeTheme.popUpExitDuration).SetEase(activeTheme.popUpExitEase).SetUpdate(true).OnComplete(() => onComplete?.Invoke());
-            if (canvasGroup != null) canvasGroup.DOFade(0f, activeTheme.popUpExitDuration).SetUpdate(true);
-            DOTween.To(() => currentZTilt, x => currentZTilt = x, 0f, activeTheme.popUpExitDuration).SetUpdate(true);
+
+            // Guard: originalScale must be non-zero or DOScale will NullRef internally
+            Vector3 exitScale = Vector3.zero;
+            rectTrans.DOScale(exitScale, activeTheme.popUpExitDuration)
+                     .SetEase(activeTheme.popUpExitEase).SetUpdate(true)
+                     .OnComplete(() => onComplete?.Invoke());
+
+            if (canvasGroup != null)
+                canvasGroup.DOFade(0f, activeTheme.popUpExitDuration).SetUpdate(true);
+
+            DOTween.To(() => currentZTilt, x => currentZTilt = x, 0f, activeTheme.popUpExitDuration)
+                   .SetUpdate(true);
         }
         else
         {
-            rectTrans.DOScale(Vector3.zero, activeTheme.entryDuration).SetEase(Ease.InBack).SetUpdate(true).OnComplete(() => onComplete?.Invoke());
-            if (canvasGroup != null) canvasGroup.DOFade(0f, activeTheme.entryDuration).SetUpdate(true);
+            rectTrans.DOScale(Vector3.zero, activeTheme.entryDuration)
+                     .SetEase(Ease.InBack).SetUpdate(true)
+                     .OnComplete(() => onComplete?.Invoke());
+            if (canvasGroup != null)
+                canvasGroup.DOFade(0f, activeTheme.entryDuration).SetUpdate(true);
         }
     }
 
     private void AnimatePopUpEntry()
     {
         if (currentSequence != null) currentSequence.Kill();
+
+        // Guard: if originalScale is zero the overshoot target will also be zero,
+        // causing DOTween's getter lambda to resolve to a zero-magnitude vector.
+        if (originalScale.sqrMagnitude < 0.01f) originalScale = Vector3.one;
+
         rectTrans.localScale = Vector3.zero;
         currentZTilt = 0f;
+
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 0;
             canvasGroup.blocksRaycasts = false;
         }
+
         float halfDuration = activeTheme.popUpDuration * 0.5f;
         currentSequence = DOTween.Sequence().SetUpdate(true);
         currentSequence.Append(rectTrans.DOScale(originalScale * overshootScale, halfDuration).SetEase(Ease.OutQuad));
-        currentSequence.Join(canvasGroup.DOFade(1f, halfDuration));
+
+        // Only join canvasGroup tween if it actually exists
+        if (canvasGroup != null)
+            currentSequence.Join(canvasGroup.DOFade(1f, halfDuration));
+
         currentSequence.Join(DOTween.To(() => currentZTilt, x => currentZTilt = x, tiltAngle, halfDuration).SetEase(Ease.OutQuad));
         currentSequence.Append(rectTrans.DOScale(originalScale, halfDuration).SetEase(Ease.InOutQuad));
         currentSequence.Join(DOTween.To(() => currentZTilt, x => currentZTilt = x, 0f, halfDuration).SetEase(Ease.InOutQuad));

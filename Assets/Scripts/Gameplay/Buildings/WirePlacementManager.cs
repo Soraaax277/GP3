@@ -83,8 +83,8 @@ public class WirePlacementManager : MonoBehaviour
         currentYRotation = 0f;
         lastStartTime = Time.time;
 
-        if (BuildUIManager.Instance != null)
-             BuildUIManager.Instance.ignoreNextClick = true;
+        if (BuildingUIManager.Instance != null)
+             BuildingUIManager.Instance.ignoreNextClick = true;
 
         if (wirePrefab != null)
         {

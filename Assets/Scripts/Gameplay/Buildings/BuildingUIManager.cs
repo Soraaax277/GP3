@@ -1,0 +1,518 @@
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using TMPro;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BuildingUIManager  –  Universal world-space panel for all buildings.
+//
+//  Usage — call from OnMouseDown() in each building script:
+//    BuildingUIManager.Instance.Open(this);
+//
+//  Supported buildings:
+//    • SignalNode       → Root: [Construct Infrastructure] [Deploy Unit]
+//    • BPOCenter        → Status display (powered, worker, income)
+//    • CommercialHub    → Toggle auto-spawn button
+//    • ServiceCenter    → Workforce recruitment (Foremen, Maintenance, IT)
+//
+//  To add a new building type:
+//    1. Add a new branch in Open(MonoBehaviour building).
+//    2. Write a private void Show<BuildingType>() method.
+//    3. Wire OnMouseDown() in the building script to call Open(this).
+// ─────────────────────────────────────────────────────────────────────────────
+
+public class BuildingUIManager : MonoBehaviour
+{
+    public static BuildingUIManager Instance;
+
+    [Header("UI References")]
+    public GameObject panel;
+
+    [Tooltip("Prefab: Button root + 'ActionLabel' TMP + 'CostLabel' TMP children. Same prefab as UnitActionPanel.")]
+    public GameObject actionButtonPrefab;
+
+    [Tooltip("The Content RectTransform inside the panel that owns the Vertical Layout Group + ContentSizeFitter.")]
+    public Transform buttonContainer;
+
+    [Tooltip("TMP header text at the top of the panel.")]
+    public TextMeshProUGUI headerText;
+
+    public Camera mainCamera;
+
+    [Header("World Space Settings")]
+    public Vector3 menuOffset = new Vector3(2f, 3f, 0f);
+
+    [Header("Button Text Colors")]
+    public Color colorCanAfford       = Color.white;
+    public Color colorCannotAfford    = Color.red;
+    public Color colorNotInteractable = Color.grey;
+    public Color colorDisplay         = Color.cyan;
+
+    [Header("Dependencies")]
+    public TowerPlacementManager placementManager;
+
+    // Kept public so TowerPlacementManager / WirePlacementManager can set it
+    public bool ignoreNextClick = false;
+
+    // ── Private state ─────────────────────────────────────────────────────────
+    private MonoBehaviour currentBuilding;
+    private Transform followTarget;
+    private readonly List<GameObject> spawnedButtons = new List<GameObject>();
+
+    private struct ActionConfig
+    {
+        public string label;
+        public int cost;
+        public bool interactable;
+        public bool isDisplay;
+        public System.Action onClick;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Lifecycle
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void Awake()
+    {
+        Instance = this;
+        if (panel != null) panel.SetActive(false);
+        if (mainCamera == null) mainCamera = Camera.main;
+    }
+
+    private void Update()
+    {
+        if (panel.activeSelf && followTarget != null)
+        {
+            if (mainCamera != null)
+            {
+                Vector3 offset = mainCamera.transform.rotation * menuOffset;
+                panel.transform.position = followTarget.position + offset;
+                panel.transform.rotation = mainCamera.transform.rotation;
+            }
+            else
+            {
+                panel.transform.position = followTarget.position + menuOffset;
+            }
+        }
+
+        if (!panel.activeSelf) return;
+        if (placementManager != null && placementManager.IsPlacing) return;
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (ignoreNextClick) { ignoreNextClick = false; return; }
+            if (IsClickOnUIButton()) return;
+
+            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                if (currentBuilding != null && hit.collider.gameObject != GetBuildingGameObject())
+                    Close();
+            }
+            else
+            {
+                Close();
+            }
+        }
+    }
+
+    private bool IsClickOnUIButton()
+    {
+        PointerEventData pd = new PointerEventData(EventSystem.current) { position = Input.mousePosition };
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pd, results);
+        foreach (var r in results)
+            if (r.gameObject.GetComponent<Button>() != null) return true;
+        return false;
+    }
+
+    private GameObject GetBuildingGameObject()
+    {
+        if (currentBuilding is SignalNode sn && sn.businessBuilding != null)
+            return sn.businessBuilding;
+        return currentBuilding != null ? currentBuilding.gameObject : null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Open / Close
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public void Open(MonoBehaviour building)
+    {
+        if (building == null) return;
+
+        PlayerData owner = GetOwner(building);
+        if (owner != null && owner.isAI) return;
+        if (owner != null && TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
+
+        currentBuilding = building;
+        followTarget    = building.transform;
+
+        panel.SetActive(true);
+        ignoreNextClick = true;
+
+        if (CameraController.Instance != null)
+            CameraController.Instance.SetBuildModeLock(true, followTarget.position);
+
+        // ── Hook: show detail panel ───────────────────────────────────────────
+        if (DetailPanel.Instance != null)
+            DetailPanel.Instance.ShowBuilding(building);
+        // ─────────────────────────────────────────────────────────────────────
+
+        if      (building is SignalNode    hq)  { followTarget = hq.businessBuilding != null ? hq.businessBuilding.transform : hq.transform; ShowHQRoot(hq); }
+        else if (building is BPOCenter     bpo)  ShowBPO(bpo);
+        else if (building is CommercialHub hub)  ShowCommercialHub(hub);
+        else if (building is ServiceCenter sc)   ShowServiceCenter(sc);
+        else
+        {
+            ClearButtons();
+            if (headerText != null) headerText.text = building.GetType().Name.ToUpper();
+            SpawnDisplayRow("No actions available.");
+        }
+    }
+
+    public void Close()
+    {
+        if (panel == null || !panel.activeSelf) return;
+
+        if (CameraController.Instance != null)
+            CameraController.Instance.SetBuildModeLock(false, Vector3.zero);
+
+        UIAnimator animator = panel.GetComponent<UIAnimator>();
+        if (animator != null)
+        {
+            animator.AnimateExit(() =>
+            {
+                panel.SetActive(false);
+                ClearButtons();
+                currentBuilding = null;
+                followTarget    = null;
+            });
+        }
+        else
+        {
+            ClearButtons();
+            panel.SetActive(false);
+            currentBuilding = null;
+            followTarget    = null;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  SignalNode (HQ) — Level 1: Root
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowHQRoot(SignalNode hq)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "BUSINESS HQ";
+
+        SpawnButton(new ActionConfig
+        {
+            label        = "Construct Infrastructure",
+            cost         = 0,
+            interactable = true,
+            onClick      = () => ShowHQConstruct(hq)
+        });
+
+        SpawnButton(new ActionConfig
+        {
+            label        = "Deploy Unit",
+            cost         = 0,
+            interactable = true,
+            onClick      = () => ShowHQDeploy(hq)
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  SignalNode (HQ) — Level 2A: Construct Infrastructure
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowHQConstruct(SignalNode hq)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "CONSTRUCT INFRASTRUCTURE";
+
+        SpawnButton(new ActionConfig { label = "← Back", cost = 0, interactable = true, onClick = () => ShowHQRoot(hq) });
+
+        int  gold           = hq.owner.resources;
+        bool towersUnlocked = IsUnlocked("TelecomTowers");
+        int  towerCost      = TowerPlacementManager.Instance != null ? TowerPlacementManager.Instance.GetCurrentTowerCost() : 0;
+
+        SpawnButton(new ActionConfig
+        {
+            label        = "Construct Tower",
+            cost         = towerCost,
+            interactable = towersUnlocked && hq.CanPlaceTower() && gold >= towerCost,
+            onClick      = () => { StartTowerPlacement(hq); Close(); }
+        });
+
+        var spm = StructurePlacementManager.Instance;
+        if (spm == null) return;
+
+        TryAddStructureButton("Build Service Center",  "ServiceCenter",   spm.serviceCenterPrefab);
+        TryAddStructureButton("Build BPO Center",      "BPOCenters",      spm.bpoCenterPrefab);
+        TryAddStructureButton("Build Commercial Hub",  "CommercialHubs",  spm.commercialHubPrefab);
+        TryAddStructureButton("Build Business Center", "BusinessCenters", spm.businessCenterPrefab);
+        TryAddStructureButton("Build Worker Factory",  "WorkerFactories", spm.workerFactoryPrefab);
+        TryAddStructureButton("Build Drone Factory",   "DroneFactories",  spm.droneFactoryPrefab);
+        TryAddStructureButton("Build Signal Booster",  "SignalBooster",   spm.signalBoosterPrefab);
+        TryAddStructureButton("Build Signal Jammer",   "SignalJammers",   spm.signalJammerPrefab);
+        TryAddStructureButton("Build Power Box",       "PowerBoxes",      spm.powerBoxPrefab);
+        TryAddStructureButton("Build Tesseract",       "Tesseract",       spm.tesseractPrefab);
+        TryAddStructureButton("Build Rocketship",      "Rocketship",      spm.rocketshipPrefab);
+    }
+
+    private void TryAddStructureButton(string label, string featureKey, GameObject prefab)
+    {
+        if (prefab == null || !IsUnlocked(featureKey)) return;
+
+        SpawnButton(new ActionConfig
+        {
+            label        = label,
+            cost         = 0,
+            interactable = true,
+            onClick      = () => { StructurePlacementManager.Instance.StartPlacement(prefab, featureKey); Close(); }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  SignalNode (HQ) — Level 2B: Deploy Unit
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowHQDeploy(SignalNode hq)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "DEPLOY UNIT";
+
+        SpawnButton(new ActionConfig { label = "← Back", cost = 0, interactable = true, onClick = () => ShowHQRoot(hq) });
+
+        if (UnitSpawner.Instance == null) return;
+
+        int     gold = hq.owner.resources;
+        var     us   = UnitSpawner.Instance;
+        HexTile tile = hq.tile;
+
+        TryAddUnitButton("Recruit Builder",         us.builderPrefab,        gold, tile, hq.owner, "Builder");
+        TryAddUnitButton("Recruit Wire Specialist", us.wireSpecialistPrefab, gold, tile, hq.owner, "Wire Specialist");
+        TryAddUnitButton("Recruit Scout",           us.scoutPrefab,          gold, tile, hq.owner, "Scout");
+        TryAddUnitButton("Recruit Technician",      us.technicianPrefab,     gold, tile, hq.owner, "Technician");
+        TryAddUnitButton("Recruit Businessman",     us.businessmanPrefab,    gold, tile, hq.owner, "Businessman");
+        TryAddUnitButton("Recruit Sales Marketer",  us.salesMarketerPrefab,  gold, tile, hq.owner, "SalesMarketer");
+        TryAddUnitButton("Recruit Saboteur",        us.saboteurPrefab,       gold, tile, hq.owner, "Saboteur");
+        TryAddUnitButton("Recruit Robo Worker",     us.roboWorkerPrefab,     gold, tile, hq.owner, "RoboWorker");
+        TryAddUnitButton("Recruit Robo Marshall",   us.roboMarshallPrefab,   gold, tile, hq.owner, "RoboMarshall");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  BPO Center — status display
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowBPO(BPOCenter bpo)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "BPO CENTER";
+
+        SpawnDisplayRow($"Powered: {(bpo.IsPowered ? "Yes" : "No")}");
+        SpawnDisplayRow($"Worker: {bpo.GetCurrentWorkerName()}");
+
+        int income = bpo.GetCurrentWorkerIncome();
+        if (income > 0)
+            SpawnDisplayRow($"Income: +{income}G per turn");
+        else
+            SpawnDisplayRow("Move a Businessman or IT Personnel\nonto this tile to earn passive gold.");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Commercial Hub — toggle auto-spawn
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowCommercialHub(CommercialHub hub)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "COMMERCIAL HUB";
+
+        SpawnDisplayRow($"Automation: {(hub.autoSpawnEnabled ? "ON" : "OFF")}");
+
+        SpawnButton(new ActionConfig
+        {
+            label        = hub.autoSpawnEnabled ? "Disable Auto-Spawn" : "Enable Auto-Spawn",
+            cost         = 0,
+            interactable = true,
+            onClick      = () => { hub.ToggleAutoSpawn(); ShowCommercialHub(hub); }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Service Center — workforce recruitment
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowServiceCenter(ServiceCenter sc)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "SERVICE CENTER";
+
+        if (UnitSpawner.Instance == null) return;
+
+        int     gold = sc.owner.resources;
+        var     us   = UnitSpawner.Instance;
+        HexTile tile = sc.ParentTile;
+
+        TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, sc.owner, "MaintenanceCrew");
+        TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, sc.owner, "Foreman");
+        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonel");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Tower placement
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void StartTowerPlacement(SignalNode hq)
+    {
+        if (!IsUnlocked("TelecomTowers"))
+        {
+            Debug.Log("[BuildingUIManager] 'Telecom Towers' not yet researched.");
+            return;
+        }
+
+        if (hq.CanPlaceTower() && placementManager != null)
+        {
+            placementManager.StartTowerPlacement(hq);
+            ignoreNextClick = true;
+        }
+    }
+
+    /// <summary>Returns the SignalNode currently open in the panel, or null.</summary>
+    public SignalNode GetCurrentBusiness() => currentBuilding as SignalNode;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Tech helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private bool IsUnlocked(string featureKey)
+        => TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked(featureKey);
+
+    private bool IsUnitUnlocked(string unitName)
+        => TechManager.Instance != null && TechManager.Instance.unlockedUnitNames.Contains(unitName);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Owner helper
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private PlayerData GetOwner(MonoBehaviour building)
+    {
+        if (building is SignalNode    sn) return sn.owner;
+        if (building is StructureNode st) return st.owner;
+        return null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Button / display row helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void SpawnDisplayRow(string text)
+    {
+        SpawnButton(new ActionConfig
+        {
+            label        = text,
+            cost         = 0,
+            interactable = false,
+            isDisplay    = true,
+            onClick      = null
+        });
+    }
+
+    // Shows a greyed-out placeholder for locked units so layout stays stable
+    private void SpawnLockedPlaceholder()
+    {
+        SpawnButton(new ActionConfig
+        {
+            label        = "???",
+            cost         = 0,
+            interactable = false,
+            isDisplay    = true,
+            onClick      = null
+        });
+    }
+
+    private void TryAddUnitButton(string label, GameObject prefab, int gold,
+                                   HexTile spawnTile, PlayerData owner, string techUnlockName)
+    {
+        if (prefab == null) return;
+
+        // Not yet unlocked — show a locked placeholder instead
+        if (techUnlockName != null && !IsUnitUnlocked(techUnlockName))
+        {
+            SpawnLockedPlaceholder();
+            return;
+        }
+
+        int cost = UnitSpawner.Instance.GetRecruitmentCost(prefab);
+        SpawnButton(new ActionConfig
+        {
+            label        = label,
+            cost         = cost,
+            interactable = gold >= cost,
+            onClick      = () => { UnitSpawner.Instance.SpawnUnit(prefab, spawnTile, owner); Close(); }
+        });
+    }
+
+    private void SpawnButton(ActionConfig config)
+    {
+        if (actionButtonPrefab == null || buttonContainer == null)
+        {
+            Debug.LogError("[BuildingUIManager] actionButtonPrefab or buttonContainer is not assigned!");
+            return;
+        }
+
+        GameObject go = Instantiate(actionButtonPrefab, buttonContainer);
+        spawnedButtons.Add(go);
+
+        TextMeshProUGUI[] texts = go.GetComponentsInChildren<TextMeshProUGUI>(true);
+
+        if (texts.Length >= 1)
+        {
+            texts[0].text  = config.label;
+            texts[0].color = config.isDisplay
+                ? colorDisplay
+                : (config.interactable ? colorCanAfford : colorNotInteractable);
+        }
+
+        if (texts.Length >= 2)
+        {
+            if (config.cost > 0)
+            {
+                PlayerData owner = GetOwner(currentBuilding);
+                bool canAfford   = owner != null && owner.resources >= config.cost;
+                texts[1].text    = $"{config.cost}G";
+                texts[1].color   = canAfford ? colorCanAfford : colorCannotAfford;
+                texts[1].gameObject.SetActive(true);
+            }
+            else
+            {
+                texts[1].gameObject.SetActive(false);
+            }
+        }
+
+        Button btn = go.GetComponent<Button>();
+        if (btn != null)
+        {
+            btn.interactable = config.interactable && !config.isDisplay;
+            if (config.onClick != null)
+            {
+                System.Action cachedAction = config.onClick;
+                btn.onClick.AddListener(() => cachedAction?.Invoke());
+            }
+        }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(buttonContainer as RectTransform);
+    }
+
+    private void ClearButtons()
+    {
+        foreach (GameObject go in spawnedButtons)
+            if (go != null) Destroy(go);
+        spawnedButtons.Clear();
+    }
+}
