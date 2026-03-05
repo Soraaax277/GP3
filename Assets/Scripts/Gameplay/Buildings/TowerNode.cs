@@ -129,10 +129,21 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
                 HologramUtil.MakeSolid(gameObject);
                 SetRangeColor(new Color(0f, 1f, 0f, 0.4f)); 
             }
-            else
+            else if (state == TowerState.Constructed)
+            {
+                // Built but unpowered: Solid grey/white, but not the green pulse
+                HologramUtil.MakeSolid(gameObject);
+                SetRangeColor(new Color(0.5f, 0.5f, 0.5f, 0.25f));
+            }
+            else if (state == TowerState.Destroyed)
+            {
+                // Red/Broken visual handled by DestroyTower() usually, but for safety:
+                SetRangeColor(new Color(1f, 0f, 0f, 0.25f));
+            }
+            else // Hologram
             {
                 HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
-                SetRangeColor(new Color(0f, 0.8f, 0f, 0.15f));
+                SetRangeColor(new Color(0f, 0.5f, 1f, 0.15f));
             }
         }
     }

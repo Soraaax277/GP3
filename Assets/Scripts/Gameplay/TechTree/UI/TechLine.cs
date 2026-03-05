@@ -31,8 +31,12 @@ public class TechLine : MonoBehaviour
         if (sourceNode == null) return;
         if (rectTrans == null) rectTrans = GetComponent<RectTransform>();
 
-        // 1. Check if the SOURCE (Prerequisite) is unlocked
-        if (sourceNode.IsUnlocked)
+        // Ensure we check the HUMAN player's status (Player 0)
+        PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
+            ? GameManager.Instance.players[0] : null;
+
+        // 1. Check if the SOURCE (Prerequisite) is unlocked for the HUMAN player
+        if (humanPlayer != null && sourceNode.IsUnlockedBy(humanPlayer))
         {
             Vector2 endSize = new Vector2(targetWidth, rectTrans.sizeDelta.y);
 
@@ -56,7 +60,7 @@ public class TechLine : MonoBehaviour
         }
         else
         {
-            // If Source is locked, hide the line
+            // If Source is locked for the human player, hide the line
             rectTrans.sizeDelta = new Vector2(0, rectTrans.sizeDelta.y);
         }
     }

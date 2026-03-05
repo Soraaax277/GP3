@@ -71,13 +71,19 @@ public class TechButton : MonoBehaviour
         // Ensure we have necessary components before proceeding
         if (tech == null || button == null || targetImage == null) return;
 
+        // Ensure we check the HUMAN player's status (Player 0)
+        PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
+            ? GameManager.Instance.players[0] : null;
+
+        if (humanPlayer == null) return;
+
         // Apply logic to tint the child image sprite
-        if (tech.IsUnlocked)
+        if (tech.IsUnlockedBy(humanPlayer))
         {
             button.interactable = true;
             targetImage.color = new Color(1f, 0.95f, 0.8f, 1f); 
         }
-        else if (tech.CanUnlock())
+        else if (tech.CanUnlockFor(humanPlayer))
         {
             button.interactable = true;
             targetImage.color = Color.white; 

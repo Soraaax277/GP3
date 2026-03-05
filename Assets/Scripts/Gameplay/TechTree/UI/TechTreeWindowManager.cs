@@ -102,7 +102,12 @@ public class TechTreeWindowManager : MonoBehaviour
     {
         if (btnSabotage == null) return;
 
-        bool unlocked = TechManager.Instance != null && TechManager.Instance.IsSabotageTabUnlocked();
+        // Ensure we check the HUMAN player's status, not just whatever the current turn is
+        PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
+            ? GameManager.Instance.players[0] : null;
+
+        bool unlocked = TechManager.Instance != null && humanPlayer != null && 
+                        TechManager.Instance.IsSabotageTabUnlockedFor(humanPlayer);
 
         btnSabotage.interactable = unlocked;
 
@@ -283,15 +288,14 @@ public class TechTreeWindowManager : MonoBehaviour
                                        $"<color=yellow>Cost: {currentSelectedNode.researchCost} RP</color>";
         }
 
-        bool isUnlocked = currentSelectedNode.IsUnlocked;
-        bool canUnlock = currentSelectedNode.CanUnlock();
+        // Check Player Resources (Human Player at index 0)
+        PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
+            ? GameManager.Instance.players[0] : null;
+
+        bool isUnlocked = humanPlayer != null && currentSelectedNode.IsUnlockedBy(humanPlayer);
+        bool canUnlock = humanPlayer != null && currentSelectedNode.CanUnlockFor(humanPlayer);
         
-        // Check Player Resources
-        int playerRP = 0;
-        if (GameManager.Instance != null && GameManager.Instance.players.Count > 0)
-        {
-            playerRP = GameManager.Instance.players[0].researchPoints;
-        }
+        int playerRP = humanPlayer != null ? humanPlayer.researchPoints : 0;
         bool canAfford = playerRP >= currentSelectedNode.researchCost;
 
         if (confirmUpgradeButton != null && confirmButtonText != null)

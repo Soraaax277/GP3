@@ -77,19 +77,9 @@ public class EnemyAI : MonoBehaviour
         yield return StartCoroutine(ResearchPhase(aiPlayer));
 
         // --- PHASE 1: PLACE TOWER BLUEPRINTS ---
-        foreach (SignalNode node in aiPlayer.ownedNodes)
-        {
-            if (node.CanPlaceTower())
-            {
-                HexTile bestBlueprintTile = FindBestTowerSpot(node);
-                if (bestBlueprintTile != null)
-                {
-                    Debug.Log($"[EnemyAI] Placing tower blueprint at {bestBlueprintTile.name}");
-                    PlaceBlueprint(bestBlueprintTile, aiPlayer, node);
-                    yield return new WaitForSeconds(0.5f);
-                }
-            }
-        }
+        TowerBlueprintPhase(aiPlayer);
+        yield return new WaitForSeconds(0.5f);
+
 
         // --- PHASE 2: PLACE STRUCTURES ---
         yield return StartCoroutine(StructurePlacementPhase(aiPlayer));
@@ -112,12 +102,41 @@ public class EnemyAI : MonoBehaviour
     {
         if (TechManager.Instance == null || allTechNodes == null) yield break;
 
-        // AI researches up to 2 techs per turn, prioritizing affordable ones
+        // AI researches up to 2 techs per turn
         int researchedThisTurn = 0;
+
+        // First, check for essential construction techs if not already unlocked
+        bool canBuild = TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "Construction") || 
+                        TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "MinimumWageContract");
+
+        if (!canBuild)
+        {
+            foreach (TechNode tech in allTechNodes)
+            {
+                if (tech == null || TechManager.Instance.IsNodeUnlocked(aiPlayer, tech)) continue;
+                if (!tech.CanUnlockFor(aiPlayer)) continue;
+
+                // Simple check for construction-related names in tech
+                bool isConstructionTech = tech.techName.Contains("Construction") || 
+                                          tech.techName.Contains("Minimum Wage") ||
+                                          tech.techName.Contains("Contract");
+
+                if (isConstructionTech && aiPlayer.researchPoints >= tech.researchCost && aiPlayer.resources >= tech.goldCost)
+                {
+                    TechManager.Instance.ResearchTech(tech);
+                    researchedThisTurn++;
+                    Debug.Log($"[EnemyAI] Prioritized Construction Research: {tech.techName}");
+                    yield return new WaitForSeconds(0.3f);
+                    break; 
+                }
+            }
+        }
+
+        // Normal research for remaining slots
         foreach (TechNode tech in allTechNodes)
         {
-            if (tech == null || tech.IsUnlocked) continue;
-            if (!tech.CanUnlock()) continue;
+            if (tech == null || TechManager.Instance.IsNodeUnlocked(aiPlayer, tech)) continue;
+            if (!tech.CanUnlockFor(aiPlayer)) continue;
             if (researchedThisTurn >= 2) break;
 
             if (aiPlayer.researchPoints >= tech.researchCost && aiPlayer.resources >= tech.goldCost)
@@ -126,6 +145,29 @@ public class EnemyAI : MonoBehaviour
                 researchedThisTurn++;
                 Debug.Log($"[EnemyAI] Researched: {tech.techName}");
                 yield return new WaitForSeconds(0.3f);
+            }
+        }
+    }
+
+    // --- PHASE 1: PLACE TOWER BLUEPRINTS ---
+    private void TowerBlueprintPhase(PlayerData aiPlayer)
+    {
+        bool canBuild = TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "Construction") || 
+                        TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "MinimumWageContract");
+
+        // Don't waste money/space on blueprints if we can't build them yet
+        if (!canBuild) return;
+
+        foreach (SignalNode node in aiPlayer.ownedNodes)
+        {
+            if (node.CanPlaceTower())
+            {
+                HexTile bestBlueprintTile = FindBestTowerSpot(node);
+                if (bestBlueprintTile != null)
+                {
+                    Debug.Log($"[EnemyAI] Placing tower blueprint at {bestBlueprintTile.name}");
+                    PlaceBlueprint(bestBlueprintTile, aiPlayer, node);
+                }
             }
         }
     }
@@ -210,6 +252,8 @@ public class EnemyAI : MonoBehaviour
         bool needsBuilder = GetUnbuiltTowers(aiPlayer).Any();
         bool needsRepair  = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Any(t => t.owner == aiPlayer && t.IsDestroyed());
+        bool needsActivation = FindObjectsByType<WireNode>(FindObjectsSortMode.None)
+            .Any(w => w.owner == aiPlayer && !w.IsTechnicianActivated);
 
         // ---- CORE UNITS (always needed) ----
 
@@ -225,9 +269,9 @@ public class EnemyAI : MonoBehaviour
         if (marketerCount < 1 && TechManager.Instance != null && TechManager.Instance.unlockedUnitNames.Contains("SalesMarketer"))
             yield return TryRecruit(salesMarketerPrefab, aiPlayer, salesMarketerCost, "SalesMarketer");
 
-        // Technician (if repairs needed and no Tesseract)
+        // Technician (if repairs or wire activations needed and no Tesseract)
         bool hasTesseract = PowerGridManager.Instance != null && PowerGridManager.Instance.HasTesseract(aiPlayer);
-        if (needsRepair && technicianCount < 1 && !hasTesseract)
+        if ((needsRepair || needsActivation) && technicianCount < 1 && !hasTesseract)
             yield return TryRecruit(technicianPrefab, aiPlayer, technicianCost, "Technician");
 
         // ---- SCOUTS (if unlocked) ----
@@ -268,7 +312,11 @@ public class EnemyAI : MonoBehaviour
 
     private IEnumerator TryRecruit(GameObject prefab, PlayerData aiPlayer, int cost, string label)
     {
-        if (prefab == null || aiPlayer.resources < cost) yield break;
+        if (prefab == null) yield break;
+
+        // Ensure we keep some gold for building if we have unbuilt towers
+        int reserve = GetUnbuiltTowers(aiPlayer).Any() ? 100 : 0;
+        if (aiPlayer.resources < cost + reserve) yield break;
 
         SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
         Unit u = UnitSpawner.Instance.SpawnUnit(prefab, spawnNode.tile, aiPlayer);
@@ -607,10 +655,37 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleTechnician(Technician technician)
     {
         if (technician == null || !technician.gameObject.activeInHierarchy || !technician.CanAct) yield break;
-        // Priority 1: Power adjacent wires
-        technician.PowerAdjacentStructure();
-        if (technician == null) yield break;
-        if (!technician.CanAct) yield break;
+
+        // Priority 1: Power the nearest unactivated wire
+        WireNode activationTarget = FindObjectsByType<WireNode>(FindObjectsSortMode.None)
+            .Where(w => w.owner == technician.owner && !w.IsTechnicianActivated)
+            .OrderBy(w => GridManager.Instance.CubeDistance(technician.currentTile.cubeCoords, w.ParentTile.cubeCoords))
+            .FirstOrDefault();
+
+        if (activationTarget != null)
+        {
+            if (GridManager.Instance.GetNeighbors(technician.currentTile).Contains(activationTarget.ParentTile) || 
+                technician.currentTile == activationTarget.ParentTile)
+            {
+                technician.PowerAdjacentStructure();
+            }
+            else
+            {
+                HexTile moveTarget = GetCloserTile(technician.currentTile, activationTarget.ParentTile, technician.moveRange);
+                if (moveTarget != null && moveTarget != technician.currentTile)
+                {
+                    technician.MoveTo(moveTarget, technician.moveRange);
+                    yield return new WaitForSeconds(0.5f);
+
+                    if (technician != null && technician.CanAct)
+                    {
+                        technician.PowerAdjacentStructure();
+                    }
+                }
+            }
+        }
+
+        if (technician == null || !technician.CanAct) yield break;
 
         // Priority 2: Repair adjacent structures
         TowerNode repairTarget = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
