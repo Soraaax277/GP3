@@ -6,6 +6,93 @@
 
 > Put what a header of when and who updated who above here:
 
+-------------------------------------------------------------------------------------------
+## 03/05/2026 UPDATE (UPDATED BY CHARLES)
+---
+# UI Panel System – Building & Unit Interaction Managers
+
+Modular world-space and screen-space UI panel system for a Unity strategy game. Handles contextual action menus for all unit types and buildings, with dynamic button generation, cost affordability checks, tech-lock gating, and animated open/close transitions.
+
+---
+
+## Overview
+
+This update introduces three tightly integrated UI managers that together handle all player-facing interaction with units and buildings on the game map.
+
+---
+
+## Scripts
+
+### `BuildingUIManager.cs`
+Universal world-space panel for all owned buildings. Opened via `OnMouseDown()` in each building script using `BuildingUIManager.Instance.Open(this)`.
+
+**Supported buildings:**
+- **SignalNode (HQ)** — Two-level menu: `Construct Infrastructure` (tower + all unlocked structures) and `Deploy Unit` (all unlocked recruitable units)
+- **BPOCenter** — Status display: powered state, assigned worker, and passive income
+- **CommercialHub** — Toggle auto-spawn on/off
+- **ServiceCenter** — Workforce recruitment: Maintenance Crew, Foremen, IT Personnel
+
+**Key behaviors:**
+- AI players and non-active players are blocked from opening the panel
+- Panel follows the building in world space using camera-relative offset
+- Integrates with `TechManager` to gate buttons behind research unlocks
+- Locked units display a `???` placeholder instead of being hidden entirely
+- Hooks into `DetailPanel` automatically on open to show building lore/description
+- Integrates with `TowerPlacementManager` and `StructurePlacementManager` for placement flows
+
+---
+
+### `UnitActionPanel.cs`
+World-space contextual action menu that appears when a unit is selected. Follows the unit in real time using a camera-relative offset.
+
+**Supported unit types and actions:**
+
+| Unit | Actions |
+|---|---|
+| BuilderUnit | Construct, Repair *(if unlocked)*, Sabotage *(if unlocked)* |
+| WireSpecialist | Lay Wire, Repair Tower *(if unlocked)*, Sabotage *(if unlocked)* |
+| Technician | Repair, Power |
+| Foremen | Construct |
+| RoboWorker | Construct |
+| ITPersonnel | Repair |
+| MaintenanceCrew | Maintain *(if unlocked)* |
+| RoboMarshall | Repair |
+| Saboteurs | Sabotage |
+| SalesMarketer | Deny, Recruit *(if unlocked)* |
+| Businessman | Convert |
+
+**Key behaviors:**
+- Each button shows a gold cost label that turns red when the player cannot afford the action
+- Unavailable actions (already acted, insufficient gold) are greyed out but remain visible
+- Panel locks camera into build mode while open via `CameraController`
+- On close, deselects the unit and notifies `PlayerInput`
+
+---
+
+### `DetailPanel.cs`
+Screen-space slide-in info panel (right side). Displays lore, stats, and role context for any selected unit or building.
+
+**Key behaviors:**
+- Singleton with `ShowUnit(Unit)` and `ShowBuilding(MonoBehaviour)` public API
+- Skips re-opening if the same target is already displayed
+- Closes when the player clicks empty world space (no UI, no collider hit)
+- Supports `UIAnimator` for entry and exit slide animations
+- Data is statically defined in dictionaries — no runtime lookups or external data files
+
+**Covered unit types:** Builder, Wire Specialist, Scout, Technician, Businessman, Sales Marketer, Saboteur, Maintenance Crew, Foremen, IT Personnel, Robo Worker, Robo Marshall
+
+**Covered building types:** Signal Node, Service Center, BPO Center, Commercial Hub, plus all `StructureNode`-based structures (Business Center, Advanced Business Center, Worker Factory, Drone Factory, Power Box, Signal Booster, Signal Jammer, Tesseract, Rocketship, Tower Node)
+
+---
+
+## Architecture Notes
+
+- All three panels share the same `actionButtonPrefab` — a button root with two `TextMeshProUGUI` children (`ActionLabel` + `CostLabel`)
+- `BuildingUIManager` and `UnitActionPanel` both call `CameraController.SetBuildModeLock()` to freeze camera movement while a menu is open
+- `UIAnimator` is optional on all panels — graceful fallback to instant show/hide if not present
+- `BuildingUIManager.ignoreNextClick` is a public flag used by placement managers to suppress accidental immediate-close after starting a placement flow
+
+
 --------------------------------------------------------------------------------------------
 ## 02/21/2026 UPDATE (UPDATED BY CHARLES)
 ---
