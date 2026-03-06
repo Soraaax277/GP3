@@ -58,6 +58,7 @@ public class TechTreeWindowManager : MonoBehaviour
 
     private void Awake()
     {
+        IsTechTreeOpen = false;
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }

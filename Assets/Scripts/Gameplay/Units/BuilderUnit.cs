@@ -207,6 +207,7 @@ public class BuilderUnit : Unit
         }
 
         TowerNode targetTower = null;
+        StructureNode targetStructure = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
             if (neighbor.placedTower != null && neighbor.placedTower.IsDestroyed())
@@ -214,11 +215,16 @@ public class BuilderUnit : Unit
                 targetTower = neighbor.placedTower;
                 break;
             }
+            if (neighbor.placedStructure != null && neighbor.placedStructure.IsBroken)
+            {
+                targetStructure = neighbor.placedStructure;
+                break;
+            }
         }
 
-        if (targetTower == null)
+        if (targetTower == null && targetStructure == null)
         {
-            Debug.Log("[Builder] No destroyed tower adjacent!");
+            Debug.Log("[Builder] No destroyed infrastructure adjacent!");
             return;
         }
 
@@ -231,7 +237,8 @@ public class BuilderUnit : Unit
         }
 
         owner.resources -= repairCost;
-        targetTower.Repair(repairEfficiency);
+        if (targetTower != null) targetTower.Repair(repairEfficiency);
+        else if (targetStructure != null) targetStructure.Repair(20f * repairEfficiency);
 
         buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
         ConsumeAction();
@@ -241,11 +248,6 @@ public class BuilderUnit : Unit
         {
             Die();
             return;
-        }
-
-        if (!owner.isAI)
-        {
-            // Removed: Stop deselecting so units can move after actions
         }
     }
     
@@ -323,15 +325,5 @@ public class BuilderUnit : Unit
         return baseCost;
     }
 
-    void Die()
-    {
-        if (currentTile != null) currentTile.placedUnit = null;
 
-        // Unregister BEFORE destroying so TurnManager never holds a dead reference.
-        // This prevents MissingReferenceException in GetPlayerFocusPoint.
-        if (TurnManager.Instance != null)
-            TurnManager.Instance.UnregisterUnit(this);
-
-        Destroy(gameObject);
-    }
 }

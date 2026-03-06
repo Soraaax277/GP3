@@ -7,6 +7,11 @@ public class HazardManager : MonoBehaviour
 
     public GameObject saboteurPrefab; // The "Capsule" mini-human
     public GameObject geyserPrefab; // The "Hotspot"
+
+    [Header("Hazard Particle Effects")]
+    public GameObject saboteurParticlePrefab;
+    public GameObject geyserParticlePrefab;
+
     public List<NomadicSaboteur> activeSaboteurs = new List<NomadicSaboteur>();
     public List<ResourceGeyser> activeGeysers = new List<ResourceGeyser>();
 
@@ -91,6 +96,45 @@ public class HazardManager : MonoBehaviour
             
             script.Initialize(spawnTile);
             activeGeysers.Add(script);
+
+            if (geyserParticlePrefab != null)
+            {
+                GameObject particleObj = Instantiate(geyserParticlePrefab, obj.transform.position, Quaternion.identity, obj.transform);
+                particleObj.transform.position += Vector3.up * 1.5f; // Hover above ground to avoid clipping
+                float hexScale = GridManager.Instance != null ? GridManager.Instance.hexSize : 1f;
+                float maxAuthoredSize = 0.5f;
+
+                foreach (var ps in particleObj.GetComponentsInChildren<ParticleSystem>())
+                {
+                    var main = ps.main;
+                    main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                    var shape = ps.shape;
+                    if (shape.enabled)
+                    {
+                        if (shape.shapeType == ParticleSystemShapeType.Sphere || shape.shapeType == ParticleSystemShapeType.Circle || shape.shapeType == ParticleSystemShapeType.Hemisphere)
+                        {
+                            maxAuthoredSize = Mathf.Max(maxAuthoredSize, shape.radius * 2f);
+                        }
+                        else if (shape.shapeType == ParticleSystemShapeType.Box || shape.shapeType == ParticleSystemShapeType.Rectangle)
+                        {
+                            float boxMax = Mathf.Max(shape.scale.x, Mathf.Max(shape.scale.y, shape.scale.z));
+                            maxAuthoredSize = Mathf.Max(maxAuthoredSize, boxMax);
+                        }
+                    }
+                }
+
+                // Target size is roughly exactly one hex tile diameter
+                float targetSize = hexScale * 1.75f; 
+                float dynamicScale = targetSize / maxAuthoredSize;
+
+                // Counteract parent obj localScale so the effect itself isn't squished or stretched
+                particleObj.transform.localScale = new Vector3(
+                    dynamicScale / obj.transform.localScale.x, 
+                    dynamicScale / obj.transform.localScale.y, 
+                    dynamicScale / obj.transform.localScale.z
+                );
+            }
+
             Debug.Log("[HazardManager] Spawned Resource Geyser at " + spawnTile.cubeCoords);
         }
     }
@@ -141,6 +185,44 @@ public class HazardManager : MonoBehaviour
             script.Initialize(spawnTile);
             activeSaboteurs.Add(script);
             
+            if (saboteurParticlePrefab != null)
+            {
+                GameObject particleObj = Instantiate(saboteurParticlePrefab, obj.transform.position, Quaternion.identity, obj.transform);
+                particleObj.transform.position += Vector3.up * 1.5f; // Hover above ground to avoid clipping
+                float hexScale = GridManager.Instance != null ? GridManager.Instance.hexSize : 1f;
+                float maxAuthoredSize = 0.5f;
+
+                foreach (var ps in particleObj.GetComponentsInChildren<ParticleSystem>())
+                {
+                    var main = ps.main;
+                    main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                    var shape = ps.shape;
+                    if (shape.enabled)
+                    {
+                        if (shape.shapeType == ParticleSystemShapeType.Sphere || shape.shapeType == ParticleSystemShapeType.Circle || shape.shapeType == ParticleSystemShapeType.Hemisphere)
+                        {
+                            maxAuthoredSize = Mathf.Max(maxAuthoredSize, shape.radius * 2f);
+                        }
+                        else if (shape.shapeType == ParticleSystemShapeType.Box || shape.shapeType == ParticleSystemShapeType.Rectangle)
+                        {
+                            float boxMax = Mathf.Max(shape.scale.x, Mathf.Max(shape.scale.y, shape.scale.z));
+                            maxAuthoredSize = Mathf.Max(maxAuthoredSize, boxMax);
+                        }
+                    }
+                }
+
+                // Target size is roughly exactly one hex tile diameter
+                float targetSize = hexScale * 1.75f; 
+                float dynamicScale = targetSize / maxAuthoredSize;
+
+                // Counteract parent obj localScale so the effect itself isn't squished or stretched
+                particleObj.transform.localScale = new Vector3(
+                    dynamicScale / obj.transform.localScale.x, 
+                    dynamicScale / obj.transform.localScale.y, 
+                    dynamicScale / obj.transform.localScale.z
+                );
+            }
+
             Debug.Log("[HazardManager] Spawned Nomadic Saboteur at " + spawnTile.cubeCoords);
         }
     }

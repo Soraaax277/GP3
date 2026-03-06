@@ -91,6 +91,100 @@ public class TechManager : MonoBehaviour
         return _playerSabotageTabUnlocked.TryGetValue(player, out bool v) && v;
     }
 
+    public List<TechNode> GetUnlockedNodes(PlayerData player)
+    {
+        if (player == null) return new List<TechNode>();
+        if (_playerUnlocks.TryGetValue(player, out var set))
+            return new List<TechNode>(set);
+        return new List<TechNode>();
+    }
+
+    public void LoadTechState(PlayerData player, List<string> techNames)
+    {
+        if (player == null || techNames == null) return;
+        
+        HashSet<TechNode> unlockedSet = new HashSet<TechNode>();
+        
+        // Find all tech nodes in the project to match names
+        TechNode[] allNodes = Resources.FindObjectsOfTypeAll<TechNode>();
+        
+        foreach (string name in techNames)
+        {
+            foreach (TechNode node in allNodes)
+            {
+                if (node.techName == name)
+                {
+                    unlockedSet.Add(node);
+                    // Also trigger their effects if they aren't already active?
+                    // Actually, for infra/feature unlocks, we should re-apply them.
+                    foreach (var effect in node.unlockEffects)
+                    {
+                        // We need a subtle way to re-apply without double-charging or side effects
+                        // but most effects are idempotent (setting a bool, adding to a HashSet)
+                        // infra multipliers might STACK though, so we must be careful.
+                    }
+                    break;
+                }
+            }
+        }
+        
+        _playerUnlocks[player] = unlockedSet;
+        
+        // Refresh persistent state based on unlocked nodes
+        RefreshPlayerTechStats(player);
+    }
+
+    private void RefreshPlayerTechStats(PlayerData player)
+    {
+        // Clear and rebuild player-specific tech flags (don't clear global infra stats here)
+        GetOrCreateSet(_playerUnlockedUnitNames, player).Clear();
+        GetOrCreateSet(_playerUnlockedFeatures, player).Clear();
+        _playerRPBonusPerTurn[player] = 0;
+        _playerSabotageTabUnlocked[player] = false;
+
+        if (_playerUnlocks.TryGetValue(player, out var nodes))
+        {
+            foreach (var node in nodes)
+            {
+                // RP Bonus
+                _playerRPBonusPerTurn[player] += node.rpBonusPerTurn;
+                
+                // Sabotage
+                if (node.unlocksSabotageTab) _playerSabotageTabUnlocked[player] = true;
+
+                // Effects
+                foreach (var effect in node.unlockEffects)
+                {
+                    switch (effect.type)
+                    {
+                        case EffectType.UnlockFeature:
+                            GetOrCreateSet(_playerUnlockedFeatures, player).Add(effect.featureName);
+                            break;
+                        case EffectType.UnlockUnit:
+                            if (effect.targetUnits != null)
+                            {
+                                foreach (var u in effect.targetUnits) 
+                                    GetOrCreateSet(_playerUnlockedUnitNames, player).Add(u.name);
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    public Dictionary<string, float> GetInfraMultipliers() => infraMultipliers;
+    public Dictionary<string, float> GetInfraFlatStats() => infraFlatBonuses;
+
+    public void LoadInfraStats(List<string> mKeys, List<float> mValues, List<string> fKeys, List<float> fValues)
+    {
+        infraMultipliers.Clear();
+        for (int i = 0; i < mKeys.Count; i++) infraMultipliers[mKeys[i]] = mValues[i];
+
+        infraFlatBonuses.Clear();
+        for (int i = 0; i < fKeys.Count; i++) infraFlatBonuses[fKeys[i]] = fValues[i];
+    }
+
     private Dictionary<string, float> infraMultipliers  = new Dictionary<string, float>();
     private Dictionary<string, float> infraFlatBonuses  = new Dictionary<string, float>();
 
@@ -145,7 +239,6 @@ public class TechManager : MonoBehaviour
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     //  RESEARCH

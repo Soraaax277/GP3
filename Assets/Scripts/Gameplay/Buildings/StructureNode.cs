@@ -12,11 +12,18 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     public float currentDurability;
     public int goldUpkeep = 10;
 
+    [Header("Hidden Stats")]
+    public float hiddenDurability = 50f;
+    public float currentHiddenDurability;
+    public bool IsBroken { get; protected set; }
+
     public virtual void Initialize(HexTile tile, PlayerData player)
     {
         ParentTile = tile;
         owner = player;
         currentDurability = baseDurability;
+        currentHiddenDurability = hiddenDurability;
+        IsBroken = false;
         
         tile.hasStructure = true; 
         tile.placedStructure = this;
@@ -40,8 +47,46 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
 
     public virtual void TakeDamage(float amount)
     {
-        currentDurability -= amount;
-        if (currentDurability <= 0) DestroyStructure();
+        if (IsBroken)
+        {
+            currentHiddenDurability -= amount;
+            if (currentHiddenDurability <= 0) DestroyStructure();
+        }
+        else
+        {
+            currentDurability -= amount;
+            if (currentDurability <= 0) 
+            {
+                BreakStructure();
+            }
+        }
+    }
+
+    protected virtual void BreakStructure()
+    {
+        IsBroken = true;
+        currentDurability = 0;
+        IsPowered = false;
+        Debug.Log($"[Structure] {name} is BROKEN and needs repair!");
+        
+        // Visual feedback: darkening
+        Renderer rend = GetComponentInChildren<Renderer>();
+        if (rend != null) rend.material.color = Color.Lerp(rend.material.color, Color.black, 0.5f);
+    }
+
+    public virtual void Repair(float amount)
+    {
+        if (IsBroken)
+        {
+            IsBroken = false;
+            currentHiddenDurability = hiddenDurability;
+            Debug.Log($"[Structure] {name} has been REPAIRED!");
+        }
+        currentDurability = Mathf.Min(currentDurability + amount, baseDurability);
+        
+        // Reset color if subclass doesn't handle visuals
+        Renderer rend = GetComponentInChildren<Renderer>();
+        if (rend != null) rend.material.color = Color.white; 
     }
 
     protected virtual void DestroyStructure()

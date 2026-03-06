@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        Time.timeScale = 1f;
 
         // --- PHASE 1 COMPONENTS ---
         if (GetComponent<EventManager>() == null) gameObject.AddComponent<EventManager>();
@@ -44,6 +44,19 @@ public class GameManager : MonoBehaviour
             yield return null;
 
         CreatePlayers();
+        TurnManager.Instance.players = this.players;
+
+        if (SaveSystem.HasSaveData())
+        {
+            Debug.Log("GameManager: Found save data, loading...");
+            bool success = SaveSystem.LoadGame();
+            if (success)
+            {
+                yield break;
+            }
+            Debug.LogWarning("GameManager: Load failed, starting new game.");
+        }
+
         SpawnInitialBusinesses();
         TurnManager.Instance.StartGame(players);
     }

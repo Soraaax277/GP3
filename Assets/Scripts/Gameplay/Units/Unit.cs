@@ -234,4 +234,14 @@ public abstract class Unit : MonoBehaviour
     {
         Debug.Log($"{name} unlocked skill: {skillName}");
     }
+
+    public virtual void Die()
+    {
+        currentTile.placedUnit = null;
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.UnregisterUnit(this);
+        
+        Debug.Log($"[Unit] {name} has been killed!");
+        Destroy(gameObject);
+    }
 }

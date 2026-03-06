@@ -8,7 +8,26 @@ public class GameState
     public int playerResources;
     public int enemyResources;
     public int currentTurn;
+    public int currentPlayerIndex;
     public string currentEra;
+    
+    // Player Tech/State
+    public int playerResearchPoints;
+    public int enemyResearchPoints;
+    public int playerHardwareEra;
+    public int playerWorkforceEra;
+    public int enemyHardwareEra;
+    public int enemyWorkforceEra;
+    
+    public List<string> playerUnlockedTechs;
+    public List<string> enemyUnlockedTechs;
+    
+    // Infra Stats (Strings for serializable dict)
+    public List<string> infraMultiplierKeys;
+    public List<float> infraMultiplierValues;
+    public List<string> infraFlatKeys;
+    public List<float> infraFlatValues;
+    
     
     public List<UnitData> playerUnits;
     public List<UnitData> enemyUnits;
@@ -25,6 +44,12 @@ public class GameState
         towers = new List<TowerData>();
         wires = new List<WireData>();
         tileInfluences = new List<TileInfluenceData>();
+        playerUnlockedTechs = new List<string>();
+        enemyUnlockedTechs = new List<string>();
+        infraMultiplierKeys = new List<string>();
+        infraMultiplierValues = new List<float>();
+        infraFlatKeys = new List<string>();
+        infraFlatValues = new List<float>();
     }
 }
 
@@ -37,6 +62,7 @@ public class UnitData
     public bool canAct;
     public int actionsRemaining;
     public float movementRemaining;
+    public int specialCharges;
 }
 
 [Serializable]
@@ -58,6 +84,7 @@ public class TowerData
     public bool isPlayerOwned;
     public int parentNodeX;
     public int parentNodeY;
+    public float currentDurability;
 }
 
 [Serializable]
@@ -66,6 +93,7 @@ public class WireData
     public int tileX;
     public int tileY;
     public bool isPlayerOwned;
+    public float currentDurability;
 }
 
 [Serializable]

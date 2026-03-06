@@ -13,13 +13,40 @@ public static class SaveSystem
         if (TurnManager.Instance != null)
         {
             state.currentTurn = TurnManager.Instance.currentTurn;
+            state.currentPlayerIndex = TurnManager.Instance.currentPlayerIndex;
             state.currentEra = TurnManager.Instance.GetCurrentEra();
+            
+            if (TurnManager.Instance.players.Count >= 2)
+            {
+                var p1 = TurnManager.Instance.players[0];
+                var p2 = TurnManager.Instance.players[1];
+                
+                state.playerResources = p1.resources;
+                state.playerResearchPoints = p1.researchPoints;
+                state.playerHardwareEra = (int)p1.hardwareEra;
+                state.playerWorkforceEra = (int)p1.workforceEra;
+                
+                state.enemyResources = p2.resources;
+                state.enemyResearchPoints = p2.researchPoints;
+                state.enemyHardwareEra = (int)p2.hardwareEra;
+                state.enemyWorkforceEra = (int)p2.workforceEra;
+            }
         }
 
-        if (TurnManager.Instance != null && TurnManager.Instance.players != null && TurnManager.Instance.players.Count >= 2)
+        if (TechManager.Instance != null)
         {
-            state.playerResources = TurnManager.Instance.players[0].resources;
-            state.enemyResources = TurnManager.Instance.players[1].resources;
+            state.playerUnlockedTechs = TechManager.Instance.GetUnlockedNodes(TurnManager.Instance.players[0])
+                .Select(n => n.techName).ToList();
+            state.enemyUnlockedTechs = TechManager.Instance.GetUnlockedNodes(TurnManager.Instance.players[1])
+                .Select(n => n.techName).ToList();
+                
+            var mDict = TechManager.Instance.GetInfraMultipliers();
+            state.infraMultiplierKeys = mDict.Keys.ToList();
+            state.infraMultiplierValues = mDict.Values.ToList();
+            
+            var fDict = TechManager.Instance.GetInfraFlatStats();
+            state.infraFlatKeys = fDict.Keys.ToList();
+            state.infraFlatValues = fDict.Values.ToList();
         }
 
         SaveUnits(state);
@@ -46,15 +73,27 @@ public static class SaveSystem
         string json = PlayerPrefs.GetString(SAVE_KEY);
         GameState state = JsonUtility.FromJson<GameState>(json);
 
-        if (TurnManager.Instance != null)
-        {
-            TurnManager.Instance.currentTurn = state.currentTurn;
-        }
-
         if (TurnManager.Instance != null && TurnManager.Instance.players != null && TurnManager.Instance.players.Count >= 2)
         {
-            TurnManager.Instance.players[0].resources = state.playerResources;
-            TurnManager.Instance.players[1].resources = state.enemyResources;
+            var p1 = TurnManager.Instance.players[0];
+            var p2 = TurnManager.Instance.players[1];
+            
+            p1.resources = state.playerResources;
+            p1.researchPoints = state.playerResearchPoints;
+            p1.hardwareEra = (TurnManager.PlayerEra)state.playerHardwareEra;
+            p1.workforceEra = (TurnManager.PlayerEra)state.playerWorkforceEra;
+            
+            p2.resources = state.enemyResources;
+            p2.researchPoints = state.enemyResearchPoints;
+            p2.hardwareEra = (TurnManager.PlayerEra)state.enemyHardwareEra;
+            p2.workforceEra = (TurnManager.PlayerEra)state.enemyWorkforceEra;
+        }
+
+        if (TechManager.Instance != null)
+        {
+            TechManager.Instance.LoadInfraStats(state.infraMultiplierKeys, state.infraMultiplierValues, state.infraFlatKeys, state.infraFlatValues);
+            TechManager.Instance.LoadTechState(TurnManager.Instance.players[0], state.playerUnlockedTechs);
+            TechManager.Instance.LoadTechState(TurnManager.Instance.players[1], state.enemyUnlockedTechs);
         }
 
         LoadUnits(state);
@@ -62,6 +101,12 @@ public static class SaveSystem
         LoadTowers(state);
         LoadWires(state);
         LoadInfluence(state);
+
+        if (TurnManager.Instance != null)
+        {
+            TurnManager.Instance.currentTurn = state.currentTurn;
+            TurnManager.Instance.ResumeFromSave(state.currentPlayerIndex);
+        }
 
         Debug.Log("Game loaded successfully");
         return true;
@@ -87,13 +132,18 @@ public static class SaveSystem
         {
             if (unit == null || unit.currentTile == null) continue;
 
+            int charges = 0;
+            if (unit is BuilderUnit builder) charges = builder.buildsRemaining;
+            else if (unit is Technician tech) charges = tech.actionCharges;
+
             UnitData data = new UnitData
             {
                 unitType = unit.GetType().Name,
                 tileX = unit.currentTile.cubeCoords.x,
                 tileY = unit.currentTile.cubeCoords.y,
-                canAct = unit.CanAct,
-                movementRemaining = unit.movementRemaining
+                canAct = unit.canAct,
+                movementRemaining = unit.movementRemaining,
+                specialCharges = charges
             };
 
             if (unit.owner == TurnManager.Instance.players[0])
@@ -141,7 +191,8 @@ public static class SaveSystem
                     state = tower.state.ToString(),
                     isPlayerOwned = tower.owner == TurnManager.Instance.players[0],
                     parentNodeX = tower.parentNode != null ? tower.parentNode.ParentTile.cubeCoords.x : -1,
-                    parentNodeY = tower.parentNode != null ? tower.parentNode.ParentTile.cubeCoords.y : -1
+                    parentNodeY = tower.parentNode != null ? tower.parentNode.ParentTile.cubeCoords.y : -1,
+                    currentDurability = tower.currentDurability
                 };
                 state.towers.Add(data);
             }
@@ -161,7 +212,8 @@ public static class SaveSystem
                 {
                     tileX = tile.cubeCoords.x,
                     tileY = tile.cubeCoords.y,
-                    isPlayerOwned = wire.owner == TurnManager.Instance.players[0]
+                    isPlayerOwned = wire.owner == TurnManager.Instance.players[0],
+                    currentDurability = wire.currentDurability
                 };
                 state.wires.Add(data);
             }
@@ -231,10 +283,10 @@ public static class SaveSystem
         {
             unit.Initialize(tile, owner);
             unit.movementRemaining = (int)data.movementRemaining;
-            if (!data.canAct)
-            {
-                unit.canAct = false;
-            }
+            unit.canAct = data.canAct;
+            
+            if (unit is BuilderUnit builder) builder.buildsRemaining = data.specialCharges;
+            else if (unit is Technician tech) tech.actionCharges = data.specialCharges;
         }
     }
 
@@ -245,16 +297,19 @@ public static class SaveSystem
 
         switch (unitType)
         {
-            case "WireSpecialist":
-                return spawner.wireSpecialistPrefab;
-            case "BuilderUnit":
-                return spawner.builderPrefab;
-            case "SalesMarketer":
-                return spawner.salesMarketerPrefab;
-            case "Technician":
-                return spawner.technicianPrefab;
-            default:
-                return null;
+            case "WireSpecialist":  return spawner.wireSpecialistPrefab;
+            case "BuilderUnit":     return spawner.builderPrefab;
+            case "SalesMarketer":   return spawner.salesMarketerPrefab;
+            case "Technician":      return spawner.technicianPrefab;
+            case "ScoutUnit":       return spawner.scoutPrefab;
+            case "MaintenanceCrew": return spawner.maintenanceCrewPrefab;
+            case "Foremen":         return spawner.foremenPrefab;
+            case "ITPersonnel":     return spawner.itPersonnelPrefab;
+            case "Businessman":      return spawner.businessmanPrefab;
+            case "RoboMarshall":    return spawner.roboMarshallPrefab;
+            case "RoboWorker":      return spawner.roboWorkerPrefab;
+            case "Saboteurs":       return spawner.saboteurPrefab;
+            default:                return null;
         }
     }
 
@@ -301,9 +356,10 @@ public static class SaveSystem
             if (towerManager != null)
             {
                 TowerNode tower = towerManager.PlaceTowerDirect(tile, owner, parentNode);
-                if (tower != null && towerData.state == "Built")
+                if (tower != null)
                 {
-                    tower.SetBuilt();
+                    if (towerData.state == "Built") tower.SetBuilt();
+                    tower.currentDurability = towerData.currentDurability;
                 }
             }
         }
@@ -324,7 +380,11 @@ public static class SaveSystem
             WirePlacementManager wireManager = Object.FindFirstObjectByType<WirePlacementManager>();
             if (wireManager != null)
             {
-                wireManager.PlaceWireDirect(tile, owner);
+                WireNode wire = wireManager.PlaceWireDirect(tile, owner);
+                if (wire != null)
+                {
+                    wire.currentDurability = wireData.currentDurability;
+                }
             }
         }
     }

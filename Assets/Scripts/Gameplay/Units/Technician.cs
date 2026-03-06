@@ -90,6 +90,7 @@ public class Technician : Unit
         if (!canAct && !testingMode) return;
 
         TowerNode targetTower = null;
+        StructureNode targetStructure = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
             if (neighbor.placedTower != null && neighbor.placedTower.IsDestroyed())
@@ -97,10 +98,15 @@ public class Technician : Unit
                 targetTower = neighbor.placedTower;
                 break;
             }
+            if (neighbor.placedStructure != null && neighbor.placedStructure.IsBroken)
+            {
+                targetStructure = neighbor.placedStructure;
+                break;
+            }
         }
 
         WireNode targetWire = null;
-        if (targetTower == null && canRepairWires)
+        if (targetTower == null && targetStructure == null && canRepairWires)
         {
             foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
             {
@@ -112,13 +118,14 @@ public class Technician : Unit
             }
         }
 
-        if (targetTower == null && targetWire == null) return;
+        if (targetTower == null && targetWire == null && targetStructure == null) return;
 
         int repairCost = GetRepairCost();
         if (owner.resources < repairCost) return;
 
         owner.resources -= repairCost;
         if (targetTower != null) targetTower.Repair(repairEfficiency);
+        else if (targetStructure != null) targetStructure.Repair(20f * repairEfficiency);
         else if (targetWire != null)
         {
             float healAmount = targetWire.MaxDurability * repairEfficiency;
@@ -139,12 +146,5 @@ public class Technician : Unit
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;
-    }
-
-    void Die()
-    {
-        if (currentTile != null) currentTile.placedUnit = null;
-        if (TurnManager.Instance != null) TurnManager.Instance.UnregisterUnit(this);
-        Destroy(gameObject);
     }
 }

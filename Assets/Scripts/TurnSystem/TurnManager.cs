@@ -18,7 +18,7 @@ public class TurnManager : MonoBehaviour
     public PlayerData currentPlayer { get; private set; }
 
     public List<PlayerData> players = new List<PlayerData>();
-    private int currentPlayerIndex;
+    public int currentPlayerIndex { get; private set; }
 
     private List<Unit>       allUnits  = new List<Unit>();
     private List<TowerNode>     allTowers     = new List<TowerNode>();
@@ -40,10 +40,7 @@ public class TurnManager : MonoBehaviour
 
     private void Start()
     {
-        if (SaveSystem.HasSaveData())
-        {
-            SaveSystem.LoadGame();
-        }
+        // GameManager handled LoadGame logic in its SetupGame coroutine
     }
 
     public void StartGame(List<PlayerData> playerList)
@@ -111,16 +108,11 @@ public class TurnManager : MonoBehaviour
         }
 
         // --- PHASE 1: GLOBAL EVENTS & HAZARDS ---
-        // Process global events and hazards only ONCE at the start of each turn cycle.
-        // This usually triggers on the human player's turn (index 0).
-        if (currentPlayerIndex == 0)
-        {
-            if (EventManager.Instance != null)
-                EventManager.Instance.ProcessTurnEvents();
+        if (EventManager.Instance != null)
+            EventManager.Instance.ProcessTurnEvents();
             
-            if (HazardManager.Instance != null)
-                HazardManager.Instance.ProcessTurnHazards();
-        }
+        if (currentPlayerIndex == 0 && HazardManager.Instance != null)
+            HazardManager.Instance.ProcessTurnHazards();
         // ----------------------------------------
         
         // UPDATE GAME WORLD 
@@ -330,6 +322,14 @@ public class TurnManager : MonoBehaviour
     public void UnregisterStructure(StructureNode structure)
     {
         allStructures.Remove(structure);
+    }
+
+    public void ResumeFromSave(int playerIndex)
+    {
+        currentPlayerIndex = playerIndex;
+        UpdateEra();
+        StartTurn();
+        NotifyStatusChanged();
     }
 
     public string GetCurrentEra()

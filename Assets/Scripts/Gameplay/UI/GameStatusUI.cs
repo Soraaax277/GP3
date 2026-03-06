@@ -13,6 +13,7 @@ public class GameStatusUI : MonoBehaviour
     [Header("Game Info UI")]
     public TextMeshProUGUI turnText;
     public TextMeshProUGUI eraText;
+    public TextMeshProUGUI turnStaterText; 
 
     [Header("Tech Tree Panel UI")]
     // These update in the background even if the panel is closed/hidden
@@ -24,6 +25,7 @@ public class GameStatusUI : MonoBehaviour
     private int _cachedRP = -1;
     private int _cachedInfluence = -1;
     private int _cachedTurn = -1;
+    private PlayerData _cachedPlayer = null;
 
     private void Awake()
     {
@@ -107,6 +109,13 @@ public class GameStatusUI : MonoBehaviour
                 _cachedInfluence = currentInfluence;
             }
         }
+
+        // 4. Handle Current Turn Player (Who is acting now)
+        if (TurnManager.Instance.currentPlayer != _cachedPlayer)
+        {
+            UpdateTurnStater();
+            _cachedPlayer = TurnManager.Instance.currentPlayer;
+        }
     }
 
     // Call this to force a full redraw (e.g. on Load Game)
@@ -118,6 +127,7 @@ public class GameStatusUI : MonoBehaviour
             _cachedRP = -1;
             _cachedInfluence = -1;
             _cachedTurn = -1;
+            _cachedPlayer = null;
         }
         CheckForResourceChanges();
     }
@@ -132,6 +142,17 @@ public class GameStatusUI : MonoBehaviour
             string eraName = FormatEraName(TurnManager.Instance.currentEra);
             eraText.text = $"Era: {eraName}";
         }
+    }
+
+    private void UpdateTurnStater()
+    {
+        if (turnStaterText == null || TurnManager.Instance.currentPlayer == null) return;
+
+        bool isAI = TurnManager.Instance.currentPlayer.isAI;
+        turnStaterText.text = isAI ? "Enemy's Turn" : "Player's Turn";
+        
+        // Bonus: Change color for better feedback
+        turnStaterText.color = isAI ? Color.red : Color.green;
     }
 
     private string FormatEraName(TurnManager.GameEra era)

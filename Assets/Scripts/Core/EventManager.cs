@@ -17,6 +17,8 @@ public class EventManager : MonoBehaviour
     public GameObject rainParticlePrefab;
     public GameObject solarFlareParticlePrefab;
     public GameObject powerOutageParticlePrefab;
+    public GameObject hyperInflationParticlePrefab;
+    public GameObject techBoomParticlePrefab;
 
     private GameObject currentParticleSystem;
 
@@ -28,10 +30,22 @@ public class EventManager : MonoBehaviour
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     public void ProcessTurnEvents()
+    {
+        bool isStartOfCycle = (TurnManager.Instance != null && TurnManager.Instance.currentPlayerIndex == 0);
+
+        if (isStartOfCycle)
+        {
+            AdvanceEventClock();
+        }
+
+        // Apply visual/status effects and recurring damage
+        ApplyEventEffects(isStartOfCycle);
+    }
+
+    private void AdvanceEventClock()
     {
         if (eventDurationLeft > 0)
         {
@@ -46,8 +60,6 @@ public class EventManager : MonoBehaviour
         {
             TryStartRandomEvent();
         }
-
-        ApplyEventEffects();
     }
 
     private void TryStartRandomEvent()
@@ -83,6 +95,9 @@ public class EventManager : MonoBehaviour
     private void EndCurrentEvent()
     {
         Debug.Log($"[EventManager] Event {activeEvent} at {targetTile?.cubeCoords} has ended.");
+        
+        if (targetTile != null) targetTile.isHyperinflated = false;
+
         activeEvent = EventType.None;
         targetTile = null;
         
@@ -92,27 +107,124 @@ public class EventManager : MonoBehaviour
         }
     }
 
-    private void ApplyEventEffects()
+    private void ApplyEventEffects(bool dealDamage)
     {
         if (activeEvent == EventType.None || targetTile == null) return;
 
-        // Each tile's hazardImpact determines how strongly it is hit
+        // Each tile's hazard impact determines how strongly it is hit
         float impact = targetTile.hazardImpact;
+        PlayerData owner = targetTile.GetOwner();
+        string ownerName = owner != null ? owner.playerName : "Wilderness (None)";
+
+        // Influence/Gold suppression (Income is derived from influence)
+        int suppressionPenalty = Mathf.RoundToInt(15 * impact);
 
         switch (activeEvent)
         {
             case EventType.AcidRain:
-                if (targetTile.placedTower != null) targetTile.placedTower.currentDurability -= 5f * impact;
-                if (targetTile.placedWire != null) targetTile.placedWire.currentDurability -= 3f * impact;
-                break;
-            case EventType.SolarFlare:
-                targetTile.influenceSuppression += Mathf.RoundToInt(10 * impact);
-                break;
-            case EventType.PowerOutage:
-                if (targetTile.placedWire != null && Random.value < 0.2f * impact)
+                if (dealDamage) Debug.Log($"[EventManager] Acid Rain hitting {targetTile.cubeCoords}. Owner: {ownerName}");
+                
+                // Penalty to influence (and thus gold) - Always applied, but reported on turn start
+                targetTile.influenceSuppression += suppressionPenalty;
+                if (owner != null && dealDamage)
                 {
-                    targetTile.placedWire.TakeDamage(10f);
+                    Debug.Log($" > Economic Impact: Suppressing influence by {suppressionPenalty}. Gold revenue reduced for {ownerName}.");
                 }
+
+                if (dealDamage)
+                {
+                    if (targetTile.placedTower != null) 
+                    {
+                        float dmg = 5f * impact;
+                        targetTile.placedTower.currentDurability -= dmg;
+                        Debug.Log($" > Corroding Tower: {targetTile.placedTower.name} (-{dmg} HP)");
+                    }
+                    if (targetTile.placedWire != null) 
+                    {
+                        float dmg = 3f * impact;
+                        targetTile.placedWire.currentDurability -= dmg;
+                        Debug.Log($" > Corroding Wires: {targetTile.placedWire.name} (-{dmg} HP)");
+                    }
+                    if (targetTile.placedStructure != null)
+                    {
+                        float dmg = 4f * impact;
+                        targetTile.placedStructure.TakeDamage(dmg);
+                        Debug.Log($" > Corroding Structure: {targetTile.placedStructure.name} (-{dmg} HP)");
+                    }
+                }
+                break;
+
+            case EventType.SolarFlare:
+                int solarSuppression = Mathf.RoundToInt(10 * impact);
+                targetTile.influenceSuppression += solarSuppression;
+                if (dealDamage) Debug.Log($"[EventManager] Solar Flare hitting {targetTile.cubeCoords}. Owner: {ownerName} | Suppressing influence by {solarSuppression}.");
+                break;
+
+            case EventType.PowerOutage:
+                if (dealDamage) Debug.Log($"[EventManager] Thunderstorm over {targetTile.cubeCoords}. Owner: {ownerName}");
+                
+                // Penalty to influence (and thus gold income)
+                targetTile.influenceSuppression += suppressionPenalty;
+                if (owner != null && dealDamage)
+                {
+                    Debug.Log($" > Economic Impact: Suppressing influence by {suppressionPenalty}. Gold revenue reduced for {ownerName}.");
+                }
+
+                if (dealDamage)
+                {
+                    // 50% chance to CRITICALLY DESTROY buildings/infrastructure
+                    float disasterRoll = Random.value;
+                    if (disasterRoll < 0.5f)
+                    {
+                        if (targetTile.placedTower != null)
+                        {
+                            Debug.Log(" > [CRITICAL] Lightning struck the Tower! It is now DESTROYED.");
+                            targetTile.placedTower.TakeDamage(999f); 
+                        }
+                        if (targetTile.placedStructure != null)
+                        {
+                            Debug.Log($" > [CRITICAL] Lightning struck {targetTile.placedStructure.name}! It is now BROKEN.");
+                            targetTile.placedStructure.TakeDamage(999f);
+                        }
+                        if (targetTile.placedWire != null)
+                        {
+                            Debug.Log(" > [CRITICAL] Lightning struck the Wires! Grid short-circuit.");
+                            targetTile.placedWire.TakeDamage(999f);
+                        }
+                    }
+
+                    // 50% chance to kill unit on tile
+                    if (targetTile.placedUnit != null)
+                    {
+                        if (Random.value < 0.5f)
+                        {
+                            Debug.Log($" > [DEATH] Unit {targetTile.placedUnit.name} struck by lightning and KILLED.");
+                            targetTile.placedUnit.Die();
+                        }
+                        else
+                        {
+                            Debug.Log($" > Unit {targetTile.placedUnit.name} narrowly survived the lightning strike.");
+                        }
+                    }
+                }
+                break;
+
+            case EventType.HyperInflation:
+                // Always set flag so mid-turn expansions pick it up immediately
+                targetTile.isHyperinflated = true;
+                
+                if (owner != null && dealDamage)
+                {
+                    Debug.Log($"[EventManager] Hyper-Inflation hits {targetTile.cubeCoords}! LOCAL GOLD BOOST ACTIVE for {owner.playerName} (+200% revenue contribution).");
+                }
+                else if (dealDamage)
+                {
+                    Debug.Log($"[EventManager] Hyper-Inflation hits {targetTile.cubeCoords}, but it's Wilderness. No one gains gold.");
+                }
+                break;
+            
+            case EventType.TechBoom:
+                if (dealDamage) Debug.Log($"[EventManager] Tech Boom at {targetTile.cubeCoords}. Owner: {ownerName} | Visual explosion effect triggering.");
                 break;
         }
     }
@@ -128,11 +240,80 @@ public class EventManager : MonoBehaviour
             case EventType.AcidRain: prefab = rainParticlePrefab; break;
             case EventType.SolarFlare: prefab = solarFlareParticlePrefab; break;
             case EventType.PowerOutage: prefab = powerOutageParticlePrefab; break;
+            case EventType.HyperInflation: prefab = hyperInflationParticlePrefab; break;
+            case EventType.TechBoom: prefab = techBoomParticlePrefab; break;
         }
 
         if (prefab != null)
         {
-            currentParticleSystem = Instantiate(prefab, targetTile.transform.position + Vector3.up * 5f, Quaternion.identity, transform);
+            // Use the prefab's authored rotation so things like the horizontal SunRay stay horizontal
+            Quaternion spawnRot = prefab.transform.rotation;
+            Vector3 spawnPos = targetTile.transform.position;
+
+            if (activeEvent == EventType.PowerOutage)
+                spawnPos += Vector3.up * 4.11f;
+            else if (activeEvent == EventType.AcidRain)
+                spawnPos += Vector3.up * 3.85f;
+            else if (activeEvent == EventType.TechBoom)
+                spawnPos += Vector3.up * 2.79f;
+            else if (activeEvent == EventType.HyperInflation)
+                spawnPos += Vector3.up * 3.22f;
+            else if (activeEvent == EventType.SolarFlare)
+                spawnPos += Vector3.up * 2.74f;
+
+            currentParticleSystem = Instantiate(prefab, spawnPos, spawnRot, transform);
+            
+            float hexScale = GridManager.Instance != null ? GridManager.Instance.hexSize : 1f;
+            float maxAuthoredSize = 0.5f;
+
+            // Force hierarchy scaling and find the authored shape's maximum extent
+            foreach (var ps in currentParticleSystem.GetComponentsInChildren<ParticleSystem>())
+            {
+                var main = ps.main;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                var shape = ps.shape;
+                if (shape.enabled)
+                {
+                    if (shape.shapeType == ParticleSystemShapeType.Sphere || shape.shapeType == ParticleSystemShapeType.Circle || shape.shapeType == ParticleSystemShapeType.Hemisphere)
+                    {
+                        maxAuthoredSize = Mathf.Max(maxAuthoredSize, shape.radius * 2f);
+                    }
+                    else if (shape.shapeType == ParticleSystemShapeType.Box || shape.shapeType == ParticleSystemShapeType.Rectangle)
+                    {
+                        float boxMax = Mathf.Max(shape.scale.x, Mathf.Max(shape.scale.y, shape.scale.z));
+                        maxAuthoredSize = Mathf.Max(maxAuthoredSize, boxMax);
+                    }
+                }
+
+                // Make the Thunderstorm (PowerOutage) cloud 3D-ish by forcing it to face the camera as a Billboard instead of a flat ground decal
+                var renderer = ps.GetComponent<ParticleSystemRenderer>();
+                if (renderer != null && activeEvent == EventType.PowerOutage)
+                {
+                    renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                }
+            }
+
+            // Fix the one-sided bug on Solar Flare by generating a full "X" cross of duplicates so it's visible perfectly from all 4 3D sides!
+            if (activeEvent == EventType.SolarFlare)
+            {
+                Instantiate(prefab, spawnPos, spawnRot * Quaternion.Euler(0, 90, 0), currentParticleSystem.transform).transform.localScale = Vector3.one;
+                Instantiate(prefab, spawnPos, spawnRot * Quaternion.Euler(0, 180, 0), currentParticleSystem.transform).transform.localScale = Vector3.one;
+                Instantiate(prefab, spawnPos, spawnRot * Quaternion.Euler(0, 270, 0), currentParticleSystem.transform).transform.localScale = Vector3.one;
+            }
+
+            // Target size is roughly exactly one hex tile diameter
+            float targetSize = hexScale * 1.75f; 
+            float dynamicScale = targetSize / maxAuthoredSize;
+
+            if (activeEvent == EventType.TechBoom)
+            {
+                currentParticleSystem.transform.localScale = new Vector3(0.8414741f, 0.8414741f, 0.8414741f);
+                currentParticleSystem.AddComponent<ParticleLoopTimer>();
+            }
+            else
+            {
+                currentParticleSystem.transform.localScale = new Vector3(dynamicScale, dynamicScale, dynamicScale);
+            }
         }
         else
         {
@@ -176,5 +357,31 @@ public class EventManager : MonoBehaviour
 
         currentParticleSystem = particles;
         ps.Play();
+    }
+}
+
+public class ParticleLoopTimer : MonoBehaviour
+{
+    private ParticleSystem[] particleSystems;
+    private Vector3 originalPosition;
+
+    void Start()
+    {
+        particleSystems = GetComponentsInChildren<ParticleSystem>();
+        originalPosition = transform.position;
+        InvokeRepeating(nameof(PlayParticles), 0.5f, 0.5f);
+    }
+
+    void PlayParticles()
+    {
+        if (particleSystems == null) return;
+
+        // Offset the explosion slightly on a different X or Y (or Z) each time it loops to make it look scattered!
+        transform.position = originalPosition + new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+
+        foreach (var ps in particleSystems)
+        {
+            if (ps != null) ps.Play();
+        }
     }
 }

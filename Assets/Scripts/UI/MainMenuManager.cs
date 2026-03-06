@@ -25,6 +25,7 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnNewGame()
     {
+        Time.timeScale = 1f;
         SaveSystem.DeleteSave();
         SceneManager.LoadScene("GameScene");
     }
@@ -33,6 +34,7 @@ public class MainMenuManager : MonoBehaviour
     {
         if (SaveSystem.HasSaveData())
         {
+            Time.timeScale = 1f;
             SceneManager.LoadScene("GameScene");
         }
     }

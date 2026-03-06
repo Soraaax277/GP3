@@ -23,6 +23,8 @@ public class HexTile : MonoBehaviour
     public StructureNode placedStructure;
     public Unit placedUnit;
 
+    public bool isHyperinflated; // Flag for EconomyManager boost
+    
     public int baseInfluence;
     public Dictionary<PlayerData, int> influenceByPlayer = new Dictionary<PlayerData, int>();
     public int influenceSuppression;
@@ -115,7 +117,7 @@ public class HexTile : MonoBehaviour
         if (influenceByPlayer.ContainsKey(forPlayer))
             raw += influenceByPlayer[forPlayer];
         
-        return Mathf.Max(0, raw);
+        return Mathf.Max(0, raw - influenceSuppression);
     }
 
     /// <summary>
@@ -132,13 +134,14 @@ public class HexTile : MonoBehaviour
 
         foreach (var kvp in influenceByPlayer)
         {
-            if (kvp.Value > maxInf)
+            int effectiveInf = Mathf.Max(0, kvp.Value - influenceSuppression);
+            if (effectiveInf > maxInf)
             {
-                maxInf = kvp.Value;
+                maxInf = effectiveInf;
                 bestOwner = kvp.Key;
                 tie = false;
             }
-            else if (kvp.Value == maxInf && maxInf > 0)
+            else if (effectiveInf == maxInf && maxInf > 0)
             {
                 tie = true;
             }

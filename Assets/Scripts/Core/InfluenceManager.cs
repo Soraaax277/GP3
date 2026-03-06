@@ -44,7 +44,8 @@ public class InfluenceManager : MonoBehaviour
                         if (TurnManager.Instance != null)
                             eraMultiplier = TurnManager.Instance.GetEraInfluenceMultiplier(player);
 
-                        playerTotalInfluence[player] += Mathf.RoundToInt(Mathf.Max(0, tileInf - tile.influenceSuppression) * eraMultiplier);
+                        float hyperMultiplier = tile.isHyperinflated ? 2.0f : 1.0f;
+                        playerTotalInfluence[player] += Mathf.RoundToInt(Mathf.Max(0, tileInf - tile.influenceSuppression) * eraMultiplier * hyperMultiplier);
                     }
                 }
             }
