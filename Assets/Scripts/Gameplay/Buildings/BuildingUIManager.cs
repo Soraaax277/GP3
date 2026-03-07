@@ -38,6 +38,15 @@ public class BuildingUIManager : MonoBehaviour
     [Tooltip("TMP header text at the top of the panel.")]
     public TextMeshProUGUI headerText;
 
+    [Tooltip("Secondary TMP below the header. Used to show state messages like 'No units available for deployment.'")]
+    public TextMeshProUGUI subHeaderText;
+
+    [Tooltip("ScrollRect wrapping the buttonContainer. Enabled automatically when button count exceeds scrollButtonThreshold.")]
+    public UnityEngine.UI.ScrollRect buttonScrollRect;
+
+    [Tooltip("Number of buttons at which the list switches to a scrollable view.")]
+    public int scrollButtonThreshold = 5;
+
     public Camera mainCamera;
 
     [Header("World Space Settings")]
@@ -207,6 +216,7 @@ public class BuildingUIManager : MonoBehaviour
     {
         ClearButtons();
         if (headerText != null) headerText.text = "BUSINESS HQ";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
 
         SpawnButton(new ActionConfig
         {
@@ -223,6 +233,8 @@ public class BuildingUIManager : MonoBehaviour
             interactable = true,
             onClick      = () => ShowHQDeploy(hq)
         });
+
+        RefreshScrollRect();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -233,6 +245,7 @@ public class BuildingUIManager : MonoBehaviour
     {
         ClearButtons();
         if (headerText != null) headerText.text = "CONSTRUCT INFRASTRUCTURE";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
 
         SpawnButton(new ActionConfig { label = "← Back", cost = 0, interactable = true, onClick = () => ShowHQRoot(hq) });
 
@@ -262,6 +275,8 @@ public class BuildingUIManager : MonoBehaviour
         TryAddStructureButton("Build Power Box",       "PowerBoxes",      spm.powerBoxPrefab);
         TryAddStructureButton("Build Tesseract",       "Tesseract",       spm.tesseractPrefab);
         TryAddStructureButton("Build Rocketship",      "Rocketship",      spm.rocketshipPrefab);
+
+        RefreshScrollRect();
     }
 
     private void TryAddStructureButton(string label, string featureKey, GameObject prefab)
@@ -303,6 +318,18 @@ public class BuildingUIManager : MonoBehaviour
         TryAddUnitButton("Recruit Saboteur",        us.saboteurPrefab,       gold, tile, hq.owner, "Saboteur");
         TryAddUnitButton("Recruit Robo Worker",     us.roboWorkerPrefab,     gold, tile, hq.owner, "RoboWorker");
         TryAddUnitButton("Recruit Robo Marshall",   us.roboMarshallPrefab,   gold, tile, hq.owner, "RoboMarshall");
+
+        // Only the ← Back button exists — no units unlocked yet
+        if (spawnedButtons.Count == 1)
+        {
+            if (subHeaderText != null) { subHeaderText.text = "No units available for deployment."; subHeaderText.gameObject.SetActive(true); }
+        }
+        else
+        {
+            if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+        }
+
+        RefreshScrollRect();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -313,6 +340,7 @@ public class BuildingUIManager : MonoBehaviour
     {
         ClearButtons();
         if (headerText != null) headerText.text = "BPO CENTER";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
 
         SpawnDisplayRow($"Powered: {(bpo.IsPowered ? "Yes" : "No")}");
         SpawnDisplayRow($"Worker: {bpo.GetCurrentWorkerName()}");
@@ -322,6 +350,8 @@ public class BuildingUIManager : MonoBehaviour
             SpawnDisplayRow($"Income: +{income}G per turn");
         else
             SpawnDisplayRow("Move a Businessman or IT Personnel\nonto this tile to earn passive gold.");
+
+        RefreshScrollRect();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -332,6 +362,7 @@ public class BuildingUIManager : MonoBehaviour
     {
         ClearButtons();
         if (headerText != null) headerText.text = "COMMERCIAL HUB";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
 
         SpawnDisplayRow($"Automation: {(hub.autoSpawnEnabled ? "ON" : "OFF")}");
 
@@ -342,6 +373,8 @@ public class BuildingUIManager : MonoBehaviour
             interactable = true,
             onClick      = () => { hub.ToggleAutoSpawn(); ShowCommercialHub(hub); }
         });
+
+        RefreshScrollRect();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -352,6 +385,7 @@ public class BuildingUIManager : MonoBehaviour
     {
         ClearButtons();
         if (headerText != null) headerText.text = "SERVICE CENTER";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
 
         if (UnitSpawner.Instance == null) return;
 
@@ -362,6 +396,18 @@ public class BuildingUIManager : MonoBehaviour
         TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, sc.owner, "MaintenanceCrew");
         TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, sc.owner, "Foreman");
         TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonel");
+
+        // No units unlocked yet
+        if (spawnedButtons.Count == 0)
+        {
+            if (subHeaderText != null) { subHeaderText.text = "No units available for deployment."; subHeaderText.gameObject.SetActive(true); }
+        }
+        else
+        {
+            if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+        }
+
+        RefreshScrollRect();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -441,12 +487,9 @@ public class BuildingUIManager : MonoBehaviour
     {
         if (prefab == null) return;
 
-        // Not yet unlocked — show a locked placeholder instead
+        // Not yet unlocked — hide entirely
         if (techUnlockName != null && !IsUnitUnlocked(techUnlockName))
-        {
-            SpawnLockedPlaceholder();
             return;
-        }
 
         int cost = UnitSpawner.Instance.GetRecruitmentCost(prefab);
         SpawnButton(new ActionConfig
@@ -514,5 +557,34 @@ public class BuildingUIManager : MonoBehaviour
         foreach (GameObject go in spawnedButtons)
             if (go != null) Destroy(go);
         spawnedButtons.Clear();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Scroll Rect management
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Enables vertical scrolling if button count exceeds scrollButtonThreshold.
+    /// Uses spawnedButtons.Count — always accurate, no layout timing issues.
+    /// </summary>
+    private void RefreshScrollRect()
+    {
+        if (buttonScrollRect == null) return;
+
+        bool needsScroll = spawnedButtons.Count > scrollButtonThreshold;
+
+        buttonScrollRect.enabled  = true;
+        buttonScrollRect.vertical = needsScroll;
+
+        // Always snap content back to the top when a view is loaded.
+        buttonScrollRect.verticalNormalizedPosition = 1f;
+
+        RectTransform contentRect = buttonContainer as RectTransform;
+        if (contentRect != null)
+        {
+            Vector2 pos = contentRect.anchoredPosition;
+            pos.y = 0f;
+            contentRect.anchoredPosition = pos;
+        }
     }
 }
