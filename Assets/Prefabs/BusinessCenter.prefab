@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2013450924933006564}
   - component: {fileID: 5545426662043981766}
   - component: {fileID: 2146095453617026632}
+  - component: {fileID: 7049187763141258089}
   m_Layer: 0
   m_Name: BusinessCenter
   m_TagString: Untagged
@@ -112,3 +113,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7049187763141258089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6925926071195437682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d027834fafb314f4e92bed6af59cee4a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BusinessCenter
+  baseDurability: 100
+  currentDurability: 0
+  goldUpkeep: 10
+  hiddenDurability: 50
+  currentHiddenDurability: 0

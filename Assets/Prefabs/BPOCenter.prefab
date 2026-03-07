@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 9114283731075122654}
   - component: {fileID: 7092586665298480658}
   - component: {fileID: 7939374178568806126}
+  - component: {fileID: 8482562265032306101}
   m_Layer: 0
   m_Name: BPOCenter
   m_TagString: Untagged
@@ -112,3 +113,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8482562265032306101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1105714717946617516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6be396f8d124656479aebe261463dd7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BPOCenter
+  baseDurability: 100
+  currentDurability: 0
+  goldUpkeep: 10
+  hiddenDurability: 50
+  currentHiddenDurability: 0
+  incomePerBusinessperson: 50
+  incomePerITPersonnel: 30

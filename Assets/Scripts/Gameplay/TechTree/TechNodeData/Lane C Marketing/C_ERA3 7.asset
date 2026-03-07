@@ -24,6 +24,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3fde934239ba02247a2007ecd7437c7e, type: 2}
   - {fileID: 11400000, guid: e682a38f3ad43fa45a2ff257f7a60680, type: 2}
   unlockEffects:
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: AdvancedBusinessCenters
+    isHardwareEra: 0
   - type: 1
     targetUnits: []
     statToUpgrade: 

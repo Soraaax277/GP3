@@ -22,6 +22,16 @@ MonoBehaviour:
   preReqs:
   - {fileID: 11400000, guid: 141c1c0b9cbcc0e4d8c3a5bf5c2a8623, type: 2}
   unlockEffects:
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: DroneFactories
+    isHardwareEra: 0
   - type: 2
     targetUnits: []
     statToUpgrade: 

@@ -9,6 +9,7 @@ public class FeedbackController : MonoBehaviour
     public Color technicianColor = new Color(0f, 1f, 0.8f); // Cyan/Teal
     public Color wireSpecialistColor = new Color(0f, 0.5f, 1f); // Blue
     public Color alertColor = new Color(1f, 0.1f, 0.1f); // Red
+    public Color levelUpColor = new Color(1f, 0.9f, 0.2f); // Gold/Yellow
 
     private void Awake()
     {
@@ -69,6 +70,37 @@ public class FeedbackController : MonoBehaviour
         
         if (flash.TryGetComponent<Collider>(out Collider col)) Destroy(col);
         StartCoroutine(FadeAndDestroy(flash, 0.5f));
+    }
+
+    public void PlayLevelUpEffect(Vector3 position)
+    {
+        // "Golden Ring" burst using multiple spheres
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = i * 45f * Mathf.Deg2Rad;
+            Vector3 ringPos = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+            
+            GameObject star = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            star.transform.position = position + Vector3.up * 1f;
+            star.transform.localScale = Vector3.one * 0.25f;
+            
+            Renderer r = star.GetComponent<Renderer>();
+            r.material = new Material(Shader.Find("Unlit/Color"));
+            r.material.color = levelUpColor;
+            
+            if (star.TryGetComponent<Collider>(out Collider col)) Destroy(col);
+            StartCoroutine(SparkRoutine(star, (ringPos + Vector3.up * 0.5f).normalized));
+        }
+        
+        // Vertical beam
+        GameObject beam = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        beam.transform.position = position + Vector3.up * 3f;
+        beam.transform.localScale = new Vector3(0.5f, 3f, 0.5f);
+        Renderer beamR = beam.GetComponent<Renderer>();
+        beamR.material = new Material(Shader.Find("Unlit/Transparent"));
+        beamR.material.color = new Color(levelUpColor.r, levelUpColor.g, levelUpColor.b, 0.4f);
+        if (beam.TryGetComponent<Collider>(out Collider colB)) Destroy(colB);
+        StartCoroutine(FadeAndDestroy(beam, 1.2f));
     }
 
     // --- ERA TRANSITION ---

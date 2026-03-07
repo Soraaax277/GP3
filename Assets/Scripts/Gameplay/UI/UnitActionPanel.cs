@@ -166,6 +166,19 @@ public class UnitActionPanel : MonoBehaviour
         bool canAct = unit.CanAct;
         int  gold   = unit.owner.resources;
 
+        // --- PHASE 3: REFILL SYSTEM ---
+        if (unit.IsNearServiceCenter() && unit.CurrentCharges < unit.MaxCharges)
+        {
+            int refillCost = unit.GetRefillCost();
+            actions.Add(new ActionConfig 
+            { 
+                label = "Refill", 
+                cost = refillCost, 
+                interactable = gold >= refillCost, 
+                onClick = () => { unit.RefillCharges(); Close(); } 
+            });
+        }
+
         if (unit is BuilderUnit builder)
         {
             if (builder.canConstructTower)
@@ -195,6 +208,17 @@ public class UnitActionPanel : MonoBehaviour
         }
         else if (unit is Technician technician)
         {
+            if (technician.IsAtBase() && !technician.isResearching)
+            {
+                // Simple hardcoded example, ideally this would pull from a list of Grand Wonders
+                actions.Add(new ActionConfig 
+                { 
+                    label = "Research HW", 
+                    cost = 500, 
+                    interactable = canAct && gold >= 500 && technician.owner.researchPoints >= 200, 
+                    onClick = () => { technician.StartResearchProject("Era4Hardware"); Close(); } 
+                });
+            }
             int repairCost = technician.GetRepairCost();
             actions.Add(new ActionConfig { label = "Repair", cost = repairCost, interactable = canAct && gold >= repairCost, onClick = () => { technician.RepairAdjacentStructure(); Close(); } });
             actions.Add(new ActionConfig { label = "Power", cost = 0, interactable = canAct, onClick = () => { technician.PowerAdjacentStructure(); Close(); } });

@@ -37,6 +37,12 @@ public class EnemyAI : MonoBehaviour
     public GameObject signalJammerPrefab;
     public GameObject tesseractPrefab;
     public GameObject workerFactoryPrefab;
+    public GameObject powerBoxPrefab;
+    public GameObject droneFactoryPrefab;
+    public GameObject rocketshipPrefab;
+    public GameObject advBusinessCenterPrefab;
+    public GameObject advServiceCenterPrefab;
+    public GameObject canteenPrefab;
 
     [Header("Costs")]
     public int wireSpecialistCost  = 25;
@@ -51,6 +57,12 @@ public class EnemyAI : MonoBehaviour
     public int saboteurCost        = 110;
     public int roboWorkerCost      = 150;
     public int roboMarshallCost    = 180;
+    public int powerBoxCost        = 100;
+    public int droneFactoryCost    = 400;
+    public int rocketshipCost      = 1000;
+    public int advBusinessCenterCost = 500;
+    public int advServiceCenterCost = 450;
+    public int canteenCost          = 250;
 
     [Header("Tech Research")]
     public TechNode[] allTechNodes;
@@ -117,15 +129,17 @@ public class EnemyAI : MonoBehaviour
                 if (!tech.CanUnlockFor(aiPlayer)) continue;
 
                 // Simple check for construction-related names in tech
-                bool isConstructionTech = tech.techName.Contains("Construction") || 
-                                          tech.techName.Contains("Minimum Wage") ||
-                                          tech.techName.Contains("Contract");
+                bool isPriorityTech = tech.techName.Contains("Construction") || 
+                                      tech.techName.Contains("Minimum Wage") ||
+                                      tech.techName.Contains("Contract") ||
+                                      tech.techName.Contains("Radio Broadcasting") || // Power Boxes
+                                      tech.techName.Contains("Service Center");
 
-                if (isConstructionTech && aiPlayer.researchPoints >= tech.researchCost && aiPlayer.resources >= tech.goldCost)
+                if (isPriorityTech && aiPlayer.researchPoints >= tech.researchCost && aiPlayer.resources >= tech.goldCost)
                 {
                     TechManager.Instance.ResearchTech(tech);
                     researchedThisTurn++;
-                    Debug.Log($"[EnemyAI] Prioritized Construction Research: {tech.techName}");
+                    Debug.Log($"[EnemyAI] Prioritized Structural Research: {tech.techName}");
                     yield return new WaitForSeconds(0.3f);
                     break; 
                 }
@@ -179,24 +193,55 @@ public class EnemyAI : MonoBehaviour
     {
         if (TechManager.Instance == null) yield break;
 
-        // Try to place one structure per turn if unlocked and affordable
-        var structurePriority = new List<(GameObject prefab, string feature, int cost)>
+        // Current counts
+        var allStructures = TurnManager.Instance.GetAllStructures().Where(s => s != null && s.owner == aiPlayer).ToList();
+        int serviceCenterCount = allStructures.Count(s => s is ServiceCenter);
+        int hubCount          = allStructures.Count(s => s is CommercialHub);
+        int bizCount          = allStructures.Count(s => s is BusinessCenter);
+        int bpoCount          = allStructures.Count(s => s is BPOCenter);
+        int factoryCount      = allStructures.Count(s => s is WorkerFactory);
+        int tesseractCount    = allStructures.Count(s => s is Tesseract);
+        int jammerCount       = allStructures.Count(s => s is SignalJammer);
+        int boosterCount      = allStructures.Count(s => s is SignalBooster);
+        int powerBoxCount     = allStructures.Count(s => s is PowerBox);
+        int droneCount        = allStructures.Count(s => s is DroneFactory);
+        int rocketCount       = allStructures.Count(s => s is Rocketship);
+        int advBizCount       = allStructures.Count(s => s is AdvancedBusinessCenter);
+        int advServCount      = allStructures.Count(s => s is AdvancedServiceCenter);
+        int canteenCount      = allStructures.Count(s => s is Canteen);
+
+        // Try to place up to 2 structures per turn if budget allows (3 if Futuristic)
+        int builtThisTurn = 0;
+        int buildLimit = (aiPlayer.hardwareEra == TurnManager.PlayerEra.Futuristic) ? 3 : 2;
+
+        var structureOptions = new List<(GameObject prefab, string feature, int cost, int currentCount, int maxCount)>
         {
-            (serviceCenterPrefab,   "ServiceCenter",          200),
-            (commercialHubPrefab,   "CommercialHubs",         250),
-            (businessCenterPrefab,  "BusinessCenters",        300),
-            (signalBoosterPrefab,   "SignalBooster",          150),
-            (signalJammerPrefab,    "SignalJammers",          150),
-            (bpoCenterPrefab,       "BPOCenters",             400),
-            (workerFactoryPrefab,   "WorkerFactories",        500),
-            (tesseractPrefab,       "Tesseract",              600),
+            (serviceCenterPrefab,   "ServiceCenter",          200, serviceCenterCount, 1), // One SC is usually enough for a while
+            (commercialHubPrefab,   "CommercialHubs",         250, hubCount, 3),
+            (businessCenterPrefab,  "BusinessCenters",        300, bizCount, 2),
+            (signalBoosterPrefab,   "SignalBooster",          150, boosterCount, 4),
+            (signalJammerPrefab,    "SignalJammers",          150, jammerCount, 4),
+            (bpoCenterPrefab,       "BPOCenters",             400, bpoCount, 3),
+            (workerFactoryPrefab,   "WorkerFactories",        500, factoryCount, 1),
+            (tesseractPrefab,       "Tesseract",              600, tesseractCount, 1),
+            (powerBoxPrefab,        "PowerBoxes",             powerBoxCost, powerBoxCount, 5),
+            (droneFactoryPrefab,    "DroneFactories",         droneFactoryCost, droneCount, 1),
+            (rocketshipPrefab,      "Rocketship",             rocketshipCost, rocketCount, 1),
+            (advBusinessCenterPrefab, "AdvancedBusinessCenters", advBusinessCenterCost, advBizCount, 2),
+            (advServiceCenterPrefab, "AdvancedServiceCenter",   advServCount, advServCount, 1),
+            (canteenPrefab,         "Canteens",               canteenCost, canteenCount, 2),
         };
 
-        foreach (var (prefab, feature, cost) in structurePriority)
+        // Shuffle list to diversify selection
+        structureOptions = structureOptions.OrderBy(x => Random.value).ToList();
+
+        foreach (var (prefab, feature, cost, currentCount, maxCount) in structureOptions)
         {
             if (prefab == null) continue;
-            if (!TechManager.Instance.IsFeatureUnlocked(feature)) continue;
-            if (aiPlayer.resources < cost) continue;
+            if (!TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, feature)) continue;
+            if (currentCount >= maxCount) continue;
+            if (aiPlayer.resources < cost + 100) continue; // Keep reserve
+            if (builtThisTurn >= buildLimit) break;
 
             HexTile bestTile = FindBestStructureSpot(aiPlayer);
             if (bestTile != null)
@@ -205,9 +250,9 @@ public class EnemyAI : MonoBehaviour
                 GameObject structure = Instantiate(prefab, bestTile.transform.position + Vector3.up * 1f, Quaternion.identity);
                 StructureNode node = structure.GetComponent<StructureNode>();
                 if (node != null) node.Initialize(bestTile, aiPlayer);
-                Debug.Log($"[EnemyAI] Placed {feature} at {bestTile.name} for {cost} gold");
+                Debug.Log($"[EnemyAI] Placed {feature} at {bestTile.name} for {cost} gold. #{currentCount+1}");
+                builtThisTurn++;
                 yield return new WaitForSeconds(0.5f);
-                break; // Only place one structure per turn
             }
         }
     }
@@ -236,6 +281,8 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator RecruitmentPhase(PlayerData aiPlayer)
     {
         List<Unit> myUnits = TurnManager.Instance.GetAllUnits().Where(u => u != null && u.owner == aiPlayer).ToList();
+        
+        // Count specific types
         int builderCount     = myUnits.Count(u => u is BuilderUnit);
         int specialistCount  = myUnits.Count(u => u is WireSpecialist);
         int marketerCount    = myUnits.Count(u => u is SalesMarketer);
@@ -255,57 +302,75 @@ public class EnemyAI : MonoBehaviour
         bool needsActivation = FindObjectsByType<WireNode>(FindObjectsSortMode.None)
             .Any(w => w.owner == aiPlayer && !w.IsTechnicianActivated);
 
-        // ---- CORE UNITS (always needed) ----
+        var unlockedUnits = TechManager.Instance != null ? TechManager.Instance.GetUnlockedUnitNamesFor(aiPlayer) : new HashSet<string>();
 
-        // Builder (if unbuilt towers exist)
-        if (needsBuilder && builderCount == 0)
+        // ---- CORE UNITS (always needed) ----
+        // Builder
+        if (needsBuilder && (builderCount + foremenCount + roboWorkerCount) < 2)
             yield return TryRecruit(builderPrefab, aiPlayer, builderCost, "Builder");
 
         // Wire Specialist (keep 2)
         if (specialistCount < 2)
             yield return TryRecruit(wireSpecialistPrefab, aiPlayer, wireSpecialistCost, "WireSpecialist");
 
-        // Sales Marketer (keep 1)
-        if (marketerCount < 1 && TechManager.Instance != null && TechManager.Instance.unlockedUnitNames.Contains("SalesMarketer"))
+        // Sales Marketer — unlocked via CommercialHubs feature (C_ERA2 0) or explicit unit unlock
+        bool salesMarketerUnlocked = TechManager.Instance != null &&
+            (TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "CommercialHubs") ||
+             unlockedUnits.Contains("SalesMarketer"));
+        if (marketerCount < 1 && salesMarketerUnlocked)
             yield return TryRecruit(salesMarketerPrefab, aiPlayer, salesMarketerCost, "SalesMarketer");
 
-        // Technician (if repairs or wire activations needed and no Tesseract)
+        // Technician
         bool hasTesseract = PowerGridManager.Instance != null && PowerGridManager.Instance.HasTesseract(aiPlayer);
-        if ((needsRepair || needsActivation) && technicianCount < 1 && !hasTesseract)
+        if ((needsRepair || needsActivation) && (technicianCount + itCount + roboMarshallCount) < 1 && !hasTesseract)
             yield return TryRecruit(technicianPrefab, aiPlayer, technicianCost, "Technician");
 
-        // ---- SCOUTS (if unlocked) ----
-        if (scoutCount < 1 && scoutPrefab != null)
+        // ---- ADVANCED UNLOCKS ----
+
+        // Scouts
+        if (scoutCount < 1 && scoutPrefab != null && unlockedUnits.Contains("Scout"))
             yield return TryRecruit(scoutPrefab, aiPlayer, scoutCost, "Scout");
 
-        // ---- WORKFORCE UNITS (if Service Center feature is unlocked) ----
-        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("ServiceCenter"))
-        {
-            if (foremenCount < 1 && needsBuilder && foremenPrefab != null)
-                yield return TryRecruit(foremenPrefab, aiPlayer, foremenCost, "Foremen");
+        // Workforce (Service Center / Canteen features)
+        bool hasWorkforceBase = TechManager.Instance != null && 
+                                (TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "ServiceCenter") || 
+                                 TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "Canteens"));
 
-            if (maintenanceCount < 1 && needsRepair && maintenanceCrewPrefab != null)
+        if (hasWorkforceBase)
+        {
+            // Foreman must ONLY be unlocked if Canteens is unlocked (for AI)
+            bool foremenUnlocked = TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "Canteens");
+            if (foremenCount < 1 && needsBuilder && foremenPrefab != null && foremenUnlocked)
+                yield return TryRecruit(foremenPrefab, aiPlayer, foremenCost, "Foreman");
+
+            if (maintenanceCount < 1 && maintenanceCrewPrefab != null && unlockedUnits.Contains("MaintenanceCrew"))
                 yield return TryRecruit(maintenanceCrewPrefab, aiPlayer, maintenanceCrewCost, "MaintenanceCrew");
 
-            if (itCount < 1 && needsRepair && itPersonnelPrefab != null)
-                yield return TryRecruit(itPersonnelPrefab, aiPlayer, itPersonnelCost, "ITPersonnel");
+            // Prefab name is "ITPersonel" (one 'n', matches your asset)
+            bool itUnlocked = unlockedUnits.Contains("ITPersonel") ||
+                              TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "ServiceCenter");
+            if (itCount < 1 && itPersonnelPrefab != null && itUnlocked)
+                yield return TryRecruit(itPersonnelPrefab, aiPlayer, itPersonnelCost, "ITPersonel");
         }
 
-        // ---- SABOTEUR (Lane D) ----
-        if (saboteurCount < 1 && saboteurPrefab != null && TechManager.Instance != null && TechManager.Instance.IsSabotageTabUnlocked())
+        // Saboteurs
+        if (saboteurCount < 1 && saboteurPrefab != null && TechManager.Instance != null && TechManager.Instance.IsSabotageTabUnlockedFor(aiPlayer))
             yield return TryRecruit(saboteurPrefab, aiPlayer, saboteurCost, "Saboteur");
 
-        // ---- BUSINESSMAN (Lane C) ----
-        if (businessmanCount < 1 && businessmanPrefab != null && TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("CommercialHubs"))
+        // Businessman — unlocked alongside SalesMarketer via CommercialHubs feature
+        bool businessmanUnlocked = TechManager.Instance != null &&
+            (TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "CommercialHubs") ||
+             unlockedUnits.Contains("Businessman"));
+        if (businessmanCount < 1 && businessmanPrefab != null && businessmanUnlocked)
             yield return TryRecruit(businessmanPrefab, aiPlayer, businessmanCost, "Businessman");
 
-        // ---- LATE GAME ROBO UNITS ----
-        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked("WorkerFactories"))
+        // Robo Units
+        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlockedFor(aiPlayer, "WorkerFactories"))
         {
-            if (roboWorkerCount < 2 && roboWorkerPrefab != null)
+            if (roboWorkerCount < 2 && roboWorkerPrefab != null && unlockedUnits.Contains("RoboWorker"))
                 yield return TryRecruit(roboWorkerPrefab, aiPlayer, roboWorkerCost, "RoboWorker");
 
-            if (roboMarshallCount < 1 && roboMarshallPrefab != null)
+            if (roboMarshallCount < 1 && roboMarshallPrefab != null && unlockedUnits.Contains("RoboMarshall"))
                 yield return TryRecruit(roboMarshallPrefab, aiPlayer, roboMarshallCost, "RoboMarshall");
         }
     }
@@ -318,12 +383,39 @@ public class EnemyAI : MonoBehaviour
         int reserve = GetUnbuiltTowers(aiPlayer).Any() ? 100 : 0;
         if (aiPlayer.resources < cost + reserve) yield break;
 
-        SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
-        Unit u = UnitSpawner.Instance.SpawnUnit(prefab, spawnNode.tile, aiPlayer);
-        if (u != null)
+        // Pick a spawn location. Prioritize Canteen for workforce, Service Center for Maintenance, else HQ.
+        HexTile spawnTile = null;
+        if (prefab == foremenPrefab || prefab == builderPrefab || prefab == technicianPrefab)
         {
-            Debug.Log($"[EnemyAI] Recruited {label}. Remaining: {aiPlayer.resources}");
+            var canteen = FindObjectsByType<Canteen>(FindObjectsSortMode.None).FirstOrDefault(c => c.owner == aiPlayer && c.IsPowered);
+            if (canteen != null) spawnTile = canteen.ParentTile;
         }
+        else if (prefab == maintenanceCrewPrefab || prefab == itPersonnelPrefab)
+        {
+            var sc = FindObjectsByType<ServiceCenter>(FindObjectsSortMode.None).FirstOrDefault(s => s.owner == aiPlayer && s.IsPowered);
+            if (sc != null) spawnTile = sc.ParentTile;
+        }
+
+        // Default to a random HQ if no specialized structure found
+        if (spawnTile == null && aiPlayer.ownedNodes.Count > 0)
+        {
+            SignalNode spawnNode = aiPlayer.ownedNodes[Random.Range(0, aiPlayer.ownedNodes.Count)];
+            spawnTile = spawnNode.tile;
+        }
+
+        if (spawnTile != null)
+        {
+            Unit u = UnitSpawner.Instance.SpawnUnit(prefab, spawnTile, aiPlayer);
+            if (u != null)
+                Debug.Log($"[EnemyAI] ✓ Recruited {label} at {spawnTile.name}. Gold remaining: {aiPlayer.resources}");
+            else
+                Debug.LogWarning($"[EnemyAI] SpawnUnit returned null for {label} at {spawnTile.name} (tile occupied?)");
+        }
+        else
+        {
+            Debug.LogWarning($"[EnemyAI] No spawn tile found for {label}!");
+        }
+
         yield return new WaitForSeconds(0.5f);
     }
 
@@ -721,10 +813,21 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleSalesMarketer(SalesMarketer marketer)
     {
         if (marketer == null || !marketer.gameObject.activeInHierarchy || !marketer.CanAct) yield break;
+
+        // 1. Try to find an enemy tile to deny (must be visible to AI!)
         HexTile target = GridManager.Instance.tiles.Values
-            .Where(t => t.influenceByPlayer.Any(kvp => kvp.Key != marketer.owner && kvp.Value > 0))
+            .Where(t => IsTileVisibleToAI(t, marketer.owner) && t.influenceByPlayer.Any(kvp => kvp.Key != marketer.owner && kvp.Value > 0))
             .OrderBy(t => GridManager.Instance.CubeDistance(marketer.currentTile.cubeCoords, t.cubeCoords))
             .FirstOrDefault();
+
+        // 2. If no visible enemy targets, expand own influence by 1 tile outwards
+        if (target == null)
+        {
+            target = GridManager.Instance.tiles.Values
+                .Where(t => t.GetInfluence(marketer.owner) == 0 && GridManager.Instance.GetNeighbors(t).Any(n => n.GetInfluence(marketer.owner) > 0))
+                .OrderBy(t => GridManager.Instance.CubeDistance(marketer.currentTile.cubeCoords, t.cubeCoords))
+                .FirstOrDefault();
+        }
 
         if (target != null)
         {
@@ -738,7 +841,7 @@ public class EnemyAI : MonoBehaviour
 
         if (marketer.CanAct)
         {
-            marketer.PerformDeny();
+            marketer.ClaimInfluence();
         }
     }
 
@@ -746,24 +849,34 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleScout(ScoutUnit scout)
     {
         if (scout == null || !scout.gameObject.activeInHierarchy || !scout.CanAct) yield break;
-        HexTile farthestTile = GridManager.Instance.tiles.Values
-            .Where(t => !t.IsOccupied() && t.type == HexTile.TileType.Land)
-            .OrderByDescending(t =>
-            {
-                int minDist = 999;
-                foreach (var node in scout.owner.ownedNodes)
-                {
-                    int d = GridManager.Instance.CubeDistance(t.cubeCoords, node.tile.cubeCoords);
-                    if (d < minDist) minDist = d;
-                }
-                return minDist;
-            })
-            .ThenBy(t => GridManager.Instance.CubeDistance(scout.currentTile.cubeCoords, t.cubeCoords))
+        
+        // Find a tile that the AI CANNOT currently see, to go explore it.
+        HexTile exploreTarget = GridManager.Instance.tiles.Values
+            .Where(t => !t.IsOccupied() && t.type == HexTile.TileType.Land && !IsTileVisibleToAI(t, scout.owner))
+            .OrderBy(t => GridManager.Instance.CubeDistance(scout.currentTile.cubeCoords, t.cubeCoords))
             .FirstOrDefault();
 
-        if (farthestTile != null)
+        // Fallback to furthest tile if entire map is somehow visible
+        if (exploreTarget == null)
         {
-            HexTile moveTarget = GetCloserTile(scout.currentTile, farthestTile, scout.moveRange);
+            exploreTarget = GridManager.Instance.tiles.Values
+                .Where(t => !t.IsOccupied() && t.type == HexTile.TileType.Land)
+                .OrderByDescending(t =>
+                {
+                    int minDist = 999;
+                    foreach (var node in scout.owner.ownedNodes)
+                    {
+                        int d = GridManager.Instance.CubeDistance(t.cubeCoords, node.tile.cubeCoords);
+                        if (d < minDist) minDist = d;
+                    }
+                    return minDist;
+                })
+                .FirstOrDefault();
+        }
+
+        if (exploreTarget != null)
+        {
+            HexTile moveTarget = GetCloserTile(scout.currentTile, exploreTarget, scout.moveRange);
             if (moveTarget != null && moveTarget != scout.currentTile)
             {
                 if (scout == null || !scout.gameObject.activeInHierarchy) yield break;
@@ -909,32 +1022,65 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleBusinessman(Businessman biz)
     {
         if (biz == null || !biz.gameObject.activeInHierarchy || !biz.CanAct) yield break;
-        // Find nearest enemy tower to recruit
-        TowerNode enemyTower = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
-            .Where(t => t.owner != biz.owner && !t.IsDestroyed())
-            .OrderBy(t => GridManager.Instance.CubeDistance(biz.currentTile.cubeCoords, t.tile.cubeCoords))
+
+        // Only chase enemy units the AI can currently SEE 
+        Unit targetEnemy = TurnManager.Instance.GetAllUnits()
+            .Where(u => u != null
+                     && u.gameObject.activeInHierarchy
+                     && u.owner != biz.owner
+                     && u.currentTile != null
+                     && IsTileVisibleToAI(u.currentTile, biz.owner))
+            .OrderBy(u => GridManager.Instance.CubeDistance(biz.currentTile.cubeCoords, u.currentTile.cubeCoords))
             .FirstOrDefault();
 
-        if (enemyTower == null) yield break;
-
-        if (GridManager.Instance.GetNeighbors(biz.currentTile).Contains(enemyTower.tile))
+        if (targetEnemy == null)
         {
-            biz.RecruitNearestWorker();
+            Debug.Log("[EnemyAI] Businessman: no visible enemy units to convert.");
+            yield break;
+        }
+
+        // If adjacent, recruit
+        if (GridManager.Instance.GetNeighbors(biz.currentTile).Contains(targetEnemy.currentTile))
+        {
+             biz.RecruitNearestWorker();
         }
         else
         {
-            HexTile moveTarget = GetCloserTile(biz.currentTile, enemyTower.tile, biz.moveRange);
+            // Move toward visible target
+            HexTile moveTarget = GetCloserTile(biz.currentTile, targetEnemy.currentTile, biz.moveRange);
             if (moveTarget != null && moveTarget != biz.currentTile)
             {
                 biz.MoveTo(moveTarget, biz.moveRange);
                 yield return new WaitForSeconds(0.5f);
 
                 if (biz != null && biz.CanAct &&
-                    GridManager.Instance.GetNeighbors(biz.currentTile).Contains(enemyTower.tile))
+                    GridManager.Instance.GetNeighbors(biz.currentTile).Contains(targetEnemy.currentTile))
                 {
                     biz.RecruitNearestWorker();
                 }
             }
         }
+    }
+
+    // --- AI VISION HELPER ---
+    // The tile.isVisible flag only tracks the human player's vision!
+    // The AI needs its own logic to see if a tile is within its own FOV.
+    public bool IsTileVisibleToAI(HexTile targetTile, PlayerData aiPlayer)
+    {
+        if (FieldOfViewManager.Instance == null) return true; // Fallback
+
+        // Check HQs
+        if (aiPlayer.ownedNodes.Any(n => n != null && GridManager.Instance.CubeDistance(n.ParentTile.cubeCoords, targetTile.cubeCoords) <= FieldOfViewManager.Instance.hqVisionRange)) 
+            return true;
+
+        // Check Towers
+        if (TurnManager.Instance.GetAllTowers().Any(t => t.owner == aiPlayer && !t.IsDestroyed() && GridManager.Instance.CubeDistance(t.tile.cubeCoords, targetTile.cubeCoords) <= FieldOfViewManager.Instance.towerVisionRange)) 
+            return true;
+
+        // Check Units
+        if (TurnManager.Instance.GetAllUnits().Any(u => u.owner == aiPlayer && u.currentTile != null && GridManager.Instance.CubeDistance(u.currentTile.cubeCoords, targetTile.cubeCoords) <= ((u is ScoutUnit) ? FieldOfViewManager.Instance.unitVisionRange + 2 : FieldOfViewManager.Instance.unitVisionRange))) 
+            return true;
+
+        return false;
     }
 }

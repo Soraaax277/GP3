@@ -17,6 +17,7 @@ public class StructurePlacementManager : MonoBehaviour
     public GameObject workerFactoryPrefab;
     public GameObject droneFactoryPrefab;
     public GameObject rocketshipPrefab;
+    public GameObject canteenPrefab;
 
     private GameObject hologram;
     private HexTile hoveredTile;

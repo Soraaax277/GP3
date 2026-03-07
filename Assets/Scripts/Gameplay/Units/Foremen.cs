@@ -7,6 +7,11 @@ public class Foremen : Unit
 {
     public int buildRange = 1;
     public int buildsRemaining = 5; // More than regular builders
+    public int maxBuilds = 5;
+
+    public override int CurrentCharges { get => buildsRemaining; set => buildsRemaining = value; }
+    public override int MaxCharges => maxBuilds;
+
     public bool canConstructTower = true; // Starts with construction ability
 
     public override void Initialize(HexTile spawnTile, PlayerData player)
@@ -22,6 +27,7 @@ public class Foremen : Unit
         // 1. ERA SPECIFIC UPGRADES (Futuristic)
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
+            maxBuilds = 10;
             buildsRemaining = 10; // AI Management boost
             moveRange = 5; // Hyper-commuter pods
         }
@@ -89,7 +95,9 @@ public class Foremen : Unit
         owner.resources -= buildCost;
         targetTower.Build();
 
-        buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
+        if (ShouldConsumeCharge())
+            buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
+            
         ConsumeAction();
         Debug.Log($"[Foremen] Construction complete (cost: {buildCost}). Builds left: {buildsRemaining}");
 

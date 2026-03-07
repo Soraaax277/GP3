@@ -6,6 +6,11 @@ using UnityEngine;
 public class MaintenanceCrew : Unit
 {
     public int maintenanceCharges = 4; // Higher than basic units
+    public int maxMaintenanceCharges = 4;
+
+    public override int CurrentCharges { get => maintenanceCharges; set => maintenanceCharges = value; }
+    public override int MaxCharges => maxMaintenanceCharges;
+
     public float repairEfficiency = 1.0f;
     public bool canRepairTowers = false;
 
@@ -26,7 +31,8 @@ public class MaintenanceCrew : Unit
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
             repairEfficiency = 2.0f; // Rapid nanite maintenance
-            maintenanceCharges = 8; // Ultra-long-life fuel cells
+            maxMaintenanceCharges = 8;
+            maintenanceCharges = Mathf.Max(maintenanceCharges, 8); // Ultra-long-life fuel cells
         }
 
         // 2. TECH TREE FEATURES
@@ -103,7 +109,9 @@ public class MaintenanceCrew : Unit
         owner.resources -= repairCost;
         targetTower.Repair(repairEfficiency);
 
-        maintenanceCharges--;
+        if (ShouldConsumeCharge())
+            maintenanceCharges--;
+            
         ConsumeAction();
         Debug.Log($"[MaintenanceCrew] Maintenance complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}). Charges left: {maintenanceCharges}");
 

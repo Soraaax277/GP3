@@ -6,6 +6,11 @@ using UnityEngine;
 public class RoboMarshall : Unit
 {
     public int repairCharges = 5;
+    public int maxRepairCharges = 5;
+
+    public override int CurrentCharges { get => repairCharges; set => repairCharges = value; }
+    public override int MaxCharges => maxRepairCharges;
+
     public float repairEfficiency = 1.5f; // Superior efficiency
     public bool canRepairWires = true;
     public bool canRepairTowers = true;
@@ -24,7 +29,8 @@ public class RoboMarshall : Unit
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
             repairEfficiency = 3.0f; // AI-Optimized Nanobots
-            repairCharges = 10;
+            maxRepairCharges = 10;
+            repairCharges = Mathf.Max(repairCharges, 10);
             moveRange = 6;
         }
         else
@@ -130,7 +136,9 @@ public class RoboMarshall : Unit
             Debug.Log($"[RoboMarshall] Wire repair complete (cost: {repairCost}, full restore: {fullRestore}).");
         }
 
-        repairCharges--;
+        if (ShouldConsumeCharge())
+            repairCharges--;
+            
         ConsumeAction();
         Debug.Log($"[RoboMarshall] Charges left: {repairCharges}");
 

@@ -21,7 +21,8 @@ MonoBehaviour:
   preReqs: []
   unlockEffects:
   - type: 1
-    targetUnits: []
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: c6583ff17f7eb9c4493c2650562d7964, type: 3}
     statToUpgrade: 
     amount: 0
     skillName: 

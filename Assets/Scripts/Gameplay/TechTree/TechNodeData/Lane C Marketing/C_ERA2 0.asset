@@ -25,6 +25,7 @@ MonoBehaviour:
   - type: 1
     targetUnits:
     - {fileID: 4853573965242364229, guid: cf11ed92eb23fd04fb599ce308f012e3, type: 3}
+    - {fileID: 4853573965242364229, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
     statToUpgrade: 
     amount: 0
     skillName: 
@@ -32,6 +33,16 @@ MonoBehaviour:
     infraValueMod: 0
     isMultiplier: 0
     featureName: 
+    isHardwareEra: 0
+  - type: 4
+    targetUnits: []
+    statToUpgrade: 
+    amount: 0
+    skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: CommercialHubs
     isHardwareEra: 0
   - type: 3
     targetUnits: []

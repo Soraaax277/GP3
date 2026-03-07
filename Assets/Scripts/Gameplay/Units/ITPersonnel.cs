@@ -5,6 +5,11 @@ using UnityEngine;
 public class ITPersonnel : Unit
 {
     public int repairCharges = 3;
+    public int maxRepairCharges = 3;
+
+    public override int CurrentCharges { get => repairCharges; set => repairCharges = value; }
+    public override int MaxCharges => maxRepairCharges;
+
     public float repairEfficiency = 1.5f; // Starts at +50% efficiency
     public bool canRepairWires = true; // Can repair both towers and wires
     public bool canRepairTowers = true;
@@ -23,7 +28,8 @@ public class ITPersonnel : Unit
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
             repairEfficiency = 2.5f; // Cryo-repair technology
-            repairCharges = 6;
+            maxRepairCharges = 6;
+            repairCharges = Mathf.Max(repairCharges, 6);
             moveRange = 5;
         }
         else
@@ -113,7 +119,9 @@ public class ITPersonnel : Unit
             Debug.Log($"[ITPersonnel] Wire repair complete, restored {healAmount} HP (cost: {repairCost}).");
         }
 
-        repairCharges--;
+        if (ShouldConsumeCharge())
+            repairCharges--;
+            
         ConsumeAction();
         Debug.Log($"[ITPersonnel] Charges left: {repairCharges}");
 

@@ -8,6 +8,13 @@ public class SalesMarketer : Unit
     public float denyChance = 0.35f;
     public int denyAmount = 5;
 
+    [Header("Phase 3: Charges")]
+    public int marketingCharges = 5;
+    public int maxMarketingCharges = 5;
+
+    public override int CurrentCharges { get => marketingCharges; set => marketingCharges = value; }
+    public override int MaxCharges => maxMarketingCharges;
+
     public bool canRecruit = false;
     
     public override void CheckTechStatus()
@@ -102,7 +109,7 @@ public class SalesMarketer : Unit
     {
         if (!canAct && !testingMode)
         {
-            Debug.Log("[Saboteur] Cannot act (turn/action used)");
+            Debug.Log("[SalesMarketer] Cannot act (turn/action used)");
             return;
         }
 
@@ -111,10 +118,22 @@ public class SalesMarketer : Unit
             Debug.Log("Recruit ability not Unlocked");
             return;
         }
+
+        // Charge consumed on attempt, regardless of success
+        if (ShouldConsumeCharge())
+        {
+            marketingCharges--;
+            if (marketingCharges <= 0)
+            {
+                ConsumeAction();
+                Die();
+                return;
+            }
+        }
+
         Unit targetUnit = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            //checks if target is owned by enemyAI
             if (neighbor.placedUnit != null && neighbor.placedUnit.owner != TurnManager.Instance.currentPlayer)
             {
                 targetUnit = neighbor.placedUnit;
@@ -124,15 +143,23 @@ public class SalesMarketer : Unit
 
         if (targetUnit == null)
         {
-            Debug.Log("No unit adjacent!");
+            Debug.Log("[SalesMarketer] No enemy unit adjacent — charge still spent.");
+            ConsumeAction();
             return;
         }
 
-        int procInt = Random.Range(0, 1);
-        if (procInt >= 1) //procInt has a 20% chance of being 4
-        { 
+        // 50% recruitment chance
+        if (Random.value >= 0.5f)
+        {
             targetUnit.Recruit(owner);
+            Debug.Log($"[SalesMarketer] Successfully recruited {targetUnit.name}!");
         }
+        else
+        {
+            Debug.Log("[SalesMarketer] Recruitment failed.");
+        }
+
+        ConsumeAction();
     }
 
     public override void OnTurnStart(PlayerData activePlayer)
@@ -161,6 +188,23 @@ public class SalesMarketer : Unit
     {
         if (rangeIndicator != null)
             rangeIndicator.SetActive(show);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  DEATH: when all charges are consumed the marketer retires
+    // ─────────────────────────────────────────────────────────────────────────
+    private void Die()
+    {
+        Debug.Log($"[SalesMarketer] {owner.playerName}'s Marketer has used all charges and retired.");
+
+        // Clear the tile reference so nothing references a dead unit
+        if (currentTile != null && currentTile.placedUnit == this)
+            currentTile.placedUnit = null;
+
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.UnregisterUnit(this);
+
+        Destroy(gameObject);
     }
 
     public void PerformDeny()
@@ -203,6 +247,61 @@ public class SalesMarketer : Unit
         }
 
         Debug.Log($"[SalesMarketer] Deny action complete. Tiles affected: {tilesAffected}");
+
+        if (ShouldConsumeCharge())
+        {
+            marketingCharges--;
+            if (marketingCharges <= 0)
+            {
+                ConsumeAction();
+                Die();
+                return;
+            }
+        }
+            
+        ConsumeAction();
+    }
+
+    public void ClaimInfluence()
+    {
+        if (!canAct) return;
+
+        Debug.Log($"[SalesMarketer] {owner.playerName}'s Marketer claiming/improving influence on {currentTile.name}");
+
+        // 1. Chance to add own influence (Improve tile)
+        if (Random.value < 0.5f)
+        {
+            currentTile.AddInfluence(owner, denyAmount);
+            Debug.Log($"[SalesMarketer] Improved influence on {currentTile.name} by {denyAmount}");
+        }
+
+        // 2. Chance to remove other's influence (Deny) — also deducts from their score
+        List<PlayerData> enemyPlayers = currentTile.influenceByPlayer.Keys
+            .Where(p => p != owner)
+            .ToList();
+
+        foreach (PlayerData enemy in enemyPlayers)
+        {
+            int enemyInf = currentTile.GetInfluence(enemy);
+            if (enemyInf > 0 && Random.value < denyChance)
+            {
+                int deducted = Mathf.Min(denyAmount, enemyInf);
+                currentTile.RemoveInfluence(enemy, deducted);
+                Debug.Log($"[SalesMarketer] Reduced {enemy.playerName} influence on {currentTile.name} by {deducted}");
+            }
+        }
+
+        if (ShouldConsumeCharge())
+        {
+            marketingCharges--;
+            if (marketingCharges <= 0)
+            {
+                ConsumeAction();
+                Die();
+                return;
+            }
+        }
+            
         ConsumeAction();
     }
 
