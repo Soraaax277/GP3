@@ -70,6 +70,9 @@ public class TechManager : MonoBehaviour
     public HashSet<string> unlockedFeatures =>
         GetOrCreateSet(_playerUnlockedFeatures, TurnManager.Instance?.currentPlayer);
 
+    public HashSet<string> GetUnlockedUnitNamesFor(PlayerData player) =>
+        GetOrCreateSet(_playerUnlockedUnitNames, player);
+
     private HashSet<string> GetOrCreateSet(Dictionary<PlayerData, HashSet<string>> dict, PlayerData player)
     {
         if (player == null) return new HashSet<string>();
@@ -379,6 +382,43 @@ public class TechManager : MonoBehaviour
         
         Debug.Log($"Successfully researched {tech.techName}. " +
                   $"Remaining RP: {player.researchPoints}, Gold: {player.resources}");
+    }
+
+    public void UnlockTechExplicitly(string techName)
+    {
+         // Find node by name (Search in Resources or use an asset map)
+         TechNode[] allNodes = Resources.FindObjectsOfTypeAll<TechNode>();
+         foreach (var node in allNodes)
+         {
+             if (node.techName == techName || node.name == techName)
+             {
+                 ResearchTechForce(node);
+                 return;
+             }
+         }
+    }
+
+    private void ResearchTechForce(TechNode tech)
+    {
+        PlayerData player = TurnManager.Instance != null ? TurnManager.Instance.currentPlayer : null;
+        if (player == null || tech == null) return;
+        
+        // No cost deduction here
+        tech.UnlockFor(player);
+        
+        if (tech.unlockEffects != null)
+        {
+            foreach (var effect in tech.unlockEffects)
+            {
+                effect.ActivateEffect();
+                // Persist if needed (copied logic from ResearchTech)
+                if (effect.type == EffectType.UpgradeUnitStat || effect.type == EffectType.UnlockSkill || effect.type == EffectType.UnlockUnit)
+                {
+                     GetActiveEffectsFor(player).Add(effect);
+                     ApplyEffectToExistingUnits(effect, player);
+                }
+            }
+        }
     }
 
     // -----------------------------------------------------------------------

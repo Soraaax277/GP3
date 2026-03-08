@@ -3,7 +3,12 @@ using UnityEngine;
 public class WireSpecialist : Unit
 {
     public int wiresRemaining = 8;
-    public bool canRepairTowers = false; // Unlocked by Versatile Repairmen tech
+    public int maxWires = 8;
+
+    public override int CurrentCharges { get => wiresRemaining; set => wiresRemaining = value; }
+    public override int MaxCharges => maxWires;
+
+    public bool canRepairTowers = false;     // Unlocked by Versatile Repairmen tech
     public bool canSabotage = false;     // Unlocked by Brainwashed Workforce tech
     public bool canUseBombs = false;     // Unlocked by Neutron Bombs tech
     public float repairEfficiency = 1.0f;
@@ -23,6 +28,7 @@ public class WireSpecialist : Unit
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
             damageMultiplier = 2.0f;
+            maxWires = 12;
             wiresRemaining = Mathf.Max(wiresRemaining, 12);
         }
 
@@ -157,7 +163,12 @@ public class WireSpecialist : Unit
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayWirePlacement(tile.transform.position);
 
-        wiresRemaining--;
+        if (FeedbackController.Instance != null)
+            FeedbackController.Instance.PlayWirePlacement(tile.transform.position);
+
+        if (ShouldConsumeCharge())
+            wiresRemaining--;
+
         ConsumeAction();
 
         if (wiresRemaining <= 0)
@@ -207,7 +218,9 @@ public class WireSpecialist : Unit
 
         targetWire.TakeDamage(sabotageDamage);
 
-        wiresRemaining = Mathf.Max(0, wiresRemaining - 1);
+        if (ShouldConsumeCharge())
+            wiresRemaining = Mathf.Max(0, wiresRemaining - 1);
+            
         ConsumeAction();
         Debug.Log($"[WireSpecialist] Sabotage complete, dealing {sabotageDamage}. Wires left: {wiresRemaining}");
 
@@ -265,7 +278,9 @@ public class WireSpecialist : Unit
         owner.resources -= repairCost;
         targetTower.Repair(repairEfficiency);
 
-        wiresRemaining = Mathf.Max(0, wiresRemaining - 1);
+        if (ShouldConsumeCharge())
+            wiresRemaining = Mathf.Max(0, wiresRemaining - 1);
+            
         ConsumeAction();
         Debug.Log($"[WireSpecialist] Tower repair complete (efficiency: {repairEfficiency * 100}%, cost: {repairCost}). Wires left: {wiresRemaining}");
 

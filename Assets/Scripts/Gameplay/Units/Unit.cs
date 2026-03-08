@@ -21,6 +21,59 @@ public abstract class Unit : MonoBehaviour
     public bool isMoving;
     
     public bool forceCanAct = false;
+    
+    [Header("Veterancy & Charges")]
+    public int level = 1;
+    public int refillsHappened = 0;
+    
+    public abstract int CurrentCharges { get; set; }
+    public abstract int MaxCharges { get; }
+    
+    public virtual void RefillCharges()
+    {
+        CurrentCharges = MaxCharges;
+        refillsHappened++;
+        
+        if (refillsHappened >= 3)
+        {
+            LevelUp();
+        }
+    }
+
+    public virtual void LevelUp()
+    {
+        if (level >= 3) return;
+        
+        level++;
+        refillsHappened = 0;
+        
+        Debug.Log($"{name} leveled up to Level {level}!");
+        
+        // Apply Perks
+        if (level == 2)
+        {
+            moveRange += 1;
+            movementRemaining = moveRange;
+            if (FeedbackController.Instance != null)
+                FeedbackController.Instance.PlayLevelUpEffect(transform.position);
+        }
+        else if (level == 3)
+        {
+            // "Expert" Perk: 20% chance to not consume a charge
+            if (FeedbackController.Instance != null)
+                FeedbackController.Instance.PlayLevelUpEffect(transform.position);
+        }
+    }
+
+    public bool ShouldConsumeCharge()
+    {
+        if (level >= 3)
+        {
+            // Expert Perk: 20% chance to NOT consume charge
+            return Random.value > 0.20f;
+        }
+        return true;
+    }
 
     //  UPKEEP  (System 3)
     //  Gold subtracted from the owning player at the start of each turn.
@@ -116,6 +169,29 @@ public abstract class Unit : MonoBehaviour
         if (!owner.isAI) SetSelected(false);
         
         StartCoroutine(MoveRoutine(tile, range));
+    }
+
+    public virtual int GetRefillCost()
+    {
+        // 50 Gold base, minus something for veterancy or plus something?
+        return 75;
+    }
+    
+    public bool IsNearServiceCenter()
+    {
+        if (currentTile == null) return false;
+        
+        // Check current tile
+        if (currentTile.placedStructure is ServiceCenter sc && sc.owner == owner) return true;
+        
+        // Check neighbors
+        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+        {
+            if (neighbor.placedStructure is ServiceCenter neighborSc && neighborSc.owner == owner)
+                return true;
+        }
+        
+        return false;
     }
 
     private IEnumerator MoveRoutine(HexTile target, int range)

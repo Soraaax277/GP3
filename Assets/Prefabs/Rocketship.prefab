@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7191027893911425164}
   - component: {fileID: 3783911620473093459}
   - component: {fileID: 2449530416731528748}
+  - component: {fileID: -1630647255569991873}
   m_Layer: 0
   m_Name: Rocketship
   m_TagString: Untagged
@@ -112,3 +113,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-1630647255569991873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4579280691164300075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e54eb3b85a2b8954ea321f6dd1fe7a98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Rocketship
+  baseDurability: 100
+  currentDurability: 0
+  goldUpkeep: 10
+  hiddenDurability: 50
+  currentHiddenDurability: 0

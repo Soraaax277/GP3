@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5029333040317022617}
   - component: {fileID: 4229307564019770698}
   - component: {fileID: 5524612333225896480}
+  - component: {fileID: -8754897423210463977}
   m_Layer: 0
   m_Name: SignalJammer
   m_TagString: Untagged
@@ -112,3 +113,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-8754897423210463977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8902096787438396982}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc6b2440aaeea7640b5d24a5f2c561a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SignalJammer
+  baseDurability: 100
+  currentDurability: 0
+  goldUpkeep: 10
+  hiddenDurability: 50
+  currentHiddenDurability: 0

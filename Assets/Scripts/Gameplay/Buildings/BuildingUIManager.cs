@@ -173,6 +173,7 @@ public class BuildingUIManager : MonoBehaviour
         else if (building is BPOCenter     bpo)  ShowBPO(bpo);
         else if (building is CommercialHub hub)  ShowCommercialHub(hub);
         else if (building is ServiceCenter sc)   ShowServiceCenter(sc);
+        else if (building is Canteen canteen)    ShowCanteen(canteen);
         else
         {
             ClearButtons();
@@ -274,6 +275,7 @@ public class BuildingUIManager : MonoBehaviour
         TryAddStructureButton("Build Signal Jammer",   "SignalJammers",   spm.signalJammerPrefab);
         TryAddStructureButton("Build Power Box",       "PowerBoxes",      spm.powerBoxPrefab);
         TryAddStructureButton("Build Tesseract",       "Tesseract",       spm.tesseractPrefab);
+        TryAddStructureButton("Build Canteen",         "Canteens",        spm.canteenPrefab);
         TryAddStructureButton("Build Rocketship",      "Rocketship",      spm.rocketshipPrefab);
 
         RefreshScrollRect();
@@ -408,6 +410,28 @@ public class BuildingUIManager : MonoBehaviour
         }
 
         RefreshScrollRect();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Canteen — recruitment for Foremen, Builder, Technician
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowCanteen(Canteen canteen)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "CANTEEN";
+
+        if (UnitSpawner.Instance == null) return;
+
+        int     gold = canteen.owner.resources;
+        var     us   = UnitSpawner.Instance;
+        HexTile tile = canteen.ParentTile;
+
+        // "can produce foremen, builder and technician"
+        TryAddUnitButton("Recruit Builder",    us.builderPrefab,    gold, tile, canteen.owner, "Builder");
+        // Foreman is unique to Canteen (no tech string required if canteen is built)
+        TryAddUnitButton("Recruit Foremen",    us.foremenPrefab,    gold, tile, canteen.owner, null);
+        TryAddUnitButton("Recruit Technician", us.technicianPrefab, gold, tile, canteen.owner, "Technician");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

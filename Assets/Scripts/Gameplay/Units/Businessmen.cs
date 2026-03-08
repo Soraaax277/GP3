@@ -2,7 +2,11 @@ using UnityEngine;
 
 public class Businessman: Unit
 {
-    public int recruitCharges;
+    public int recruitCharges = 3;
+    public int maxRecruitCharges = 3;
+
+    public override int CurrentCharges { get => recruitCharges; set => recruitCharges = value; }
+    public override int MaxCharges => maxRecruitCharges;
     
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
@@ -16,7 +20,8 @@ public class Businessman: Unit
         // 1. ERA SPECIFIC UPGRADES (Futuristic)
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
-            recruitCharges = 3; 
+            maxRecruitCharges = 5;
+            recruitCharges = Mathf.Max(recruitCharges, 5); 
         }
         else
         {
@@ -28,31 +33,41 @@ public class Businessman: Unit
     {
         if (!canAct && !testingMode)
         {
-            Debug.Log("Businessman act (turn/action used)");
+            Debug.Log("Businessman cannot act (turn/action used)");
             return;
         }
         
-        TowerNode targetTower = null;
+        Unit targetUnit = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            //checks if target is owned by enemyAI
-            if (neighbor.placedTower != null && neighbor.placedTower.owner != TurnManager.Instance.currentPlayer)
+            // Recruit enemy units (player's)
+            if (neighbor.placedUnit != null && neighbor.placedUnit.owner != owner)
             {
-                targetTower = neighbor.placedTower;
+                targetUnit = neighbor.placedUnit;
                 break;
             }
         }
 
-        if ( targetTower == null)
+        if (targetUnit == null)
         {
-            Debug.Log("No tower adjacent!");
+            Debug.Log("No units adjacent!");
             return;
         }
 
-        int procInt = Random.Range(0, 1);
-        if (procInt >= 1) // 50/50 on recruitment chance
+        // 50% chance to recruit unit
+        if (Random.value >= 0.5f) 
         { 
-            targetTower.Recruit(TurnManager.Instance.currentPlayer);
+            targetUnit.Recruit(owner);
+            Debug.Log($"[Businessman] Successfully recruited {targetUnit.name}!");
         }
+        else
+        {
+            Debug.Log("[Businessman] Recruitment failed.");
+        }
+
+        if (ShouldConsumeCharge())
+            recruitCharges--;
+            
+        ConsumeAction();
     }
 }

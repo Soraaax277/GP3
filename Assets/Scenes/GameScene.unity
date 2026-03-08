@@ -69312,6 +69312,12 @@ MonoBehaviour:
   signalJammerPrefab: {fileID: 8902096787438396982, guid: 0209f71085c70554392af2a9cfa4c0a3, type: 3}
   tesseractPrefab: {fileID: 726823328793361326, guid: b7066d1c70bbd3b41813cae7dc12b904, type: 3}
   workerFactoryPrefab: {fileID: 186684349592794414, guid: cd1bfefb52d46894f95846934cf02a77, type: 3}
+  powerBoxPrefab: {fileID: 7147656107520055002, guid: bcf9d17c09ce6a24287d4ff3e6ddfc21, type: 3}
+  droneFactoryPrefab: {fileID: 1478508000599345289, guid: f6de75b8450e9464784c4510e654e32e, type: 3}
+  rocketshipPrefab: {fileID: 4579280691164300075, guid: b9bf28207379f024eb75abb1f7a1b58f, type: 3}
+  advBusinessCenterPrefab: {fileID: 2130921917763413501, guid: 898730a2ad698f848a5bb65ee96b4ce0, type: 3}
+  advServiceCenterPrefab: {fileID: 1778796453337503718, guid: 0f943dbe7d7bbc440ade65dbcefefa02, type: 3}
+  canteenPrefab: {fileID: 6394798834482981869, guid: ffc7758c02f11594c9c206db9d77f8cc, type: 3}
   wireSpecialistCost: 25
   builderCost: 50
   salesMarketerCost: 30
@@ -69324,6 +69330,12 @@ MonoBehaviour:
   saboteurCost: 110
   roboWorkerCost: 150
   roboMarshallCost: 180
+  powerBoxCost: 100
+  droneFactoryCost: 400
+  rocketshipCost: 1000
+  advBusinessCenterCost: 500
+  advServiceCenterCost: 450
+  canteenCost: 250
   allTechNodes:
   - {fileID: 11400000, guid: bac0c16e2243e494d8cded0a203385ad, type: 2}
   - {fileID: 11400000, guid: 52db719728075394f83d975be0ad7274, type: 2}

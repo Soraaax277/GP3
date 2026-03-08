@@ -8,6 +8,13 @@ public class ScoutUnit: Unit
     private bool isDrone;
     private int baseVisionDefault = 4;
     
+    [Header("Phase 3: Charges")]
+    public int scoutCharges = 3;
+    public int maxScoutCharges = 3;
+
+    public override int CurrentCharges { get => scoutCharges; set => scoutCharges = value; }
+    public override int MaxCharges => maxScoutCharges;
+    
     public override void Initialize(HexTile spawnTile, PlayerData player)
     {
         visionRange = baseVisionDefault;

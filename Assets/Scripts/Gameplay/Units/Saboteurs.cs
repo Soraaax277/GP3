@@ -2,7 +2,11 @@ using UnityEngine;
 
 public class Saboteurs: Unit
 {
-    public int sabotageCharges;
+    public int sabotageCharges = 3;
+    public int maxSabotageCharges = 3;
+
+    public override int CurrentCharges { get => sabotageCharges; set => sabotageCharges = value; }
+    public override int MaxCharges => maxSabotageCharges;
     
     public bool canUseBombs;
     public float baseDamage = 10;
@@ -22,6 +26,7 @@ public class Saboteurs: Unit
         // 1. ERA SPECIFIC UPGRADES (Futuristic)
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
+            maxSabotageCharges = 5;
             sabotageCharges = Mathf.Max(sabotageCharges, 5); 
             damageMultiplier = 2.0f;
         }
@@ -97,7 +102,9 @@ public class Saboteurs: Unit
         
         targetTower.TakeDamage(sabotageDamage);
 
-        sabotageCharges = Mathf.Max(0, sabotageCharges - 1); // Uses build charges
+        if (ShouldConsumeCharge())
+            sabotageCharges = Mathf.Max(0, sabotageCharges - 1); // Uses build charges
+            
         ConsumeAction();
         Debug.Log($"[Builder] Sabotage complete, dealing {sabotageDamage}. Sabotages left: {sabotageCharges}");
 

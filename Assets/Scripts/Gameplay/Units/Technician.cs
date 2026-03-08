@@ -3,8 +3,26 @@ using UnityEngine;
 public class Technician : Unit
 {
     public int actionCharges = 10;
+    public int maxCharges = 10;
+
+    public override int CurrentCharges { get => actionCharges; set => actionCharges = value; }
+    public override int MaxCharges => maxCharges;
+
     public float repairEfficiency = 1.0f;
     public bool canRepairWires = false;
+    public bool isResearching = false;
+
+    public override void OnTurnStart(PlayerData activePlayer)
+    {
+        base.OnTurnStart(activePlayer);
+        if (owner == activePlayer && isResearching)
+        {
+             // Researching units cannot act or move
+             canAct = false;
+             movementRemaining = 0;
+             Debug.Log($"[Research] {name} is busy with a project and skips its turn.");
+        }
+    }
 
     public override void CheckTechStatus()
     {
@@ -13,6 +31,7 @@ public class Technician : Unit
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
             repairEfficiency = 2.0f;
+            maxCharges = 15;
             actionCharges = Mathf.Max(actionCharges, 15); // Bonus charges in futuristic era
         }
 
@@ -36,6 +55,11 @@ public class Technician : Unit
 
     public void PowerAdjacentStructure()
     {
+        if (isResearching)
+        {
+            Debug.Log("[Technician] Unit is busy with research project!");
+            return;
+        }
         if (!canAct && !testingMode) return;
 
         WireNode targetWire = null;
@@ -69,11 +93,12 @@ public class Technician : Unit
         targetWire.IsTechnicianActivated = true;
         Debug.Log($"[Technician] Successfully activated Wire at {targetWire.ParentTile.cubeCoords}!");
 
-        // JUICE (Phase 2)
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayTechnicianAction(targetWire.transform.position);
 
-        actionCharges--;
+        if (ShouldConsumeCharge())
+            actionCharges--;
+            
         ConsumeAction();
 
         if (PowerGridManager.Instance != null)
@@ -87,6 +112,11 @@ public class Technician : Unit
 
     public void RepairAdjacentStructure()
     {
+        if (isResearching)
+        {
+            Debug.Log("[Technician] Unit is busy with research project!");
+            return;
+        }
         if (!canAct && !testingMode) return;
 
         TowerNode targetTower = null;
@@ -132,7 +162,9 @@ public class Technician : Unit
             targetWire.currentDurability = Mathf.Min(targetWire.currentDurability + healAmount, targetWire.MaxDurability);
         }
 
-        actionCharges--;
+        if (ShouldConsumeCharge())
+            actionCharges--;
+            
         ConsumeAction();
         if (actionCharges <= 0) Die();
     }
@@ -146,5 +178,22 @@ public class Technician : Unit
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;
+    }
+    
+    public void StartResearchProject(string techID)
+    {
+        if (isResearching) return;
+        if (ResearchProjectHandler.Instance != null)
+        {
+            ResearchProjectHandler.Instance.StartProject(this, techID);
+        }
+    }
+    
+    public bool IsAtBase()
+    {
+        if (currentTile == null) return false;
+        // Search for Hub/Base buildings. Many structures exist, let's look for SignalNode counterparts
+        if (currentTile.placedNode != null) return true; // SignalNodes are 'Bases'
+        return false;
     }
 }

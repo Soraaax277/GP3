@@ -4,6 +4,10 @@ public class BuilderUnit : Unit
 {
     public int buildRange      = 1;
     public int buildsRemaining = 3;
+    public int maxBuilds       = 3;
+
+    public override int CurrentCharges { get => buildsRemaining; set => buildsRemaining = value; }
+    public override int MaxCharges => maxBuilds;
 
     public bool canConstructTower = false;
     public bool canRepairInfrastructure = false; // Unlocked by Versatile Builder Tool Kit
@@ -164,7 +168,9 @@ public class BuilderUnit : Unit
         owner.resources -= buildCost;
         targetTower.Build();
 
-        buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
+        if (ShouldConsumeCharge())
+            buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
+            
         ConsumeAction();
         Debug.Log($"[Builder] Construction complete (cost: {buildCost}). Builds left: {buildsRemaining}");
 
@@ -240,7 +246,9 @@ public class BuilderUnit : Unit
         if (targetTower != null) targetTower.Repair(repairEfficiency);
         else if (targetStructure != null) targetStructure.Repair(20f * repairEfficiency);
 
-        buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
+        if (ShouldConsumeCharge())
+            buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
+            
         ConsumeAction();
         Debug.Log($"[Builder] Repair complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}). Builds left: {buildsRemaining}");
 
@@ -296,7 +304,9 @@ public class BuilderUnit : Unit
         
         targetTower.TakeDamage(sabotageDamage);
 
-        buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
+        if (ShouldConsumeCharge())
+            buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges
+            
         ConsumeAction();
         Debug.Log($"[Builder] Sabotage complete, dealing {sabotageDamage}. Actions left: {buildsRemaining}");
 

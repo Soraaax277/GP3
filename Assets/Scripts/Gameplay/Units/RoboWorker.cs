@@ -7,6 +7,11 @@ public class RoboWorker : Unit
 {
     public int buildRange = 2; // Better range than regular builders
     public int buildsRemaining = 6; // More charges
+    public int maxBuilds = 6;
+
+    public override int CurrentCharges { get => buildsRemaining; set => buildsRemaining = value; }
+    public override int MaxCharges => maxBuilds;
+
     public bool canConstructTower = true;
 
     public override void Initialize(HexTile spawnTile, PlayerData player)
@@ -22,6 +27,7 @@ public class RoboWorker : Unit
         // 1. ERA SPECIFIC UPGRADES (Futuristic)
         if (owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
         {
+            maxBuilds = 12;
             buildsRemaining = 12; // Mass production builds
             moveRange = 6;
         }
@@ -87,7 +93,9 @@ public class RoboWorker : Unit
         owner.resources -= buildCost;
         targetTower.Build();
 
-        buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
+        if (ShouldConsumeCharge())
+            buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
+            
         ConsumeAction();
         Debug.Log($"[RoboWorker] Construction complete (cost: {buildCost}). Builds left: {buildsRemaining}");
 

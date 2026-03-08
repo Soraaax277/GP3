@@ -33,7 +33,8 @@ MonoBehaviour:
     featureName: 
     isHardwareEra: 0
   - type: 1
-    targetUnits: []
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: 4e4b8f9551bd20b4e9ae8637feae4480, type: 3}
     statToUpgrade: 
     amount: 0
     skillName: 

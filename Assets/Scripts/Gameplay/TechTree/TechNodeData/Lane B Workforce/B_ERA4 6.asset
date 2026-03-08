@@ -24,9 +24,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bc41c348247aec34886f0e0b6da2d722, type: 2}
   unlockEffects:
   - type: 1
-    targetUnits: []
+    targetUnits:
+    - {fileID: 1212159640613329235, guid: bcfac6c8d0ff39e408078cd18f3301a5, type: 3}
+    - {fileID: 1212159640613329235, guid: 0c9a51b01f3f3ff4ea3b2ce7a6f65c2c, type: 3}
     statToUpgrade: 
-    amount: -50
+    amount: 0
     skillName: 
     infraStatName: 
     infraValueMod: 0

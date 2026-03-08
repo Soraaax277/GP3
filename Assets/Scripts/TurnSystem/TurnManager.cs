@@ -107,6 +107,12 @@ public class TurnManager : MonoBehaviour
             Debug.LogError("TurnManager: Missing EconomyManager!");
         }
 
+        // --- PHASE 3: RESEARCH PROCESSING ---
+        if (ResearchProjectHandler.Instance != null)
+        {
+            ResearchProjectHandler.Instance.OnTurnEnd(currentPlayer);
+        }
+
         // --- PHASE 1: GLOBAL EVENTS & HAZARDS ---
         if (EventManager.Instance != null)
             EventManager.Instance.ProcessTurnEvents();
