@@ -26,6 +26,10 @@ public class TowerPlacementManager : MonoBehaviour
     [Tooltip("Base gold cost to place one tower. 0 = free (default).")]
     public int baseTowerCost = 0;
 
+    // Cached at hologram spawn: distance from pivot to bottom of tower's MeshCollider.
+    // Used every frame in FollowMouse so we don't re-query bounds on each Update.
+    private float _hologramBottomOffset;
+
     public int GetCurrentTowerCost()
     {
         if (TechManager.Instance == null) return baseTowerCost;
@@ -88,6 +92,10 @@ public class TowerPlacementManager : MonoBehaviour
 
         hologram = Instantiate(towerPrefab);
         Debug.Log($"[TowerPlacement] Hologram instantiated: {hologram?.name}");
+
+        // Cache how far below the pivot the tower's mesh collider extends.
+        // Used every frame to sit the base flush on the tile surface.
+        _hologramBottomOffset = GetTowerBottomOffset(hologram);
         
         HologramUtil.MakeHologram(hologram, new Color(0f, 1f, 0f, 0.35f));
 
@@ -107,7 +115,16 @@ public class TowerPlacementManager : MonoBehaviour
         if (tile == null) return;
 
         hoveredTile = tile;
-        hologram.transform.position = tile.transform.position + Vector3.up * 1.2f;
+        hologram.transform.position = new Vector3(
+            tile.transform.position.x,
+            GetTileSurfaceY(tile) + _hologramBottomOffset,
+            tile.transform.position.z
+        );
+
+        // Keep the range circle on the tile surface regardless of tower pivot height.
+        TowerNode previewNode = hologram.GetComponent<TowerNode>();
+        if (previewNode != null)
+            previewNode.SetRangeIndicatorToSurface(tile);
 
         ValidateTile(tile);
     }
@@ -194,7 +211,7 @@ public class TowerPlacementManager : MonoBehaviour
 
         GameObject realTower = Instantiate(
             towerPrefab,
-            hoveredTile.transform.position + Vector3.up * 1.2f,
+            new Vector3(hoveredTile.transform.position.x, GetTowerPlacementY(hoveredTile, towerPrefab), hoveredTile.transform.position.z),
             Quaternion.identity
         );
 
@@ -234,7 +251,7 @@ public class TowerPlacementManager : MonoBehaviour
 
         GameObject realTower = Instantiate(
             towerPrefab,
-            tile.transform.position + Vector3.up * 1.2f,
+            new Vector3(tile.transform.position.x, GetTowerPlacementY(tile, towerPrefab), tile.transform.position.z),
             Quaternion.identity
         );
 
@@ -249,5 +266,45 @@ public class TowerPlacementManager : MonoBehaviour
         }
 
         return node;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Collider-based placement helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>Returns the world-space Y of the top surface of the tile's BoxCollider.</summary>
+    private float GetTileSurfaceY(HexTile tile)
+    {
+        BoxCollider box = tile.GetComponent<BoxCollider>();
+        if (box == null) return tile.transform.position.y;
+
+        float halfHeight = box.size.y * 0.5f * tile.transform.lossyScale.y;
+        float centerY    = box.center.y * tile.transform.lossyScale.y;
+        return tile.transform.position.y + centerY + halfHeight;
+    }
+
+    /// <summary>
+    /// Returns how far above its pivot the tower's MeshCollider bottom sits.
+    /// Positive value means pivot is above the mesh bottom (tower would clip without this offset).
+    /// </summary>
+    private float GetTowerBottomOffset(GameObject towerObj)
+    {
+        MeshCollider mc = towerObj.GetComponentInChildren<MeshCollider>();
+        if (mc == null) return 0f;
+
+        return towerObj.transform.position.y - mc.bounds.min.y;
+    }
+
+    /// <summary>
+    /// Temporarily instantiates the prefab to measure its bottom offset, then destroys it.
+    /// Used for PlaceTower / PlaceTowerDirect where no live hologram exists to read from.
+    /// </summary>
+    private float GetTowerPlacementY(HexTile tile, GameObject prefab)
+    {
+        float surfaceY     = GetTileSurfaceY(tile);
+        GameObject temp    = Instantiate(prefab);
+        float bottomOffset = GetTowerBottomOffset(temp);
+        Destroy(temp);
+        return surfaceY + bottomOffset;
     }
 }

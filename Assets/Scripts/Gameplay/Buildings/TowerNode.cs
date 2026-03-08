@@ -272,18 +272,59 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
     public void SetRangeColor(Color color) { if (rangeIndicator != null) rangeIndicator.GetComponent<Renderer>().material.color = color; }
     public void ShowRange(bool show) { if (rangeIndicator != null) { if (show) UpdateRangeVisuals(); rangeIndicator.SetActive(show); } }
+
+    /// <summary>
+    /// Snaps the range indicator's Y to just above the given tile's surface.
+    /// Call every frame during placement preview so the circle stays on the ground.
+    /// </summary>
+    public void SetRangeIndicatorToSurface(HexTile targetTile)
+    {
+        if (rangeIndicator == null || targetTile == null) return;
+
+        BoxCollider box = targetTile.GetComponent<BoxCollider>();
+        float surfaceY  = targetTile.transform.position.y;
+        if (box != null)
+        {
+            float halfHeight = box.size.y * 0.5f * targetTile.transform.lossyScale.y;
+            float centerY    = box.center.y * targetTile.transform.lossyScale.y;
+            surfaceY         = targetTile.transform.position.y + centerY + halfHeight + 0.05f;
+        }
+
+        Vector3 pos = rangeIndicator.transform.position;
+        pos.y = surfaceY;
+        rangeIndicator.transform.position = pos;
+    }
     
     void CreateRangeIndicator()
     {
         if (rangeIndicator != null) return;
         rangeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         rangeIndicator.transform.SetParent(transform);
-        rangeIndicator.transform.localPosition = new Vector3(0f, 0.05f, 0f);
         rangeIndicator.transform.localRotation = Quaternion.identity;
+
+        // Place the indicator at the tile's surface rather than relative to the
+        // tower pivot (which may be at the tip). Tile BoxCollider gives us the
+        // exact world Y of the top face; we convert that to the tower's local Y.
+        float worldSurfaceY = GetTileSurfaceY();
+        float localY = transform.InverseTransformPoint(0f, worldSurfaceY + 0.05f, 0f).y;
+        rangeIndicator.transform.localPosition = new Vector3(0f, localY, 0f);
+
         UpdateRangeVisuals();
         Renderer rend = rangeIndicator.GetComponent<Renderer>();
         rend.material = new Material(Shader.Find("Sprites/Default"));
         Destroy(rangeIndicator.GetComponent<Collider>());
+    }
+
+    private float GetTileSurfaceY()
+    {
+        if (tile == null) return transform.position.y;
+
+        BoxCollider box = tile.GetComponent<BoxCollider>();
+        if (box == null) return tile.transform.position.y;
+
+        float halfHeight = box.size.y * 0.5f * tile.transform.lossyScale.y;
+        float centerY    = box.center.y * tile.transform.lossyScale.y;
+        return tile.transform.position.y + centerY + halfHeight;
     }
 
     public void UpdateRangeVisuals()

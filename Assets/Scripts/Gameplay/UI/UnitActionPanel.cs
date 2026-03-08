@@ -19,6 +19,12 @@ public class UnitActionPanel : MonoBehaviour
     [Tooltip("TMP Text at the top of the container that shows the unit type header.")]
     public TextMeshProUGUI headerText;
 
+    [Tooltip("ScrollRect wrapping the buttonContainer. Enabled automatically when button count exceeds scrollButtonThreshold.")]
+    public UnityEngine.UI.ScrollRect buttonScrollRect;
+
+    [Tooltip("Number of buttons at which the list switches to a scrollable view.")]
+    public int scrollButtonThreshold = 5;
+
     public Camera mainCamera;
 
     [Header("World Space Settings")]
@@ -100,7 +106,7 @@ public class UnitActionPanel : MonoBehaviour
     {
         if (unit == null) return;
 
-        currentUnit = unit;
+        currentUnit  = unit;
         followTarget = unit.transform;
 
         ClearButtons();
@@ -108,18 +114,18 @@ public class UnitActionPanel : MonoBehaviour
         List<ActionConfig> actions = BuildActionsFor(unit);
         if (actions.Count == 0) return;
 
-        // Set header text
         if (headerText != null)
         {
             string displayName = UnitDisplayNames.ContainsKey(unit.GetType())
                 ? UnitDisplayNames[unit.GetType()]
                 : unit.GetType().Name.ToUpper();
-
             headerText.text = $"SELECT AN ACTION:";
         }
 
         foreach (ActionConfig action in actions)
             SpawnButton(action);
+
+        RefreshScrollRect();
 
         panel.SetActive(true);
 
@@ -143,7 +149,7 @@ public class UnitActionPanel : MonoBehaviour
             {
                 panel.SetActive(false);
                 ClearButtons();
-                currentUnit = null;
+                currentUnit  = null;
                 followTarget = null;
             });
         }
@@ -151,7 +157,7 @@ public class UnitActionPanel : MonoBehaviour
         {
             ClearButtons();
             panel.SetActive(false);
-            currentUnit = null;
+            currentUnit  = null;
             followTarget = null;
         }
     }
@@ -162,9 +168,9 @@ public class UnitActionPanel : MonoBehaviour
 
     private List<ActionConfig> BuildActionsFor(Unit unit)
     {
-        var actions = new List<ActionConfig>();
-        bool canAct = unit.CanAct;
-        int  gold   = unit.owner.resources;
+        var  actions = new List<ActionConfig>();
+        bool canAct  = unit.CanAct;
+        int  gold    = unit.owner.resources;
 
         // --- PHASE 3: REFILL SYSTEM ---
         if (unit.IsNearServiceCenter() && unit.CurrentCharges < unit.MaxCharges)
@@ -221,7 +227,7 @@ public class UnitActionPanel : MonoBehaviour
             }
             int repairCost = technician.GetRepairCost();
             actions.Add(new ActionConfig { label = "Repair", cost = repairCost, interactable = canAct && gold >= repairCost, onClick = () => { technician.RepairAdjacentStructure(); Close(); } });
-            actions.Add(new ActionConfig { label = "Power", cost = 0, interactable = canAct, onClick = () => { technician.PowerAdjacentStructure(); Close(); } });
+            actions.Add(new ActionConfig { label = "Power",  cost = 0,          interactable = canAct,                      onClick = () => { technician.PowerAdjacentStructure();  Close(); } });
         }
         else if (unit is Foremen foremen)
         {
@@ -267,6 +273,35 @@ public class UnitActionPanel : MonoBehaviour
         }
 
         return actions;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Scroll Rect management
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Enables vertical scrolling if button count exceeds scrollButtonThreshold.
+    /// Uses spawnedButtons.Count — always accurate, no layout timing issues.
+    /// </summary>
+    private void RefreshScrollRect()
+    {
+        if (buttonScrollRect == null) return;
+
+        bool needsScroll = spawnedButtons.Count > scrollButtonThreshold;
+
+        buttonScrollRect.enabled  = true;
+        buttonScrollRect.vertical = needsScroll;
+
+        // Always reset content position to top when panel opens.
+        buttonScrollRect.verticalNormalizedPosition = 1f;
+
+        RectTransform contentRect = buttonContainer as RectTransform;
+        if (contentRect != null)
+        {
+            Vector2 pos = contentRect.anchoredPosition;
+            pos.y = 0f;
+            contentRect.anchoredPosition = pos;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -319,9 +354,7 @@ public class UnitActionPanel : MonoBehaviour
     private void ClearButtons()
     {
         foreach (GameObject go in spawnedButtons)
-        {
             if (go != null) Destroy(go);
-        }
         spawnedButtons.Clear();
     }
 }

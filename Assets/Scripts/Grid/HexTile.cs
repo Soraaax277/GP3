@@ -71,28 +71,26 @@ public class HexTile : MonoBehaviour
         if (rend == null) rend = GetComponent<Renderer>();
         
         // --- FOG OF WAR VISUALS ---
+        Color baseTypeColor;
+        if (type == TileType.Water)
+            baseTypeColor = new Color(0.1f, 0.3f, 0.8f, 1f);
+        else
+            baseTypeColor = baseColor;
+
         if (!isExplored)
         {
-            targetFowColor = Color.black; // The Shroud
+            // The Shroud: Dark gray — fog clouds sit on top
+            targetFowColor = new Color(0.35f, 0.35f, 0.35f, 1f);
+        }
+        else if (!isVisible)
+        {
+            // Explored but not currently visible: slightly dimmed real color, no clouds
+            targetFowColor = Color.Lerp(baseTypeColor, Color.white, 0.5f);
         }
         else
         {
-            Color baseTypeColor;
-            if (type == TileType.Water)
-                baseTypeColor = new Color(0.1f, 0.3f, 0.8f, 1f);
-            else
-                baseTypeColor = baseColor;
-
-            if (!isVisible)
-            {
-                // The Fog: Greyed out version of the original color
-                targetFowColor = Color.Lerp(baseTypeColor, Color.black, 0.6f);
-            }
-            else
-            {
-                targetFowColor = baseTypeColor;
-                // Territory-based tinting removed (Phase 2 refinement)
-            }
+            // Fully visible: real color
+            targetFowColor = baseTypeColor;
         }
 
         UpdateStructureVisibility();

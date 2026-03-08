@@ -53,6 +53,10 @@ public class FieldOfViewManager : MonoBehaviour
 
         // 5. Update visuals and hide enemy units
         UpdateVisibilityState();
+
+        // 6. Update the fog cloud mesh (only covers unexplored tiles)
+        if (HexFogRenderer.Instance != null)
+            HexFogRenderer.Instance.UpdateFog();
     }
 
     private void RevealTiles(HexTile center, int range)
