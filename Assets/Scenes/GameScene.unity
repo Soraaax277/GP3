@@ -14680,6 +14680,10 @@ MonoBehaviour:
   edgeFalloff: 1.6
   hexTilePrefab: {fileID: 7627528651135053935, guid: c08c523f97d6bbe4b9199b17fab38981, type: 3}
   waterTilePrefab: {fileID: 2258295951634393469, guid: 350049b7569c31b4e8ff063e2937dd2f, type: 3}
+  waterMaterial: {fileID: 2100000, guid: 82028f47d21adf14daaad43528de4f18, type: 2}
+  sandBedDepth: 0.18
+  sandBedScale: 1.02
+  grassMaterial: {fileID: 2100000, guid: 125f30c0882610b4492023b7a0eda956, type: 2}
 --- !u!4 &256503956
 Transform:
   m_ObjectHideFlags: 0
@@ -66321,9 +66325,18 @@ MonoBehaviour:
   landFogged:
     serializedVersion: 2
     rgba: 4280495405
+  landHighTopo:
+    serializedVersion: 2
+    rgba: 4284389524
+  landShadowTopo:
+    serializedVersion: 2
+    rgba: 4281752664
   waterVisible:
     serializedVersion: 2
     rgba: 4286068510
+  waterShallow:
+    serializedVersion: 2
+    rgba: 4287385126
   waterFogged:
     serializedVersion: 2
     rgba: 4281144332
@@ -66336,6 +66349,21 @@ MonoBehaviour:
   borderPixelColor:
     serializedVersion: 2
     rgba: 4294967040
+  playerUnitColor:
+    serializedVersion: 2
+    rgba: 4291362560
+  enemyUnitColor:
+    serializedVersion: 2
+    rgba: 4283453695
+  hqColor:
+    serializedVersion: 2
+    rgba: 4283494655
+  towerColor:
+    serializedVersion: 2
+    rgba: 4294958260
+  scanlineAlpha: 0.12
+  vignetteStrength: 0.55
+  fogDitherWidth: 4
   trapezoidColor: {r: 1, g: 1, b: 1, a: 1}
   lineWidth: 2
 --- !u!1 &1094757781
@@ -69577,7 +69605,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
   wireSpecialistPrefab: {fileID: 1212159640613329235, guid: 27d772d1e915c734ab3247022af07722, type: 3}
   builderPrefab: {fileID: 4853573965242364229, guid: ab6d52a052a49674eb0f4cb91ae34ab5, type: 3}
-  towerPrefab: {fileID: 2462954530969636878, guid: 1469581c32d562b4e8864927e0715d4b, type: 3}
+  towerPrefab: {fileID: 958489105712296286, guid: 287bbfed248330e4199f385d3e0edf0f, type: 3}
   salesMarketerPrefab: {fileID: 8330399843375400954, guid: b2d9907af7a69394ab685fce6ecca9a9, type: 3}
   technicianPrefab: {fileID: 7948660175137174217, guid: 0defd1e1c025ffa45af89fd4d309d3a5, type: 3}
   scoutPrefab: {fileID: 1212159640613329235, guid: 2d2ee0b577c67c449837030858617fb2, type: 3}
@@ -103839,6 +103867,7 @@ GameObject:
   - component: {fileID: 1491263496}
   - component: {fileID: 1491263498}
   - component: {fileID: 1491263497}
+  - component: {fileID: 1491263499}
   m_Layer: 0
   m_Name: Systems
   m_TagString: Untagged
@@ -103924,6 +103953,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 802421bdb01bd12488f219f4f5ed7dd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InfluenceManager
+--- !u!114 &1491263499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1491263492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa0859ee637fe014685a6ba8bc40c337, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StructurePlacementManager
+  serviceCenterPrefab: {fileID: 1299103369380968764, guid: 241fc5137a9f35f48aba7dc64611161f, type: 3}
+  advancedServiceCenterPrefab: {fileID: 1778796453337503718, guid: 0f943dbe7d7bbc440ade65dbcefefa02, type: 3}
+  bpoCenterPrefab: {fileID: 1105714717946617516, guid: 532ec5d8b84ecdb469ea0b6d3e6ed1d6, type: 3}
+  tesseractPrefab: {fileID: 726823328793361326, guid: b7066d1c70bbd3b41813cae7dc12b904, type: 3}
+  signalBoosterPrefab: {fileID: 2830794656883086493, guid: d1c1cc2c7532e0043b2a7db111669c04, type: 3}
+  signalJammerPrefab: {fileID: 8902096787438396982, guid: 0209f71085c70554392af2a9cfa4c0a3, type: 3}
+  powerBoxPrefab: {fileID: 7147656107520055002, guid: bcf9d17c09ce6a24287d4ff3e6ddfc21, type: 3}
+  commercialHubPrefab: {fileID: 6394798834482981869, guid: 91576fdcad13fb94b8d4c5cfa22c53ee, type: 3}
+  businessCenterPrefab: {fileID: 6925926071195437682, guid: f1a9249548155224bba4ab247c22c6e0, type: 3}
+  advancedBusinessCenterPrefab: {fileID: 1778796453337503718, guid: 0f943dbe7d7bbc440ade65dbcefefa02, type: 3}
+  workerFactoryPrefab: {fileID: 186684349592794414, guid: cd1bfefb52d46894f95846934cf02a77, type: 3}
+  droneFactoryPrefab: {fileID: 1478508000599345289, guid: f6de75b8450e9464784c4510e654e32e, type: 3}
+  rocketshipPrefab: {fileID: 4579280691164300075, guid: b9bf28207379f024eb75abb1f7a1b58f, type: 3}
+  canteenPrefab: {fileID: 6394798834482981869, guid: ffc7758c02f11594c9c206db9d77f8cc, type: 3}
 --- !u!1 &1494769817
 GameObject:
   m_ObjectHideFlags: 0
@@ -109429,7 +109484,12 @@ MonoBehaviour:
   particlesPerTile: 50
   fadeMaterial: {fileID: 2100000, guid: f05b8a1183638ef43992dee4bba813eb, type: 2}
   fadeDuration: 1.2
+  fadeDelay: 0.1
   fadeColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+  riseAmount: 0.4
+  riseDuration: 0.6
+  rippleDelayPerUnit: 0.04
+  maxRippleDelay: 0.5
 --- !u!23 &1600525917
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -129743,6 +129803,61 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1917560852}
   m_CullTransparentMesh: 1
+--- !u!1 &1917709177
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1917709179}
+  - component: {fileID: 1917709178}
+  m_Layer: 0
+  m_Name: CheatEngine
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1917709178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917709177}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b6c0635eaf901c4f9c1643171a10dd6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DebugCheatManager
+  cheatsEnabled: 1
+  cheatUnlockAllTech: 1
+  cheatUnlockAllFeatures: 1
+  cheatUnlimitedGold: 1
+  cheatUnlimitedRP: 1
+  cheatFreeResearch: 1
+  cheatRevealMap: 1
+  goldAmount: 9999999
+  rpAmount: 9999999
+  applyOnStart: 1
+  clampEveryFrame: 1
+--- !u!4 &1917709179
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917709177}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 382, y: 1.51, z: 93.53074}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1918078522
 GameObject:
   m_ObjectHideFlags: 0
@@ -143940,3 +144055,4 @@ SceneRoots:
   - {fileID: 1337974982}
   - {fileID: 657174267}
   - {fileID: 1600525919}
+  - {fileID: 1917709179}

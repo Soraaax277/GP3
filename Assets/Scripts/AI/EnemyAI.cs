@@ -528,9 +528,27 @@ public class EnemyAI : MonoBehaviour
         if (tile.hasStructure)
             tile.ClearEnvironmentalStructures();
 
-        GameObject blueprint = Instantiate(towerPrefab, tile.transform.position + Vector3.up * 1.2f, Quaternion.identity);
-        TowerNode node = blueprint.GetComponent<TowerNode>();
-        node.Initialize(tile, aiPlayer, parent);
+        // FIX: Use TowerPlacementManager.PlaceTowerDirect() for correct collider-based
+        // height positioning — the same path the player uses. The old hardcoded
+        // Vector3.up * 1.2f caused AI towers to sink into the ground on uneven tiles.
+        //
+        // PlaceTowerDirect() initialises the tower as solid/built, so we immediately
+        // override the state back to Hologram so the AI's Builder units can still
+        // find it via GetUnbuiltTowers() and physically construct it next turn.
+        if (TowerPlacementManager.Instance != null)
+        {
+            TowerNode node = TowerPlacementManager.Instance.PlaceTowerDirect(tile, aiPlayer, parent);
+            if (node != null)
+                node.SetHologramState(); // revert to blueprint so builders can construct it
+        }
+        else
+        {
+            // Fallback if TowerPlacementManager is missing from the scene
+            Debug.LogWarning("[EnemyAI] PlaceBlueprint: TowerPlacementManager.Instance is null, falling back.");
+            GameObject blueprint = Instantiate(towerPrefab, tile.transform.position + Vector3.up * 1.2f, Quaternion.identity);
+            TowerNode node = blueprint.GetComponent<TowerNode>();
+            node.Initialize(tile, aiPlayer, parent);
+        }
     }
 
     private List<TowerNode> GetUnbuiltTowers(PlayerData owner)

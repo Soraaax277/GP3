@@ -17,8 +17,8 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     [Header("Upkeep")]
     public int goldUpkeep = 5; // Base gold subtracted from player per turn
 
-    /// Returns the base upkeep for this wire.
-    /// The era-mismatch multiplier is applied globally in EconomyManager.
+    // Returns the base upkeep for this wire.
+    // The era-mismatch multiplier is applied globally in EconomyManager.
     public int GetCurrentUpkeep()
     {
         return goldUpkeep;
@@ -51,10 +51,15 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         CacheRenderers();
         UpdatePowerState(false);
 
+        // Register with TurnManager here so ALL placed wires participate
+        // in the decay system — not only those placed via PlaceWireDirect().
+        // Previously, wires placed by a WireSpecialist (BuildWire → Initialize) were
+        // never registered, so they silently skipped decay each turn.
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.RegisterWire(this);
+
         if (PowerGridManager.Instance != null)
-        {
             PowerGridManager.Instance.RefreshGrid();
-        }
     }
 
     void CacheRenderers()
@@ -108,6 +113,10 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     // Called for immediate damage (explosions, sabotage)
     public void TakeDamage(float amount)
     {
+        // FIX (Bug 3): Guard against damage on already-destroyed wires, consistent
+        // with TowerNode.TakeDamage which returns early on TowerState.Destroyed.
+        if (isDestroyed) return;
+
         currentDurability -= amount;
         CheckDestruction();
     }
@@ -163,16 +172,50 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     }
 
     // -----------------------------------------------------------------------
+    //  Called by a Technician unit to restore a destroyed wire.
+    //  Mirrors the pattern used by StructureNode.Repair() and TowerNode.Repair().
+    //  efficiencyMultiplier: 1.0 = full HP restore; higher values from tech bonuses
+    //  (e.g. TechEffect infraStatName="RepairEfficiency") allow overheal up to cap.
+    // -----------------------------------------------------------------------
+    public void Repair(float efficiencyMultiplier = 1.0f)
+    {
+        if (!isDestroyed) return;
+
+        isDestroyed = false;
+        currentDurability = Mathf.Min(MaxDurability * efficiencyMultiplier, MaxDurability);
+
+        Debug.Log($"[Wire] {name} repaired. Durability: {currentDurability}/{MaxDurability}");
+
+        // Restore visual to unpowered (grey) state — power is re-evaluated by the grid
+        if (visualRenderers != null)
+        {
+            foreach (Renderer r in visualRenderers)
+            {
+                if (r != null) r.material.color = Color.gray;
+            }
+        }
+
+        // Re-enter the power grid so connected towers/wires can become active again
+        if (PowerGridManager.Instance != null)
+            PowerGridManager.Instance.RefreshGrid();
+    }
+
+    // -----------------------------------------------------------------------
     //  WIRE LENGTH  ("WireLength" flat bonus tech)
     //  Controls how far from the existing network a new wire can be placed.
     //  TechEffect setup: infraStatName="WireLength", isMultiplier=UNCHECKED, value=2
-    //  Hook this into WirePlacementManager's adjacency check to take effect.
+    //
+    //  NOTE (Bug 4): This static method measures distance from the nearest owned
+    //  network tile. WirePlacementManager instead measures from the specialist unit
+    //  via its own MaxWireLength property — those are two different validations.
+    //  This method is provided for any future system that needs the network-distance
+    //  version (e.g. AI wire-chain logic). Do NOT use this to validate specialist reach.
     // -----------------------------------------------------------------------
-    /// Returns the maximum allowed hex distance between a new wire tile and the
-    /// nearest existing owned network tile (node / wire / powered tower).
-    /// Base = 1. Increased by the "WireLength" flat bonus tech upgrade.
-    /// Call from WirePlacementManager when validating placement.
-    public static int GetMaxWireLength()
+    // Returns the maximum allowed hex distance between a new wire tile and the
+    // nearest existing owned network tile (node / wire / powered tower).
+    // Base = 1. Increased by the "WireLength" flat bonus tech upgrade.
+    // NOTE: WirePlacementManager uses its own MaxWireLength for specialist-reach checks.
+    public static int GetMaxWireLengthFromNetwork()
     {
         int baseLength = 1;
         if (TechManager.Instance == null) return baseLength;
@@ -186,9 +229,9 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     //  (negative = cheaper). The base multiplier is 1.0, so -0.1 → 0.9 = 10% cheaper.
     //  Hook this into WirePlacementManager's purchase logic to take effect.
     // -----------------------------------------------------------------------
-    /// Returns the actual gold cost to place one wire tile after tech discounts.
-    /// Pass WirePlacementManager's base wire cost as the argument.
-    /// e.g. GetPlacementCost(20) with a -0.1 WireCost tech applied = 18 gold.
+    // Returns the actual gold cost to place one wire tile after tech discounts.
+    // Pass WirePlacementManager's base wire cost as the argument.
+    // e.g. GetPlacementCost(20) with a -0.1 WireCost tech applied = 18 gold.
     public static int GetPlacementCost(int baseCost)
     {
         if (TechManager.Instance == null) return baseCost;

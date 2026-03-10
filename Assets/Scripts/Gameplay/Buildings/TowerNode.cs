@@ -263,6 +263,22 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public void SetBuilt() { _isBuilderFinished = true; state = TowerState.Constructed; }
     public bool IsBuilt() => _isBuilderFinished || state == TowerState.Powered;
     public bool IsDestroyed() => state == TowerState.Destroyed;
+
+    // Reverts this tower to Hologram/blueprint state.
+    // Called by EnemyAI.PlaceBlueprint() after PlaceTowerDirect() — which
+    // initialises towers as solid/built — so Builder units can still find it
+    // via GetUnbuiltTowers() and physically construct it next turn.
+    // Mirrors exactly what Initialize() sets up for a fresh hologram.
+    public void SetHologramState()
+    {
+        _isBuilderFinished = false;
+        state              = TowerState.Hologram;
+        IsPowered          = false;
+        HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
+        SetRangeColor(new Color(0f, 0.5f, 1f, 0.15f));
+        ShowRange(false);
+        if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
+    }
     //  RANGE INDICATOR HELPERS
     public void CreatePreview()
     {
@@ -273,10 +289,8 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public void SetRangeColor(Color color) { if (rangeIndicator != null) rangeIndicator.GetComponent<Renderer>().material.color = color; }
     public void ShowRange(bool show) { if (rangeIndicator != null) { if (show) UpdateRangeVisuals(); rangeIndicator.SetActive(show); } }
 
-    /// <summary>
-    /// Snaps the range indicator's Y to just above the given tile's surface.
-    /// Call every frame during placement preview so the circle stays on the ground.
-    /// </summary>
+    // Snaps the range indicator's Y to just above the given tile's surface.
+    // Call every frame during placement preview so the circle stays on the ground.
     public void SetRangeIndicatorToSurface(HexTile targetTile)
     {
         if (rangeIndicator == null || targetTile == null) return;

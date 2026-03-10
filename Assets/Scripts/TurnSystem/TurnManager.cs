@@ -20,12 +20,17 @@ public class TurnManager : MonoBehaviour
     public List<PlayerData> players = new List<PlayerData>();
     public int currentPlayerIndex { get; private set; }
 
-    private List<Unit>       allUnits  = new List<Unit>();
+    private List<Unit>          allUnits      = new List<Unit>();
     private List<TowerNode>     allTowers     = new List<TowerNode>();
     private List<WireNode>      allWires      = new List<WireNode>();
     private List<StructureNode> allStructures = new List<StructureNode>();
 
     public event System.Action OnGameStatusChanged;
+
+    // Fired at the start of every player's turn, AFTER fog-of-war has been
+    // updated. DebugCheatManager subscribes to this so it can re-apply the map
+    // reveal + enemy unit visibility after FieldOfViewManager runs each turn.
+    public event System.Action<PlayerData> OnTurnStarted;
 
     public void NotifyStatusChanged()
     {
@@ -173,6 +178,11 @@ public class TurnManager : MonoBehaviour
             FieldOfViewManager.Instance.UpdateFogOfWar(players[0]);
         }
 
+        // Fire OnTurnStarted AFTER fog-of-war has been updated.
+        // DebugCheatManager listens to this to re-apply map reveal + enemy
+        // unit visibility every turn, overriding FieldOfViewManager's output.
+        OnTurnStarted?.Invoke(currentPlayer);
+
         // CAMERA TRACKING
         HandleCameraFocus(currentPlayer);
 
@@ -242,11 +252,11 @@ public class TurnManager : MonoBehaviour
     }
 
     //  ACCESSORS
-    public List<Unit>      GetAllUnits()  => allUnits;
+    public List<Unit>          GetAllUnits()      => allUnits;
     public List<TowerNode>     GetAllTowers()     => allTowers;   
     public List<WireNode>      GetAllWires()      => allWires;    
     public List<StructureNode> GetAllStructures() => allStructures;
-    public List<PlayerData> GetPlayers()  => players;
+    public List<PlayerData>    GetPlayers()       => players;
 
     //  END TURN
     public void EndTurn()

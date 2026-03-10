@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_StylizedGrass
+  m_Shader: {fileID: 4800000, guid: 5f70451e7d681c44fbe82c56a7de99b2, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BlendSharpness: 15
+    - _ColorVariationScale: 0.5
+    - _Cutoff: 0.5
+    - _GrassOffset: 0.1
+    - _WindScale: 1.5
+    - _WindSpeed: 2
+    - _WindStrength: 0.2
+    m_Colors:
+    - _BottomColor: {r: 0.09999997, g: 0.29999998, b: 0.09999997, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _DirtColor: {r: 0.24724796, g: 0.35686275, b: 0.1529412, a: 1}
+    - _GrassColor: {r: 0.34999996, g: 0.7, b: 0.29999998, a: 1}
+    - _GrassColorA: {r: 0.4415272, g: 0.5754717, b: 0.22530259, a: 1}
+    - _GrassColorB: {r: 0.38574472, g: 0.5471698, b: 0.25035602, a: 1}
+    - _TopColor: {r: 0.39999998, g: 0.8, b: 0.29999998, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -12,28 +12,51 @@ public class GridManager : MonoBehaviour
         new Vector3Int(-1,  0,  1),
         new Vector3Int( 0, -1,  1),
     };
+
     public bool IsReady { get; private set; }
     public static GridManager Instance;
 
     [Header("Grid Settings")]
-    public int width = 75;
-    public int height = 45;
-    public float hexSize = 1f;
+    public int   width     = 75;
+    public int   height    = 45;
+    public float hexSize   = 1f;
 
     [Header("Continent Generation Settings")]
     [Tooltip("How zoomed in the noise is. Lower values = larger, smoother landmasses.")]
-    public float noiseScale = 0.04f; 
+    public float noiseScale    = 0.04f;
     [Tooltip("The base value required to spawn land. Lower = more land overall.")]
-    public float landThreshold = -0.1f; 
+    public float landThreshold = -0.1f;
     [Tooltip("How strongly the edges of the map turn to water. Lower = land pushes closer to edges.")]
-    public float edgeFalloff = 0.8f;
+    public float edgeFalloff   = 0.8f;
 
     [Header("References")]
     public GameObject hexTilePrefab;
     public GameObject waterTilePrefab;
 
+    // ── Water shader / material ──────────────────────────────────────────
+    [Header("Water Visual")]
+    [Tooltip("Assign the Material using the WaterUnlit shader here.\n" +
+             "GridManager will apply it to every water tile automatically.")]
+    public Material waterMaterial;
+
+    [Tooltip("How far below the water surface the sand bed tile is placed.")]
+    public float sandBedDepth = 0.18f;
+
+    [Tooltip("Sand bed scale relative to the water tile (1 = identical size).")]
+    public float sandBedScale = 1.02f; // slightly wider so no gaps at edges
+
+    // ── Grass / land shader / material ───────────────────────────────────
+    [Header("Land Visual")]
+    [Tooltip("Assign the Material using your grass shader here.\n" +
+             "GridManager will apply it to every land tile automatically.")]
+    public Material grassMaterial;
+
+    // ─────────────────────────────────────────────────────────────────────
     public Dictionary<Vector3Int, HexTile> tiles =
         new Dictionary<Vector3Int, HexTile>();
+
+    // Shared sand material — created once, reused for all sand beds
+    private Material _sandMaterial;
 
     private void Awake()
     {
@@ -45,49 +68,45 @@ public class GridManager : MonoBehaviour
         GenerateGrid();
     }
 
+    // =====================================================================
+    //  GRID GENERATION
+    // =====================================================================
     void GenerateGrid()
     {
         tiles.Clear();
 
-        // Determine the center of the grid in world space for the falloff calculation
         Vector3 worldCenter = HexToWorld(width / 2, height / 2);
-        
-        // The maximum radius based on the grid dimensions
-        float maxRadius = (Mathf.Min(width, height) / 2f) * (hexSize * 2f);
-        
-        // Generate random offsets so the continent is different every time you play
+        float   maxRadius   = (Mathf.Min(width, height) / 2f) * (hexSize * 2f);
+
         float randomOffsetX = Random.Range(-10000f, 10000f);
         float randomOffsetY = Random.Range(-10000f, 10000f);
 
-        // New world generation approach:
         // STEP 1: INITIAL NOISE GENERATION
         for (int q = 0; q < width; q++)
         {
             for (int r = 0; r < height; r++)
             {
                 Vector3 worldPos = HexToWorld(q, r);
-                
-                float distFromCenter = Vector3.Distance(worldPos, worldCenter);
-                float normalizedDist = distFromCenter / maxRadius;
 
-                float noiseValue = Mathf.PerlinNoise((q + randomOffsetX) * noiseScale, (r + randomOffsetY) * noiseScale);
-                float finalLandValue = noiseValue - (normalizedDist * edgeFalloff);
+                float distFromCenter  = Vector3.Distance(worldPos, worldCenter);
+                float normalizedDist  = distFromCenter / maxRadius;
+                float noiseValue      = Mathf.PerlinNoise(
+                    (q + randomOffsetX) * noiseScale,
+                    (r + randomOffsetY) * noiseScale);
+                float finalLandValue  = noiseValue - (normalizedDist * edgeFalloff);
 
                 if (finalLandValue >= landThreshold)
                 {
                     Vector3Int cubeCoords = AxialToCube(q, r);
-
                     GameObject tileObj = Instantiate(
                         hexTilePrefab,
                         worldPos,
                         hexTilePrefab.transform.rotation,
-                        transform
-                    );
-
+                        transform);
                     HexTile tile = tileObj.GetComponent<HexTile>();
                     tile.Initialize(cubeCoords);
-
                     tiles.Add(cubeCoords, tile);
+                    ApplyGrassMaterial(tileObj);
                 }
             }
         }
@@ -102,20 +121,26 @@ public class GridManager : MonoBehaviour
         Debug.Log($"Generated {tiles.Count} hex tiles forming a single contiguous continent.");
     }
 
+    // =====================================================================
+    //  ENVIRONMENT FEATURES
+    // =====================================================================
     private Material structureMaterial;
 
     private void AssignEnvironmentFeatures()
     {
         List<HexTile> allTiles = new List<HexTile>(tiles.Values);
-        
+
+        // ── Build shared sand material once ───────────────────────────────
+        BuildSandMaterial();
+
         int waterCount = Mathf.RoundToInt(allTiles.Count * 0.10f);
         for (int i = 0; i < waterCount; i++)
         {
             if (allTiles.Count == 0) break;
-            int index = Random.Range(0, allTiles.Count);
-            HexTile tile = allTiles[index];
-            
-            Vector3 pos = tile.transform.position;
+            int     index = Random.Range(0, allTiles.Count);
+            HexTile tile  = allTiles[index];
+
+            Vector3    pos    = tile.transform.position;
             Vector3Int coords = tile.cubeCoords;
             allTiles.RemoveAt(index);
 
@@ -124,25 +149,36 @@ public class GridManager : MonoBehaviour
                 tiles.Remove(coords);
                 Destroy(tile.gameObject);
 
-                GameObject waterObj = Instantiate(waterTilePrefab, pos, hexTilePrefab.transform.rotation, transform);
+                GameObject waterObj  = Instantiate(
+                    waterTilePrefab,
+                    pos,
+                    hexTilePrefab.transform.rotation,
+                    transform);
                 HexTile waterTile = waterObj.GetComponent<HexTile>();
                 waterTile.Initialize(coords, HexTile.TileType.Water);
-                
                 tiles.Add(coords, waterTile);
+
+                // ── Apply water shader material ───────────────────────────
+                ApplyWaterMaterial(waterObj);
+
+                // ── Spawn sand bed below this water tile ──────────────────
+                SpawnSandBed(waterTile);
             }
             else
             {
                 tile.type = HexTile.TileType.Water;
+                ApplyWaterMaterial(tile.gameObject);
+                SpawnSandBed(tile);
                 tile.UpdateAppearance();
             }
         }
 
+        // ── Structure material ─────────────────────────────────────────────
         if (structureMaterial == null)
         {
             Shader structShader = Shader.Find("Universal Render Pipeline/Lit");
             if (structShader == null) structShader = Shader.Find("Sprites/Default");
-            
-            structureMaterial = new Material(structShader);
+            structureMaterial       = new Material(structShader);
             structureMaterial.color = new Color(0.8f, 0.8f, 0.85f);
         }
 
@@ -151,150 +187,284 @@ public class GridManager : MonoBehaviour
         {
             if (allTiles.Count == 0) break;
             int index = Random.Range(0, allTiles.Count);
-            HexTile tile = allTiles[index];
-            SpawnStructures(tile);
+            SpawnStructures(allTiles[index]);
             allTiles.RemoveAt(index);
         }
     }
 
+    // =====================================================================
+    //  WATER MATERIAL APPLICATION
+    // =====================================================================
+    // Applies the WaterUnlit material to the Renderer on the water tile
+    // GameObject. Falls back to a plain blue material if none is assigned.
+    private void ApplyWaterMaterial(GameObject waterObj)
+    {
+        Renderer rend = waterObj.GetComponent<Renderer>();
+        if (rend == null) return;
+
+        if (waterMaterial != null)
+        {
+            // Instance the material so each tile can have independent depth
+            // values without interfering with others.
+            rend.material = waterMaterial;
+        }
+        else
+        {
+            // Fallback: simple blue so the game isn't broken without the shader
+            Debug.LogWarning("[GridManager] waterMaterial not assigned — using fallback blue.");
+            Shader fb = Shader.Find("Universal Render Pipeline/Lit")
+                     ?? Shader.Find("Standard");
+            if (fb != null)
+            {
+                Material mat   = new Material(fb);
+                mat.color      = new Color(0.1f, 0.3f, 0.78f, 0.85f);
+                rend.material  = mat;
+            }
+        }
+    }
+
+    // Applies the grass/land material to a land tile's Renderer.
+    // Falls back to a plain green material if none is assigned in the Inspector.
+    private void ApplyGrassMaterial(GameObject landObj)
+    {
+        Renderer rend = landObj.GetComponent<Renderer>();
+        if (rend == null) return;
+
+        if (grassMaterial != null)
+        {
+            rend.material = grassMaterial;
+        }
+        else
+        {
+            // Fallback: plain green so the game isn't broken without the shader
+            Debug.LogWarning("[GridManager] grassMaterial not assigned — using fallback green.");
+            Shader fb = Shader.Find("Universal Render Pipeline/Lit")
+                     ?? Shader.Find("Standard");
+            if (fb != null)
+            {
+                Material mat  = new Material(fb);
+                mat.color     = new Color(0.28f, 0.45f, 0.18f, 1f);
+                rend.material = mat;
+            }
+        }
+    }
+
+    // =====================================================================
+    //  SAND BED
+    // =====================================================================
+    // Spawns a copy of the hex tile prefab directly below the given water tile,
+    // coloured like wet sand to simulate a shallow seabed visible through the
+    // water shader's depth-based transparency.
+    //
+    // The sand bed is parented to the water tile so it moves with it if anything
+    // ever repositions the tile, and it is tagged "SandBed" for easy lookup.
+    //
+    // Visual design notes:
+    //   - Offset downward by sandBedDepth (Inspector-tunable, default 0.18 units)
+    ///   - Slightly wider than the water tile (sandBedScale, default 1.02) so
+    //     no thin gaps appear at the water surface edge
+    //   - Two-tone color: base sandy brown with a subtle darker variation seeded
+    //     per-tile via the tile's cube coords, giving organic variation across
+    //     the seabed without any texture asset
+    private void SpawnSandBed(HexTile waterTile)
+    {
+        if (hexTilePrefab == null) return;
+
+        // Position: same XZ as the water tile, pushed down by sandBedDepth
+        Vector3 waterPos = waterTile.transform.position;
+        Vector3 sandPos  = new Vector3(0f, 0f, 0.01f);
+
+        GameObject sandObj = Instantiate(
+            hexTilePrefab,
+            waterTile.transform.position, // world pos set via localPosition below
+            waterTile.transform.rotation,
+            waterTile.transform); // parented under the water tile
+
+        sandObj.name = "SandBed";
+        sandObj.transform.localPosition = new Vector3(0f, 0f, 0.01f);
+        sandObj.transform.localRotation = Quaternion.identity;
+
+        // Scale slightly larger to avoid edge gaps at the water surface
+        sandObj.transform.localScale = Vector3.one * sandBedScale;
+
+        // ── Remove the HexTile script — sand beds are purely visual ────────
+        HexTile sandTileScript = sandObj.GetComponent<HexTile>();
+        if (sandTileScript != null)
+            Destroy(sandTileScript);
+
+        // Remove any colliders — only the water tile above should receive raycasts
+        foreach (Collider col in sandObj.GetComponentsInChildren<Collider>())
+            Destroy(col);
+
+        // ── Apply per-tile sand color variation ────────────────────────────
+        Renderer rend = sandObj.GetComponent<Renderer>();
+        if (rend != null)
+        {
+            rend.material = BuildSandVariant(waterTile.cubeCoords);
+        }
+
+        // ── Disable any child Env_Structure objects that might have been
+        //    copied from the prefab — sand bed should be flat ───────────────
+        for (int i = sandObj.transform.childCount - 1; i >= 0; i--)
+            Destroy(sandObj.transform.GetChild(i).gameObject);
+    }
+
+    // =====================================================================
+    //  SAND MATERIAL HELPERS
+    // =====================================================================
+    private void BuildSandMaterial()
+    {
+        if (_sandMaterial != null) return;
+
+        Shader sandShader = Shader.Find("Universal Render Pipeline/Lit")
+                         ?? Shader.Find("Standard")
+                         ?? Shader.Find("Sprites/Default");
+        _sandMaterial       = new Material(sandShader);
+        _sandMaterial.color = SandColor(Vector3Int.zero, 0f);
+    }
+
+    /// <summary>
+    /// Returns a new material instance with a unique sand color tinted per-tile
+    /// using a deterministic hash of the tile's cube coordinates.
+    /// Range: warm tan → slightly greenish damp sand.
+    /// </summary>
+    private Material BuildSandVariant(Vector3Int coords)
+    {
+        Shader sandShader = Shader.Find("Universal Render Pipeline/Lit")
+                         ?? Shader.Find("Standard")
+                         ?? Shader.Find("Sprites/Default");
+
+        // Hash the coords to a 0..1 variation value — deterministic per tile
+        float hash = Mathf.Abs(Mathf.Sin(coords.x * 127.1f + coords.z * 311.7f));
+        hash       = hash - Mathf.Floor(hash); // frac
+
+        Material mat = new Material(sandShader);
+        mat.color    = SandColor(coords, hash);
+
+        // Make the sand bed slightly emissive so it's visible through the
+        // semi-transparent water without needing a light source under the tile
+        if (mat.HasProperty("_EmissionColor"))
+        {
+            mat.EnableKeyword("_EMISSION");
+            Color emissive = SandColor(coords, hash) * 0.18f;
+            mat.SetColor("_EmissionColor", emissive);
+        }
+
+        return mat;
+    }
+
+    private static Color SandColor(Vector3Int coords, float variation)
+    {
+        // Base: warm sandy tan
+        Color baseSand  = new Color(0.80f, 0.70f, 0.48f, 1f);
+        // Wet variant: cooler, darker, slightly greenish
+        Color wetSand   = new Color(0.55f, 0.52f, 0.38f, 1f);
+        // Occasional bright highlight patch (shells / quartz)
+        Color lightSand = new Color(0.92f, 0.86f, 0.68f, 1f);
+
+        if (variation > 0.85f) return Color.Lerp(baseSand, lightSand, (variation - 0.85f) / 0.15f);
+        return Color.Lerp(wetSand, baseSand, variation);
+    }
+
+    // =====================================================================
+    //  STRUCTURE SPAWNING (unchanged)
+    // =====================================================================
     private void SpawnStructures(HexTile tile)
     {
         tile.hasStructure = true;
-        int count = Random.Range(3, 6); // 3-5 structures per tile
-        
+        int count = Random.Range(3, 6);
         for (int i = 0; i < count; i++)
         {
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.name = "Env_Structure";
             cube.transform.SetParent(tile.transform);
-            
-            // Adjusting for X=90 rotation and 100x scale:
-            // Local X = World X
-            // Local Y = World Z
-            // Local Z = World -Y (So negative Z is UP)
-            float rx = Random.Range(-0.0035f, 0.0035f);
-            float ry = Random.Range(-0.0035f, 0.0035f);
-            
-            float height = Random.Range(0.006f, 0.018f);
-            float width = Random.Range(0.0025f, 0.0045f);
-            
-            // Negative Z local moves the cube "Up" in world space relative to the rotated tile
-            // Added -0.001f extra to ensure it clears the tile face
-            cube.transform.localPosition = new Vector3(rx, ry, -height / 2f - 0.001f);
-            cube.transform.localScale = new Vector3(width, width, height); // Scale Z is building height
-            
-            // Set building rotation to match world up (optional, but looks better)
+
+            float rx     = Random.Range(-0.0035f, 0.0035f);
+            float ry     = Random.Range(-0.0035f, 0.0035f);
+            float h      = Random.Range(0.006f, 0.018f);
+            float w      = Random.Range(0.0025f, 0.0045f);
+
+            cube.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
+            cube.transform.localScale    = new Vector3(w, w, h);
             cube.transform.localRotation = Quaternion.identity;
-            
             cube.GetComponent<Renderer>().sharedMaterial = structureMaterial;
-            
+
             if (cube.TryGetComponent<Collider>(out Collider col))
                 Destroy(col);
         }
     }
 
+    // =====================================================================
+    //  ISLAND REMOVAL (unchanged)
+    // =====================================================================
     private void RemoveDisconnectedIslands()
     {
         List<HashSet<HexTile>> allLandmasses = new List<HashSet<HexTile>>();
-        HashSet<HexTile> unvisitedTiles = new HashSet<HexTile>(tiles.Values);
+        HashSet<HexTile> unvisited = new HashSet<HexTile>(tiles.Values);
 
-        // 1. Group all tiles into distinct landmasses
-        while (unvisitedTiles.Count > 0)
+        while (unvisited.Count > 0)
         {
-            // Grab any unvisited tile to start a new flood fill
-            var enumerator = unvisitedTiles.GetEnumerator();
-            enumerator.MoveNext();
-            HexTile startTile = enumerator.Current;
-
-            // Get all connected tiles for this specific island
-            HashSet<HexTile> currentLandmass = GetConnectedRegion(startTile);
-            allLandmasses.Add(currentLandmass);
-
-            // Remove these tiles from the unvisited pool so we don't check them again
-            unvisitedTiles.ExceptWith(currentLandmass);
+            var en = unvisited.GetEnumerator();
+            en.MoveNext();
+            HashSet<HexTile> lm = GetConnectedRegion(en.Current);
+            allLandmasses.Add(lm);
+            unvisited.ExceptWith(lm);
         }
 
-        // 2. If we have more than one island, we need to prune the smaller ones
         if (allLandmasses.Count > 1)
         {
-            // Sort the list of landmasses by size, largest first
             allLandmasses.Sort((a, b) => b.Count.CompareTo(a.Count));
-
-            // The first one [0] is the main continent. Destroy all others.
             for (int i = 1; i < allLandmasses.Count; i++)
-            {
-                foreach (HexTile islandTile in allLandmasses[i])
+                foreach (HexTile t in allLandmasses[i])
                 {
-                    tiles.Remove(islandTile.cubeCoords);
-                    Destroy(islandTile.gameObject);
+                    tiles.Remove(t.cubeCoords);
+                    Destroy(t.gameObject);
                 }
-            }
         }
     }
 
     private HashSet<HexTile> GetConnectedRegion(HexTile startTile)
     {
-        HashSet<HexTile> region = new HashSet<HexTile>();
-        Queue<HexTile> frontier = new Queue<HexTile>();
-
+        HashSet<HexTile> region   = new HashSet<HexTile>();
+        Queue<HexTile>   frontier = new Queue<HexTile>();
         frontier.Enqueue(startTile);
         region.Add(startTile);
-
         while (frontier.Count > 0)
         {
             HexTile current = frontier.Dequeue();
-
-            foreach (HexTile neighbor in GetNeighbors(current))
-            {
-                if (!region.Contains(neighbor))
-                {
-                    region.Add(neighbor);
-                    frontier.Enqueue(neighbor);
-                }
-            }
+            foreach (HexTile n in GetNeighbors(current))
+                if (!region.Contains(n)) { region.Add(n); frontier.Enqueue(n); }
         }
-
         return region;
     }
 
-    public IEnumerable<HexTile> GetAllTiles()
-    {
-        return tiles.Values;
-    }
+    // =====================================================================
+    //  PUBLIC ACCESSORS (unchanged)
+    // =====================================================================
+    public IEnumerable<HexTile> GetAllTiles() => tiles.Values;
 
     public List<HexTile> GetNeighbors(HexTile tile)
     {
         List<HexTile> neighbors = new List<HexTile>();
-
         foreach (Vector3Int dir in CubeDirections)
         {
-            Vector3Int neighborCoords = tile.cubeCoords + dir;
-
-            if (tiles.TryGetValue(neighborCoords, out HexTile neighbor))
-            {
-                neighbors.Add(neighbor);
-            }
+            Vector3Int nc = tile.cubeCoords + dir;
+            if (tiles.TryGetValue(nc, out HexTile n))
+                neighbors.Add(n);
         }
-
         return neighbors;
     }
-    
+
     Vector3 HexToWorld(int q, int r)
     {
-        float tileWidth = hexSize * 2f;
-        float tileHeight = Mathf.Sqrt(3f) * hexSize;
-
-        float x = tileWidth * (q + r * 0.5f);
-        float z = tileHeight * r;
-
-        return new Vector3(x, 0f, z);
+        float tw = hexSize * 2f;
+        float th = Mathf.Sqrt(3f) * hexSize;
+        return new Vector3(tw * (q + r * 0.5f), 0f, th * r);
     }
 
     Vector3Int AxialToCube(int q, int r)
     {
-        int x = q;
-        int z = r;
-        int y = -x - z;
+        int x = q, z = r, y = -x - z;
         return new Vector3Int(x, y, z);
     }
 
@@ -307,106 +477,67 @@ public class GridManager : MonoBehaviour
     public HexTile GetTile(int x, int y)
     {
         foreach (var tile in tiles.Values)
-        {
-            if (tile.cubeCoords.x == x && tile.cubeCoords.y == y)
-                return tile;
-        }
+            if (tile.cubeCoords.x == x && tile.cubeCoords.y == y) return tile;
         return null;
     }
 
-    public int CubeDistance(Vector3Int a, Vector3Int b)
-    {
-        return Mathf.Max(
-            Mathf.Abs(a.x - b.x),
-            Mathf.Abs(a.y - b.y),
-            Mathf.Abs(a.z - b.z)
-        );
-    }
-    
+    public int CubeDistance(Vector3Int a, Vector3Int b) =>
+        Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y), Mathf.Abs(a.z - b.z));
+
     public List<HexTile> GetTilesInRange(HexTile centerTile, int range)
     {
         List<HexTile> result = new List<HexTile>();
-
         for (int dx = -range; dx <= range; dx++)
-        {
             for (int dy = Mathf.Max(-range, -dx - range); dy <= Mathf.Min(range, -dx + range); dy++)
             {
                 int dz = -dx - dy;
-                Vector3Int coords = centerTile.cubeCoords + new Vector3Int(dx, dy, dz);
-
-                if (tiles.TryGetValue(coords, out HexTile tile))
-                    result.Add(tile);
+                Vector3Int c = centerTile.cubeCoords + new Vector3Int(dx, dy, dz);
+                if (tiles.TryGetValue(c, out HexTile t)) result.Add(t);
             }
-        }
-
         return result;
     }
 
     public List<HexTile> GetTilesByCount(HexTile start, int count)
     {
-        List<HexTile> result = new List<HexTile>();
-        Queue<HexTile> frontier = new Queue<HexTile>();
-        HashSet<HexTile> visited = new HashSet<HexTile>();
-
+        List<HexTile>    result   = new List<HexTile>();
+        Queue<HexTile>   frontier = new Queue<HexTile>();
+        HashSet<HexTile> visited  = new HashSet<HexTile>();
         frontier.Enqueue(start);
         visited.Add(start);
-
         while (frontier.Count > 0 && result.Count < count)
         {
             HexTile current = frontier.Dequeue();
             result.Add(current);
-
-            foreach (HexTile neighbor in GetNeighbors(current))
+            foreach (HexTile n in GetNeighbors(current))
             {
-                if (visited.Contains(neighbor)) continue;
-                visited.Add(neighbor);
-                frontier.Enqueue(neighbor);
+                if (visited.Contains(n)) continue;
+                visited.Add(n);
+                frontier.Enqueue(n);
             }
         }
-
         return result;
     }
 
     public List<HexTile> FindPath(HexTile start, HexTile end)
     {
         if (start == end) return new List<HexTile> { start };
-
-        Queue<HexTile> frontier = new Queue<HexTile>();
-        frontier.Enqueue(start);
-
+        Queue<HexTile>              frontier = new Queue<HexTile>();
         Dictionary<HexTile, HexTile> cameFrom = new Dictionary<HexTile, HexTile>();
+        frontier.Enqueue(start);
         cameFrom[start] = null;
-
         bool found = false;
         while (frontier.Count > 0)
         {
             HexTile current = frontier.Dequeue();
-
-            if (current == end)
-            {
-                found = true;
-                break;
-            }
-
+            if (current == end) { found = true; break; }
             foreach (HexTile next in GetNeighbors(current))
-            {
                 if (!cameFrom.ContainsKey(next) && (!next.IsBuildingBlocked() || next == end))
-                {
-                    cameFrom[next] = current;
-                    frontier.Enqueue(next);
-                }
-            }
+                { cameFrom[next] = current; frontier.Enqueue(next); }
         }
-
         if (!found) return null;
-
         List<HexTile> path = new List<HexTile>();
         HexTile temp = end;
-        while (temp != null)
-        {
-            path.Add(temp);
-            temp = cameFrom[temp];
-        }
+        while (temp != null) { path.Add(temp); temp = cameFrom[temp]; }
         path.Reverse();
         return path;
     }

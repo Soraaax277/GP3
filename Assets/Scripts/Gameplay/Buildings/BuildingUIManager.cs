@@ -15,6 +15,7 @@ using TMPro;
 //    • BPOCenter        → Status display (powered, worker, income)
 //    • CommercialHub    → Toggle auto-spawn button
 //    • ServiceCenter    → Workforce recruitment (Foremen, Maintenance, IT)
+//    • Canteen          → Workforce recruitment (Builder, Foremen, Technician)
 //
 //  To add a new building type:
 //    1. Add a new branch in Open(MonoBehaviour building).
@@ -29,7 +30,7 @@ public class BuildingUIManager : MonoBehaviour
     [Header("UI References")]
     public GameObject panel;
 
-    [Tooltip("Prefab: Button root + 'ActionLabel' TMP + 'CostLabel' TMP children. Same prefab as UnitActionPanel.")]
+    [Tooltip("Prefab: Button root + 'ActionLabel' TMP + 'CostLabel' TMP children.")]
     public GameObject actionButtonPrefab;
 
     [Tooltip("The Content RectTransform inside the panel that owns the Vertical Layout Group + ContentSizeFitter.")]
@@ -169,11 +170,18 @@ public class BuildingUIManager : MonoBehaviour
             DetailPanel.Instance.ShowBuilding(building);
         // ─────────────────────────────────────────────────────────────────────
 
-        if      (building is SignalNode    hq)  { followTarget = hq.businessBuilding != null ? hq.businessBuilding.transform : hq.transform; ShowHQRoot(hq); }
-        else if (building is BPOCenter     bpo)  ShowBPO(bpo);
-        else if (building is CommercialHub hub)  ShowCommercialHub(hub);
-        else if (building is ServiceCenter sc)   ShowServiceCenter(sc);
-        else if (building is Canteen canteen)    ShowCanteen(canteen);
+        if      (building is SignalNode               hq)      { followTarget = hq.businessBuilding != null ? hq.businessBuilding.transform : hq.transform; ShowHQRoot(hq); }
+        else if (building is BPOCenter                bpo)     ShowBPO(bpo);
+        else if (building is CommercialHub            hub)     ShowCommercialHub(hub);
+        // IMPORTANT: AdvancedServiceCenter inherits from ServiceCenter — it MUST be
+        // checked first or the base ServiceCenter branch will silently catch it.
+        else if (building is AdvancedServiceCenter    asc)     ShowAdvancedServiceCenter(asc);
+        else if (building is ServiceCenter            sc)      ShowServiceCenter(sc);
+        // AdvancedBusinessCenter inherits from StructureNode directly (not BusinessCenter),
+        // so dispatch order doesn't matter here — but keeping advanced before base is
+        // consistent convention and safe-guards against future refactoring.
+        else if (building is AdvancedBusinessCenter   abc)     ShowAdvancedBusinessCenter(abc);
+        else if (building is Canteen                  canteen) ShowCanteen(canteen);
         else
         {
             ClearButtons();
@@ -251,7 +259,9 @@ public class BuildingUIManager : MonoBehaviour
         SpawnButton(new ActionConfig { label = "← Back", cost = 0, interactable = true, onClick = () => ShowHQRoot(hq) });
 
         int  gold           = hq.owner.resources;
-        bool towersUnlocked = IsUnlocked("TelecomTowers");
+        // FIX (Bug 2): Use owner-explicit overload so unlock checks resolve the correct
+        //              player regardless of who TurnManager.currentPlayer happens to be.
+        bool towersUnlocked = IsUnlockedFor(hq.owner, "TelecomTowers");
         int  towerCost      = TowerPlacementManager.Instance != null ? TowerPlacementManager.Instance.GetCurrentTowerCost() : 0;
 
         SpawnButton(new ActionConfig
@@ -262,28 +272,53 @@ public class BuildingUIManager : MonoBehaviour
             onClick      = () => { StartTowerPlacement(hq); Close(); }
         });
 
-        var spm = StructurePlacementManager.Instance;
-        if (spm == null) return;
+        // Guard StructurePlacementManager BEFORE spawning any structure
+        // buttons. Try Instance first; fall back to FindObjectOfType so
+        // a script-execution-order gap doesn't silently skip all buttons.
+        // If it's still null after the fallback, the GameObject is simply
+        // not in the scene — check the hierarchy and add it.
+        var spm = StructurePlacementManager.Instance
+                  ?? FindObjectOfType<StructurePlacementManager>();
 
-        TryAddStructureButton("Build Service Center",  "ServiceCenter",   spm.serviceCenterPrefab);
-        TryAddStructureButton("Build BPO Center",      "BPOCenters",      spm.bpoCenterPrefab);
-        TryAddStructureButton("Build Commercial Hub",  "CommercialHubs",  spm.commercialHubPrefab);
-        TryAddStructureButton("Build Business Center", "BusinessCenters", spm.businessCenterPrefab);
-        TryAddStructureButton("Build Worker Factory",  "WorkerFactories", spm.workerFactoryPrefab);
-        TryAddStructureButton("Build Drone Factory",   "DroneFactories",  spm.droneFactoryPrefab);
-        TryAddStructureButton("Build Signal Booster",  "SignalBooster",   spm.signalBoosterPrefab);
-        TryAddStructureButton("Build Signal Jammer",   "SignalJammers",   spm.signalJammerPrefab);
-        TryAddStructureButton("Build Power Box",       "PowerBoxes",      spm.powerBoxPrefab);
-        TryAddStructureButton("Build Tesseract",       "Tesseract",       spm.tesseractPrefab);
-        TryAddStructureButton("Build Canteen",         "Canteens",        spm.canteenPrefab);
-        TryAddStructureButton("Build Rocketship",      "Rocketship",      spm.rocketshipPrefab);
+        if (spm == null)
+        {
+            Debug.LogError("[BuildingUIManager] StructurePlacementManager not found in scene. " +
+                           "Add it to an active GameObject. Structure buttons cannot be shown.");
+            RefreshScrollRect();
+            return;
+        }
+
+        // Cache the found instance so future lookups don't need FindObjectOfType.
+        if (StructurePlacementManager.Instance == null)
+            Debug.LogWarning("[BuildingUIManager] StructurePlacementManager.Instance was null — " +
+                             "recovered via FindObjectOfType. Check script execution order or " +
+                             "ensure the GameObject is active at scene start.");
+
+        // FIX (Bug 2): Pass hq.owner into TryAddStructureButton so feature unlock
+        //              checks are always evaluated against the correct player.
+        TryAddStructureButton("Build Service Center",          "ServiceCenter",         spm.serviceCenterPrefab,         hq.owner);
+        TryAddStructureButton("Build Advanced Service Center", "AdvancedServiceCenter", spm.advancedServiceCenterPrefab, hq.owner);
+        TryAddStructureButton("Build BPO Center",      "BPOCenters",      spm.bpoCenterPrefab,      hq.owner);
+        TryAddStructureButton("Build Commercial Hub",  "CommercialHubs",  spm.commercialHubPrefab,  hq.owner);
+        TryAddStructureButton("Build Business Center",          "BusinessCenters",         spm.businessCenterPrefab,         hq.owner);
+        TryAddStructureButton("Build Advanced Business Center", "AdvancedBusinessCenters", spm.advancedBusinessCenterPrefab, hq.owner);
+        TryAddStructureButton("Build Worker Factory",  "WorkerFactories", spm.workerFactoryPrefab,  hq.owner);
+        TryAddStructureButton("Build Drone Factory",   "DroneFactories",  spm.droneFactoryPrefab,   hq.owner);
+        TryAddStructureButton("Build Signal Booster",  "SignalBooster",   spm.signalBoosterPrefab,  hq.owner);
+        TryAddStructureButton("Build Signal Jammer",   "SignalJammers",   spm.signalJammerPrefab,   hq.owner);
+        TryAddStructureButton("Build Power Box",       "PowerBoxes",      spm.powerBoxPrefab,       hq.owner);
+        TryAddStructureButton("Build Tesseract",       "Tesseract",       spm.tesseractPrefab,      hq.owner);
+        TryAddStructureButton("Build Canteen",         "Canteens",        spm.canteenPrefab,        hq.owner);
+        TryAddStructureButton("Build Rocketship",      "Rocketship",      spm.rocketshipPrefab,     hq.owner);
 
         RefreshScrollRect();
     }
 
-    private void TryAddStructureButton(string label, string featureKey, GameObject prefab)
+    // FIX (Bug 2): Added explicit PlayerData owner parameter so feature unlock checks
+    //              always use the building owner's tech state, not currentPlayer.
+    private void TryAddStructureButton(string label, string featureKey, GameObject prefab, PlayerData owner)
     {
-        if (prefab == null || !IsUnlocked(featureKey)) return;
+        if (prefab == null || !IsUnlockedFor(owner, featureKey)) return;
 
         SpawnButton(new ActionConfig
         {
@@ -312,7 +347,7 @@ public class BuildingUIManager : MonoBehaviour
         HexTile tile = hq.tile;
 
         TryAddUnitButton("Recruit Builder",         us.builderPrefab,        gold, tile, hq.owner, "Builder");
-        TryAddUnitButton("Recruit Wire Specialist", us.wireSpecialistPrefab, gold, tile, hq.owner, "Wire Specialist");
+        TryAddUnitButton("Recruit Wire Specialist", us.wireSpecialistPrefab, gold, tile, hq.owner, "WireSpecialist");
         TryAddUnitButton("Recruit Scout",           us.scoutPrefab,          gold, tile, hq.owner, "Scout");
         TryAddUnitButton("Recruit Technician",      us.technicianPrefab,     gold, tile, hq.owner, "Technician");
         TryAddUnitButton("Recruit Businessman",     us.businessmanPrefab,    gold, tile, hq.owner, "Businessman");
@@ -397,7 +432,8 @@ public class BuildingUIManager : MonoBehaviour
 
         TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, sc.owner, "MaintenanceCrew");
         TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, sc.owner, "Foreman");
-        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonel");
+        // FIX (Bug 3): Was "ITPersonel" (typo — single 'n'). IT Personnel never appeared even when unlocked.
+        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonnel");
 
         // No units unlocked yet
         if (spawnedButtons.Count == 0)
@@ -413,13 +449,85 @@ public class BuildingUIManager : MonoBehaviour
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Canteen — recruitment for Foremen, Builder, Technician
+    //  Advanced Service Center — extended workforce recruitment
+    //  Offers everything the base Service Center does, plus Robo Worker and
+    //  Robo Marshall for players who have researched the advanced tier.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowAdvancedServiceCenter(AdvancedServiceCenter asc)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "ADVANCED SERVICE CENTER";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        if (UnitSpawner.Instance == null) return;
+
+        int     gold = asc.owner.resources;
+        var     us   = UnitSpawner.Instance;
+        HexTile tile = asc.ParentTile;
+
+        // ── Base Service Center roster ────────────────────────────────────────
+        TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, asc.owner, "MaintenanceCrew");
+        TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, asc.owner, "Foreman");
+        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, asc.owner, "ITPersonnel");
+
+        // ── Advanced-only roster ──────────────────────────────────────────────
+        TryAddUnitButton("Recruit Robo Worker",      us.roboWorkerPrefab,      gold, tile, asc.owner, "RoboWorker");
+        TryAddUnitButton("Recruit Robo Marshall",    us.roboMarshallPrefab,    gold, tile, asc.owner, "RoboMarshall");
+
+        if (spawnedButtons.Count == 0)
+        {
+            if (subHeaderText != null) { subHeaderText.text = "No units available for deployment."; subHeaderText.gameObject.SetActive(true); }
+        }
+        else
+        {
+            if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+        }
+
+        RefreshScrollRect();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Advanced Business Center — business unit recruitment
+    //  Recruits business-oriented units not available at standard structures.
+    //  All units are individually gated by their own tech unlock keys.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowAdvancedBusinessCenter(AdvancedBusinessCenter abc)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "ADVANCED BUSINESS CENTER";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        if (UnitSpawner.Instance == null) return;
+
+        int     gold = abc.owner.resources;
+        var     us   = UnitSpawner.Instance;
+        HexTile tile = abc.ParentTile;
+
+        TryAddUnitButton("Recruit Businessman",    us.businessmanPrefab,   gold, tile, abc.owner, "Businessman");
+        TryAddUnitButton("Recruit Sales Marketer", us.salesMarketerPrefab, gold, tile, abc.owner, "SalesMarketer");
+        TryAddUnitButton("Recruit Saboteur",       us.saboteurPrefab,      gold, tile, abc.owner, "Saboteur");
+
+        if (spawnedButtons.Count == 0)
+        {
+            if (subHeaderText != null) { subHeaderText.text = "No units available for deployment."; subHeaderText.gameObject.SetActive(true); }
+        }
+        else
+        {
+            if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+        }
+
+        RefreshScrollRect();
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     private void ShowCanteen(Canteen canteen)
     {
         ClearButtons();
         if (headerText != null) headerText.text = "CANTEEN";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
 
         if (UnitSpawner.Instance == null) return;
 
@@ -427,11 +535,23 @@ public class BuildingUIManager : MonoBehaviour
         var     us   = UnitSpawner.Instance;
         HexTile tile = canteen.ParentTile;
 
-        // "can produce foremen, builder and technician"
         TryAddUnitButton("Recruit Builder",    us.builderPrefab,    gold, tile, canteen.owner, "Builder");
-        // Foreman is unique to Canteen (no tech string required if canteen is built)
+        // Foreman has no tech gate — available as soon as the Canteen is built
         TryAddUnitButton("Recruit Foremen",    us.foremenPrefab,    gold, tile, canteen.owner, null);
         TryAddUnitButton("Recruit Technician", us.technicianPrefab, gold, tile, canteen.owner, "Technician");
+
+        // FIX (Bug 4 & 5): Added "No units available" guard (was missing entirely for Canteen),
+        //                   and added the missing RefreshScrollRect() call.
+        if (spawnedButtons.Count == 0)
+        {
+            if (subHeaderText != null) { subHeaderText.text = "No units available for deployment."; subHeaderText.gameObject.SetActive(true); }
+        }
+        else
+        {
+            if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+        }
+
+        RefreshScrollRect();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -440,7 +560,7 @@ public class BuildingUIManager : MonoBehaviour
 
     private void StartTowerPlacement(SignalNode hq)
     {
-        if (!IsUnlocked("TelecomTowers"))
+        if (!IsUnlockedFor(hq.owner, "TelecomTowers"))
         {
             Debug.Log("[BuildingUIManager] 'Telecom Towers' not yet researched.");
             return;
@@ -460,11 +580,21 @@ public class BuildingUIManager : MonoBehaviour
     //  Tech helpers
     // ─────────────────────────────────────────────────────────────────────────
 
+    // All internal callers now use the owner-explicit overloads below.
+    // The old parameterless versions are kept for any external callers.
     private bool IsUnlocked(string featureKey)
         => TechManager.Instance != null && TechManager.Instance.IsFeatureUnlocked(featureKey);
 
+    // Explicit-player overload — always use this inside Show* methods.
+    private bool IsUnlockedFor(PlayerData owner, string featureKey)
+        => TechManager.Instance != null && TechManager.Instance.IsFeatureUnlockedFor(owner, featureKey);
+
     private bool IsUnitUnlocked(string unitName)
         => TechManager.Instance != null && TechManager.Instance.unlockedUnitNames.Contains(unitName);
+
+    // Explicit-player overload for unit unlock checks.
+    private bool IsUnitUnlockedFor(PlayerData owner, string unitName)
+        => TechManager.Instance != null && TechManager.Instance.GetUnlockedUnitNamesFor(owner).Contains(unitName);
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Owner helper
@@ -511,8 +641,9 @@ public class BuildingUIManager : MonoBehaviour
     {
         if (prefab == null) return;
 
-        // Not yet unlocked — hide entirely
-        if (techUnlockName != null && !IsUnitUnlocked(techUnlockName))
+        // FIX (Bug 2): Use owner-explicit unit unlock check so the correct player's
+        //              tech state is always evaluated, not currentPlayer's.
+        if (techUnlockName != null && !IsUnitUnlockedFor(owner, techUnlockName))
             return;
 
         int cost = UnitSpawner.Instance.GetRecruitmentCost(prefab);

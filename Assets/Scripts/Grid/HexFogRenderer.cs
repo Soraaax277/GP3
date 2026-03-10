@@ -3,17 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 
-/// <summary>
-/// Builds a procedural mesh from all unexplored (shroud) tiles,
-/// floats it Y+fogYOffset above the map, and drives a particle system
-/// on that shape to produce the volumetric fog cloud effect.
-///
-/// On reveal:
-///   - The fog fade quad dissolves smoothly with InOutSine easing
-///   - Each newly revealed tile rises from below its resting position
-///   - Tiles stagger their reveal delay by distance from the reveal centroid
-///     so the effect ripples outward from the vision source
-/// </summary>
+// Builds a procedural mesh from all unexplored (shroud) tiles,
+// floats it Y+fogYOffset above the map, and drives a particle system
+// on that shape to produce the volumetric fog cloud effect.
+//
+// On reveal:
+//   - The fog fade quad dissolves smoothly with InOutSine easing
+//   - Each newly revealed tile rises from below its resting position
+//   - Tiles stagger their reveal delay by distance from the reveal centroid
+//     so the effect ripples outward from the vision source
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class HexFogRenderer : MonoBehaviour
 {
@@ -85,9 +83,7 @@ public class HexFogRenderer : MonoBehaviour
         UpdateFog();
     }
 
-    /// <summary>
-    /// Called by FieldOfViewManager at the end of each UpdateFogOfWar().
-    /// </summary>
+    // Called by FieldOfViewManager at the end of each UpdateFogOfWar().
     public void UpdateFog()
     {
         if (GridManager.Instance == null) return;
@@ -149,10 +145,72 @@ public class HexFogRenderer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Handles both the fade quad dissolve and the tile rise animation
-    /// for all tiles revealed in this update, with ripple stagger.
-    /// </summary>
+    // <summary>
+    // Instantly tears down ALL fog geometry and particles with no DOTween tweens.
+    //
+    // Called by DebugCheatManager.CheatRevealMap() instead of UpdateFog(), which
+    // would spawn hundreds of AnimateTileRise + SpawnFadeQuad tweens in a single
+    // frame and cause DOTween to flood the log with pool-expansion warnings.
+    //
+    // This method:
+    //   1. Destroys ALL active FogFadeQuad GameObjects immediately.
+    //      CRITICAL: DOTween.KillAll() (called before this in CheatRevealMap) stops
+    //      their fade tweens but does NOT destroy the GameObjects — they stay in the
+    //      scene at full black opacity, producing the black-patch visual glitch.
+    //   2. Kills every active DOTween tween on all tile transforms (in-flight rises).
+    //   3. Snaps every tile back to its resting Y so none are stuck underground.
+    //   4. Destroys the procedural fog mesh immediately.
+    //   5. Stops and clears the particle system immediately.
+    //   6. Clears previouslyUnexplored so the next normal UpdateFog() call won't
+    //      misidentify all tiles as "newly revealed" and try to animate them.
+    public void RevealAllInstant()
+    {
+        if (GridManager.Instance == null) return;
+
+        //    SpawnFadeQuad() relies on its DOTween OnComplete callback to call
+        //    Destroy(fadeObj). When DOTween.KillAll() is called externally those
+        //    callbacks never fire, leaving black quads frozen at full opacity.
+        foreach (GameObject fadeQuad in GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
+            if (fadeQuad != null && fadeQuad.name == "FogFadeQuad")
+                Destroy(fadeQuad);
+
+        // 2. Kill tweens + snap all tiles to their resting Y so none are buried
+        foreach (HexTile tile in GridManager.Instance.GetAllTiles())
+        {
+            if (tile == null) continue;
+
+            tile.transform.DOKill();
+
+            if (tileRestingY.TryGetValue(tile, out float restY))
+            {
+                Vector3 pos = tile.transform.position;
+                pos.y = restY;
+                tile.transform.position = pos;
+            }
+        }
+
+        // 3. Destroy the fog mesh immediately — no fade
+        if (meshFilter.sharedMesh != null)
+        {
+            Destroy(meshFilter.sharedMesh);
+            meshFilter.mesh = null;
+        }
+
+        // 4. Stop and clear the particle system immediately
+        if (fogParticleSystem != null)
+        {
+            fogParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        // 5. Clear the "previously unexplored" set so UpdateFog() won't try to
+        //    animate every tile as newly-revealed the next time it runs normally.
+        previouslyUnexplored.Clear();
+
+        Debug.Log("[HexFogRenderer] RevealAllInstant: fog mesh, particles, and fade quads cleared.");
+    }
+
+    // Handles both the fade quad dissolve and the tile rise animation
+    // for all tiles revealed in this update, with ripple stagger.
     private void AnimateReveal(List<HexTile> newlyRevealed)
     {
         // Compute the centroid of all newly revealed tiles so ripple radiates
@@ -181,10 +239,8 @@ public class HexFogRenderer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Instantly drops the tile below its resting Y, then DOTweens it back up
-    /// with an OutBack ease for a satisfying overshoot land.
-    /// </summary>
+    // Instantly drops the tile below its resting Y, then DOTweens it back up
+    // with an OutBack ease for a satisfying overshoot land.
     private void AnimateTileRise(HexTile tile, float delay)
     {
         if (!tileRestingY.TryGetValue(tile, out float restY)) return;
@@ -203,10 +259,8 @@ public class HexFogRenderer : MonoBehaviour
             .SetEase(Ease.OutBack, 0.8f); // Subtle overshoot, not bouncy
     }
 
-    /// <summary>
-    /// Spawns a flat quad at the tile's position at fog height,
-    /// then DOTweens its alpha 1 to 0 with a smooth InOutSine curve.
-    /// </summary>
+    // Spawns a flat quad at the tile's position at fog height,
+    // then DOTweens its alpha 1 to 0 with a smooth InOutSine curve.
     private void SpawnFadeQuad(HexTile tile, float delay)
     {
         if (fadeMaterial == null) return;

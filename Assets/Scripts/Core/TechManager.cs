@@ -73,6 +73,24 @@ public class TechManager : MonoBehaviour
     public HashSet<string> GetUnlockedUnitNamesFor(PlayerData player) =>
         GetOrCreateSet(_playerUnlockedUnitNames, player);
 
+    // Exposes the feature set for a specific player — used by DebugCheatManager
+    // to force-unlock features by their exact string keys without going through TechNodes.
+    public HashSet<string> GetOrCreateFeatureSetFor(PlayerData player) =>
+        GetOrCreateSet(_playerUnlockedFeatures, player);
+
+    // Explicit-player version of UnlockFeature — used by DebugCheatManager so
+    // features are always written to the correct player regardless of whose turn it is.
+    public void UnlockFeatureFor(PlayerData player, string featureName)
+    {
+        if (player == null || string.IsNullOrEmpty(featureName)) return;
+        var set = GetOrCreateSet(_playerUnlockedFeatures, player);
+        if (!set.Contains(featureName))
+        {
+            set.Add(featureName);
+            Debug.Log($"Feature Unlocked: {featureName} for {player.playerName}");
+        }
+    }
+
     private HashSet<string> GetOrCreateSet(Dictionary<PlayerData, HashSet<string>> dict, PlayerData player)
     {
         if (player == null) return new HashSet<string>();

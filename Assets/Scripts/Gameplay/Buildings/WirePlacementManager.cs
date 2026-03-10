@@ -18,6 +18,8 @@ public class WirePlacementManager : MonoBehaviour
     //  WIRE LENGTH  ("WireLength" flat bonus tech)
     //  Base = 1 hex from the specialist unit.
     //  Increased by the "WireLength" TechEffect flat bonus (e.g. +2 from Coaxial Cables).
+    //  NOTE: This measures reach from the specialist unit, NOT from the network edge.
+    //        See WireNode.GetMaxWireLengthFromNetwork() for the network-distance version.
     public int MaxWireLength
     {
         get
@@ -105,6 +107,11 @@ public class WirePlacementManager : MonoBehaviour
 
     void FollowMouse()
     {
+        // FIX (Bug 6): Guard GridManager.Instance before ANY use of it, not just
+        // the adjacency check below — previously the CubeDistance call on line 118
+        // was unguarded while the neighbor loop two lines later was protected.
+        if (GridManager.Instance == null) return;
+
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out RaycastHit hit)) return;
 
@@ -113,6 +120,16 @@ public class WirePlacementManager : MonoBehaviour
 
         hoveredTile = tile;
         hologram.transform.position = tile.transform.position + Vector3.up * 0.84f;
+
+        // FIX (Bug 5): Guard currentSpecialist.currentTile before calling CubeDistance.
+        // If the specialist hasn't been placed on a tile yet, currentTile is null and
+        // this would throw a NullReferenceException every frame during placement.
+        if (currentSpecialist == null || currentSpecialist.currentTile == null)
+        {
+            isTileValid = false;
+            HologramUtil.MakeHologram(hologram, new Color(1f, 0f, 0f, 0.4f));
+            return;
+        }
 
         // VALIDITY CHECK
         int distFromUnit = GridManager.Instance.CubeDistance(
@@ -125,19 +142,16 @@ public class WirePlacementManager : MonoBehaviour
         // Previously accepted ANY player's infrastructure. Now checks ownership
         // so wires must connect to the specialist's own network.
         bool isNextToPower = false;
-        if (GridManager.Instance != null)
+        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
         {
-            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
-            {
-                bool ownedNode  = neighbor.placedNode  != null && neighbor.placedNode.owner  == currentSpecialist.owner;
-                bool ownedTower = neighbor.placedTower != null && neighbor.placedTower.owner == currentSpecialist.owner;
-                bool ownedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == currentSpecialist.owner;
+            bool ownedNode  = neighbor.placedNode  != null && neighbor.placedNode.owner  == currentSpecialist.owner;
+            bool ownedTower = neighbor.placedTower != null && neighbor.placedTower.owner == currentSpecialist.owner;
+            bool ownedWire  = neighbor.placedWire  != null && neighbor.placedWire.owner  == currentSpecialist.owner;
 
-                if (ownedNode || ownedTower || ownedWire)
-                {
-                    isNextToPower = true;
-                    break;
-                }
+            if (ownedNode || ownedTower || ownedWire)
+            {
+                isNextToPower = true;
+                break;
             }
         }
 
@@ -148,7 +162,12 @@ public class WirePlacementManager : MonoBehaviour
         // Block wires over water
         bool environmentBlocked = tile.type == HexTile.TileType.Water;
 
-        bool valid = isWithinReach && isNextToPower && !tile.IsOccupied() && !tile.HasWire() && canAfford && !environmentBlocked;
+        // FIX (Bug 7): Removed redundant !tile.HasWire() — tile.IsOccupied() already
+        // covers wired tiles. Keeping both implied HasWire() might NOT be in IsOccupied(),
+        // which would be a silent contract violation. The single IsOccupied() call is
+        // the authoritative occupation check; HasWire() is only useful for non-occupied
+        // wire reads (e.g. reading owner) outside of placement validation.
+        bool valid = isWithinReach && isNextToPower && !tile.IsOccupied() && canAfford && !environmentBlocked;
         isTileValid = valid;
 
         // Colour the hologram: yellow = valid, red = invalid
@@ -203,11 +222,10 @@ public class WirePlacementManager : MonoBehaviour
         WireNode wire = wireObj.GetComponent<WireNode>();
         wire.Initialize(tile, owner);
 
-        // Register with TurnManager so it participates in decay each turn
-        if (TurnManager.Instance != null)
-        {
-            TurnManager.Instance.RegisterWire(wire);
-        }
+        // NOTE: TurnManager.RegisterWire() is now called inside WireNode.Initialize(),
+        // so we no longer need to call it here. Left as a comment to avoid confusion
+        // if you're wondering why it was removed.
+        // TurnManager.Instance.RegisterWire(wire); ← now handled in Initialize()
 
         return wire;
     }
