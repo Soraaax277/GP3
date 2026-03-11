@@ -243,7 +243,8 @@ public class EnemyAI : MonoBehaviour
             if (aiPlayer.resources < cost + 100) continue; // Keep reserve
             if (builtThisTurn >= buildLimit) break;
 
-            HexTile bestTile = FindBestStructureSpot(aiPlayer);
+            HexTile bestTile = (feature == "SignalJammers") ? FindBestJammerSpot(aiPlayer) : FindBestStructureSpot(aiPlayer);
+            
             if (bestTile != null)
             {
                 aiPlayer.resources -= cost;
@@ -255,6 +256,25 @@ public class EnemyAI : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
             }
         }
+    }
+
+    private HexTile FindBestJammerSpot(PlayerData aiPlayer)
+    {
+        // Find a tile that is adjacent to ENEMY territory relative to the AI
+        return GridManager.Instance.tiles.Values
+            .Where(t => !t.IsOccupied() && t.type == HexTile.TileType.Land)
+            .Where(t => 
+            {
+                // Must be next to own infrastructure to be powered
+                bool nearOwn = GridManager.Instance.GetNeighbors(t).Any(n => n.placedNode != null && n.placedNode.owner == aiPlayer || n.placedTower != null && n.placedTower.owner == aiPlayer);
+                if (!nearOwn) return false;
+                
+                // Should be near enemy influence to be useful
+                bool nearEnemy = GridManager.Instance.GetNeighbors(t).Any(n => n.GetOwner() != null && n.GetOwner() != aiPlayer);
+                return nearEnemy;
+            })
+            .OrderBy(t => Random.value)
+            .FirstOrDefault();
     }
 
     private HexTile FindBestStructureSpot(PlayerData aiPlayer)
@@ -296,7 +316,7 @@ public class EnemyAI : MonoBehaviour
         int roboWorkerCount  = myUnits.Count(u => u is RoboWorker);
         int roboMarshallCount= myUnits.Count(u => u is RoboMarshall);
 
-        bool needsBuilder = GetUnbuiltTowers(aiPlayer).Any();
+        bool needsBuilder = GetUnbuiltInfrastructure(aiPlayer).Any();
         bool needsRepair  = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
             .Any(t => t.owner == aiPlayer && t.IsDestroyed());
         bool needsActivation = FindObjectsByType<WireNode>(FindObjectsSortMode.None)
@@ -379,8 +399,8 @@ public class EnemyAI : MonoBehaviour
     {
         if (prefab == null) yield break;
 
-        // Ensure we keep some gold for building if we have unbuilt towers
-        int reserve = GetUnbuiltTowers(aiPlayer).Any() ? 100 : 0;
+        // Ensure we keep some gold for building if we have unbuilt infrastructure
+        int reserve = GetUnbuiltInfrastructure(aiPlayer).Any() ? 100 : 0;
         if (aiPlayer.resources < cost + reserve) yield break;
 
         // Pick a spawn location. Prioritize Canteen for workforce, Service Center for Maintenance, else HQ.
@@ -551,10 +571,20 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private List<TowerNode> GetUnbuiltTowers(PlayerData owner)
+    private List<MonoBehaviour> GetUnbuiltInfrastructure(PlayerData owner)
     {
-        return FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
-            .Where(t => t.owner == owner && t.state == TowerNode.TowerState.Hologram).ToList();
+        var towers = FindObjectsByType<TowerNode>(FindObjectsSortMode.None)
+            .Where(t => t.owner == owner && t.state == TowerNode.TowerState.Hologram).Cast<MonoBehaviour>();
+        var structures = FindObjectsByType<StructureNode>(FindObjectsSortMode.None)
+            .Where(s => s.owner == owner && !s.IsBuilt).Cast<MonoBehaviour>();
+        return towers.Concat(structures).ToList();
+    }
+
+    private HexTile GetTile(MonoBehaviour building)
+    {
+        if (building is TowerNode tn) return tn.tile;
+        if (building is StructureNode sn) return sn.ParentTile;
+        return null;
     }
 
     private HexTile GetCloserTile(HexTile start, HexTile goal, int range)
@@ -573,30 +603,31 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleBuilder(BuilderUnit builder)
     {
         if (builder == null || !builder.gameObject.activeInHierarchy || !builder.CanAct) yield break;
-        TowerNode target = GetUnbuiltTowers(builder.owner)
-            .OrderBy(t => GridManager.Instance.CubeDistance(builder.currentTile.cubeCoords, t.tile.cubeCoords))
+        MonoBehaviour target = GetUnbuiltInfrastructure(builder.owner)
+            .OrderBy(t => GridManager.Instance.CubeDistance(builder.currentTile.cubeCoords, GetTile(t).cubeCoords))
             .FirstOrDefault();
 
         if (target == null) yield break;
 
-        if (GridManager.Instance.GetNeighbors(builder.currentTile).Contains(target.tile))
+        if (GridManager.Instance.GetNeighbors(builder.currentTile).Contains(GetTile(target)))
         {
-            builder.ConstructAdjacentTower();
+            builder.ConstructAdjacentInfrastructure();
             if (builder == null) yield break;
-            Debug.Log($"[EnemyAI] Builder constructed tower at {target.tile.name}");
+            Debug.Log($"[EnemyAI] Builder constructed infrastructure at {GetTile(target).name}");
         }
+
         else
         {
-            HexTile moveTarget = GetCloserTile(builder.currentTile, target.tile, builder.moveRange);
+            HexTile moveTarget = GetCloserTile(builder.currentTile, GetTile(target), builder.moveRange);
             if (moveTarget != null)
             {
                 builder.MoveTo(moveTarget, builder.moveRange);
                 yield return new WaitForSeconds(0.5f);
                 
                 if (builder != null && builder.CanAct && 
-                    GridManager.Instance.GetNeighbors(builder.currentTile).Contains(target.tile))
+                    GridManager.Instance.GetNeighbors(builder.currentTile).Contains(GetTile(target)))
                 {
-                    builder.ConstructAdjacentTower();
+                    builder.ConstructAdjacentInfrastructure();
                 }
             }
         }
@@ -606,28 +637,29 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleForemen(Foremen foreman)
     {
         if (foreman == null || !foreman.gameObject.activeInHierarchy || !foreman.CanAct) yield break;
-        TowerNode target = GetUnbuiltTowers(foreman.owner)
-            .OrderBy(t => GridManager.Instance.CubeDistance(foreman.currentTile.cubeCoords, t.tile.cubeCoords))
+        MonoBehaviour target = GetUnbuiltInfrastructure(foreman.owner)
+            .OrderBy(t => GridManager.Instance.CubeDistance(foreman.currentTile.cubeCoords, GetTile(t).cubeCoords))
             .FirstOrDefault();
 
         if (target == null) yield break;
 
-        if (GridManager.Instance.GetNeighbors(foreman.currentTile).Contains(target.tile))
+        if (GridManager.Instance.GetNeighbors(foreman.currentTile).Contains(GetTile(target)))
         {
-            foreman.ConstructAdjacentTower();
+            foreman.ConstructAdjacentInfrastructure();
         }
+
         else
         {
-            HexTile moveTarget = GetCloserTile(foreman.currentTile, target.tile, foreman.moveRange);
+            HexTile moveTarget = GetCloserTile(foreman.currentTile, GetTile(target), foreman.moveRange);
             if (moveTarget != null)
             {
                 foreman.MoveTo(moveTarget, foreman.moveRange);
                 yield return new WaitForSeconds(0.5f);
 
                 if (foreman != null && foreman.CanAct &&
-                    GridManager.Instance.GetNeighbors(foreman.currentTile).Contains(target.tile))
+                    GridManager.Instance.GetNeighbors(foreman.currentTile).Contains(GetTile(target)))
                 {
-                    foreman.ConstructAdjacentTower();
+                    foreman.ConstructAdjacentInfrastructure();
                 }
             }
         }
@@ -637,28 +669,29 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator HandleRoboWorker(RoboWorker robo)
     {
         if (robo == null || !robo.gameObject.activeInHierarchy || !robo.CanAct) yield break;
-        TowerNode target = GetUnbuiltTowers(robo.owner)
-            .OrderBy(t => GridManager.Instance.CubeDistance(robo.currentTile.cubeCoords, t.tile.cubeCoords))
+        MonoBehaviour target = GetUnbuiltInfrastructure(robo.owner)
+            .OrderBy(t => GridManager.Instance.CubeDistance(robo.currentTile.cubeCoords, GetTile(t).cubeCoords))
             .FirstOrDefault();
 
         if (target == null) yield break;
 
-        if (GridManager.Instance.GetNeighbors(robo.currentTile).Contains(target.tile))
+        if (GridManager.Instance.GetNeighbors(robo.currentTile).Contains(GetTile(target)))
         {
-            robo.ConstructAdjacentTower();
+            robo.ConstructAdjacentInfrastructure();
         }
+
         else
         {
-            HexTile moveTarget = GetCloserTile(robo.currentTile, target.tile, robo.moveRange);
+            HexTile moveTarget = GetCloserTile(robo.currentTile, GetTile(target), robo.moveRange);
             if (moveTarget != null)
             {
                 robo.MoveTo(moveTarget, robo.moveRange);
                 yield return new WaitForSeconds(0.5f);
 
                 if (robo != null && robo.CanAct &&
-                    GridManager.Instance.GetNeighbors(robo.currentTile).Contains(target.tile))
+                    GridManager.Instance.GetNeighbors(robo.currentTile).Contains(GetTile(target)))
                 {
-                    robo.ConstructAdjacentTower();
+                    robo.ConstructAdjacentInfrastructure();
                 }
             }
         }

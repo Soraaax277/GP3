@@ -149,8 +149,25 @@ public class HexTile : MonoBehaviour
         return bestOwner;
     }
 
-    public void AddInfluence(PlayerData player, int amount)
+    /// <summary>
+    /// Adds influence for a player. 
+    /// If bypassDominance is false, the addition is BLOCKED if the tile is already owned by someone else.
+    /// This represents the "first come, first served" territorial rule.
+    /// </summary>
+    public void AddInfluence(PlayerData player, int amount, bool bypassDominance = false)
     {
+        if (player == null) return;
+
+        if (!bypassDominance)
+        {
+            PlayerData currentOwner = GetOwner();
+            // If the tile is owned by an enemy, normal building influence is ignored.
+            if (currentOwner != null && currentOwner != player)
+            {
+                return;
+            }
+        }
+
         if (!influenceByPlayer.ContainsKey(player))
             influenceByPlayer[player] = 0;
         influenceByPlayer[player] += amount;
@@ -158,6 +175,7 @@ public class HexTile : MonoBehaviour
 
     public void RemoveInfluence(PlayerData player, int amount)
     {
+        if (player == null) return;
         if (influenceByPlayer.ContainsKey(player))
         {
             influenceByPlayer[player] -= amount;
@@ -168,12 +186,12 @@ public class HexTile : MonoBehaviour
 
     public bool IsOccupied()
     {
-        return type == TileType.Water || placedNode != null || placedUnit != null || placedTower != null;
+        return type == TileType.Water || placedNode != null || placedUnit != null || placedTower != null || placedStructure != null;
     }
 
     public bool IsBuildingBlocked()
     {
-        return type == TileType.Water || placedNode != null || placedTower != null;
+        return type == TileType.Water || placedNode != null || placedTower != null || placedStructure != null;
     }
 
     public void ClearEnvironmentalStructures()
@@ -198,8 +216,9 @@ public class HexTile : MonoBehaviour
 
     public bool IsWalkable()
     {
-        // Units cannot swim and cannot walk through structures
-        return type == TileType.Land && !hasStructure && placedNode == null && placedUnit == null && placedTower == null;
+        // Units can cross structures but not land on them. 
+        // We allow walking if it's land and no other UNIT is blocking.
+        return type == TileType.Land && placedUnit == null;
     }
 
     public bool HasTower()

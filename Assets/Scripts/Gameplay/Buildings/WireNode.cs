@@ -32,7 +32,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         get
         {
             if (TechManager.Instance == null) return baseDurability;
-            return baseDurability * TechManager.Instance.GetInfraMultiplier("WireDurability");
+            return baseDurability * TechManager.Instance.GetInfraMultiplier(owner, "WireDurability");
         }
     }
 
@@ -135,7 +135,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         // e.g. base 5 HP/turn - bonus 1.0 = 4 HP/turn lost.
         float degradationReduction = 0f;
         if (TechManager.Instance != null)
-            degradationReduction = TechManager.Instance.GetInfraFlatBonus("WireDegradation");
+            degradationReduction = TechManager.Instance.GetInfraFlatBonus(owner, "WireDegradation");
 
         float finalRate = Mathf.Max(0f, degradationRate - degradationReduction);
 
@@ -214,12 +214,11 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     // Returns the maximum allowed hex distance between a new wire tile and the
     // nearest existing owned network tile (node / wire / powered tower).
     // Base = 1. Increased by the "WireLength" flat bonus tech upgrade.
-    // NOTE: WirePlacementManager uses its own MaxWireLength for specialist-reach checks.
-    public static int GetMaxWireLengthFromNetwork()
+    public static int GetMaxWireLengthFromNetwork(PlayerData player)
     {
         int baseLength = 1;
         if (TechManager.Instance == null) return baseLength;
-        return baseLength + Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus("WireLength"));
+        return baseLength + Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus(player, "WireLength"));
     }
 
     // -----------------------------------------------------------------------
@@ -232,10 +231,10 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     // Returns the actual gold cost to place one wire tile after tech discounts.
     // Pass WirePlacementManager's base wire cost as the argument.
     // e.g. GetPlacementCost(20) with a -0.1 WireCost tech applied = 18 gold.
-    public static int GetPlacementCost(int baseCost)
+    public static int GetPlacementCost(PlayerData player, int baseCost)
     {
         if (TechManager.Instance == null) return baseCost;
-        float multiplier = TechManager.Instance.GetInfraMultiplier("WireCost");
+        float multiplier = TechManager.Instance.GetInfraMultiplier(player, "WireCost");
         return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
     }
 }

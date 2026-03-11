@@ -37,11 +37,7 @@ public class CommercialHub : StructureNode
             Debug.Log($"[CommercialHub] Auto-spawned {spawned.GetType().Name} for {cost}G.");
     }
 
-    private void OnMouseDown()
-    {
-        if (owner != TurnManager.Instance.currentPlayer || owner.isAI) return;
-        BuildingUIManager.Instance?.Open(this);
-    }
+
 
     public void ToggleAutoSpawn()
     {

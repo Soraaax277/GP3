@@ -533,8 +533,14 @@ public class TechManager : MonoBehaviour
     public float GetInfraMultiplier(string statName) =>
         infraMultipliers.ContainsKey(statName) ? infraMultipliers[statName] : 1.0f;
 
+    // Overload: accepts PlayerData for call-site compatibility (player arg currently unused as stats are global)
+    public float GetInfraMultiplier(PlayerData player, string statName) => GetInfraMultiplier(statName);
+
     public float GetInfraFlatBonus(string statName) =>
         infraFlatBonuses.ContainsKey(statName) ? infraFlatBonuses[statName] : 0f;
+
+    // Overload: accepts PlayerData for call-site compatibility (player arg currently unused as stats are global)
+    public float GetInfraFlatBonus(PlayerData player, string statName) => GetInfraFlatBonus(statName);
 
     //  UNIT EFFECT APPLICATION  
     private void ApplyEffectToExistingUnits(TechEffect effect, PlayerData player)

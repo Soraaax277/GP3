@@ -53,7 +53,7 @@ public class RoboWorker : Unit
         base.UnlockSkill(skillName);
     }
 
-    public void ConstructAdjacentTower()
+    public void ConstructAdjacentInfrastructure()
     {
         if (!canConstructTower && !testingMode)
         {
@@ -68,6 +68,7 @@ public class RoboWorker : Unit
         }
 
         TowerNode targetTower = null;
+        StructureNode targetStructure = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
             if (neighbor.placedTower != null && neighbor.placedTower.state == TowerNode.TowerState.Hologram)
@@ -75,13 +76,19 @@ public class RoboWorker : Unit
                 targetTower = neighbor.placedTower;
                 break;
             }
+            if (neighbor.placedStructure != null && !neighbor.placedStructure.IsBuilt)
+            {
+                targetStructure = neighbor.placedStructure;
+                break;
+            }
         }
 
-        if (targetTower == null)
+        if (targetTower == null && targetStructure == null)
         {
-            Debug.Log("[RoboWorker] No hologram tower adjacent to construct!");
+            Debug.Log("[RoboWorker] No hologram infrastructure adjacent! Neighbors checked: " + GridManager.Instance.GetNeighbors(currentTile).Count);
             return;
         }
+
 
         int buildCost = GetBuildingCost();
         if (owner.resources < buildCost)
@@ -91,7 +98,9 @@ public class RoboWorker : Unit
         }
 
         owner.resources -= buildCost;
-        targetTower.Build();
+        if (targetTower != null) targetTower.Build();
+        else if (targetStructure != null) targetStructure.Build();
+
 
         if (ShouldConsumeCharge())
             buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
@@ -119,7 +128,7 @@ public class RoboWorker : Unit
         int baseCost = 100;
         if (TechManager.Instance != null)
         {
-            float multiplier = TechManager.Instance.GetInfraMultiplier("BuildingCost");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "BuildingCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;

@@ -6,6 +6,13 @@ public class BPOCenter : StructureNode
     public int incomePerBusinessperson = 50;
     public int incomePerITPersonnel    = 30;
 
+    public override void Initialize(HexTile tile, PlayerData player)
+    {
+        expansionRadius = 3; // Corporate hubs claim more area
+        baseGoldCost = 300;
+        base.Initialize(tile, player);
+    }
+
     public override void OnTurnStart()
     {
         if (!IsPowered) return;
@@ -31,11 +38,7 @@ public class BPOCenter : StructureNode
             owner.resources += extraIncome;
     }
 
-    private void OnMouseDown()
-    {
-        if (owner != TurnManager.Instance.currentPlayer || owner.isAI) return;
-        BuildingUIManager.Instance?.Open(this);
-    }
+
 
     public string GetCurrentWorkerName()
     {

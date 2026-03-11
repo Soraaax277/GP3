@@ -45,8 +45,16 @@ public class InfluenceBorderRenderer : MonoBehaviour
             borderMaterial = new Material(Shader.Find("Sprites/Default"));
         meshRenderer.material = borderMaterial;
         
-        transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
+
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.OnGameStatusChanged += UpdateBorders;
+    }
+
+    private void OnDestroy()
+    {
+        if (TurnManager.Instance != null)
+            TurnManager.Instance.OnGameStatusChanged -= UpdateBorders;
     }
 
     private void Update()

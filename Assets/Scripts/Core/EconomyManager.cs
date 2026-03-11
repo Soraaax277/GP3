@@ -25,12 +25,12 @@ public class EconomyManager : MonoBehaviour
         if (TechManager.Instance != null)
         {
             // "TowerRevenue" — multiplier on base tower/influence income
-            goldMultiplier = TechManager.Instance.GetInfraMultiplier("TowerRevenue");
+            goldMultiplier = TechManager.Instance.GetInfraMultiplier(player, "TowerRevenue");
 
             // "FinalRevenueGain" — applied AFTER TowerRevenue, stacks on top of everything.
             // Era Progression nodes, Broadband (+10%), and State-of-the-Art Telecom Hardware
             // all feed into this. Set TechEffect: isMultiplier=✅.
-            finalRevenueMultiplier = TechManager.Instance.GetInfraMultiplier("FinalRevenueGain");
+            finalRevenueMultiplier = TechManager.Instance.GetInfraMultiplier(player, "FinalRevenueGain");
         }
 
         // Apply both multipliers: base income first, then the final gain on top
@@ -47,7 +47,7 @@ public class EconomyManager : MonoBehaviour
         {
             // "ResearchGain" — multiplier on RP income.
             // Retro Tech Progression adds +30% (infraValueMod: 0.3, isMultiplier: ✅).
-            rpMultiplier = TechManager.Instance.GetInfraMultiplier("ResearchGain");
+            rpMultiplier = TechManager.Instance.GetInfraMultiplier(player, "ResearchGain");
         }
 
         // Add flat RP bonus from all unlocked TechNodes that have rpBonusPerTurn set
@@ -123,8 +123,8 @@ public class EconomyManager : MonoBehaviour
 
         if (TechManager.Instance != null)
         {
-            goldMultiplier = TechManager.Instance.GetInfraMultiplier("TowerRevenue");
-            finalRevenueMultiplier = TechManager.Instance.GetInfraMultiplier("FinalRevenueGain");
+            goldMultiplier = TechManager.Instance.GetInfraMultiplier(player, "TowerRevenue");
+            finalRevenueMultiplier = TechManager.Instance.GetInfraMultiplier(player, "FinalRevenueGain");
         }
 
         return Mathf.RoundToInt(baseGold * goldMultiplier * finalRevenueMultiplier);
@@ -138,7 +138,7 @@ public class EconomyManager : MonoBehaviour
 
         if (TechManager.Instance != null)
         {
-            rpMultiplier = TechManager.Instance.GetInfraMultiplier("ResearchGain");
+            rpMultiplier = TechManager.Instance.GetInfraMultiplier(player, "ResearchGain");
         }
 
         int rpFlatBonus = TechManager.Instance != null ? TechManager.Instance.GetTotalRPBonus() : 0;

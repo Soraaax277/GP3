@@ -13,10 +13,6 @@ public static class HologramUtil
 
             r.material = mat;
         }
-
-        Collider[] colliders = obj.GetComponentsInChildren<Collider>();
-        foreach (Collider c in colliders)
-            c.enabled = false;
     }
 
     public static void MakeSolid(GameObject obj)
@@ -29,10 +25,6 @@ public static class HologramUtil
             mat.color = Color.white;
             r.material = mat;
         }
-
-        Collider[] colliders = obj.GetComponentsInChildren<Collider>();
-        foreach (Collider c in colliders)
-            c.enabled = true;
     }
 
 }

@@ -4,14 +4,12 @@ public class Canteen : StructureNode
 {
     public override void Initialize(HexTile tile, PlayerData player)
     {
+        expansionRadius = 3; // Large structure
+        baseGoldCost = 150;
         base.Initialize(tile, player);
     }
 
-    private void OnMouseDown()
-    {
-        if (owner != TurnManager.Instance.currentPlayer || owner.isAI) return;
-        BuildingUIManager.Instance?.Open(this);
-    }
+
 
     public override string GetRequiredTechFeature() => "Canteens";
 }

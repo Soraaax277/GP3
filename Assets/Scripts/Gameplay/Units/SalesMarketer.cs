@@ -271,7 +271,7 @@ public class SalesMarketer : Unit
         // 1. Chance to add own influence (Improve tile)
         if (Random.value < 0.5f)
         {
-            currentTile.AddInfluence(owner, denyAmount);
+            currentTile.AddInfluence(owner, denyAmount, true); // Specialist bypasses "First Influence" rule
             Debug.Log($"[SalesMarketer] Improved influence on {currentTile.name} by {denyAmount}");
         }
 

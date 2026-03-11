@@ -26,7 +26,7 @@ public class WirePlacementManager : MonoBehaviour
         {
             int baseLen = 1;
             if (TechManager.Instance == null) return baseLen;
-            int bonus = Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus("WireLength"));
+            int bonus = Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus(TurnManager.Instance?.currentPlayer, "WireLength"));
             return baseLen + bonus;
         }
     }
@@ -41,7 +41,7 @@ public class WirePlacementManager : MonoBehaviour
     public int GetCurrentWireCost()
     {
         if (TechManager.Instance == null) return baseCost;
-        float multiplier = TechManager.Instance.GetInfraMultiplier("WireCost");
+        float multiplier = TechManager.Instance.GetInfraMultiplier(TurnManager.Instance?.currentPlayer, "WireCost");
         return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
     }
 

@@ -105,13 +105,9 @@ public class DetailPanel : MonoBehaviour
 
     private void Update()
     {
-        if (!panel.activeSelf) return;
-        if (!Input.GetMouseButtonDown(0)) return;
-        if (IsPointerOverUI()) return;
+        // Sticky selection: don't close on empty clicks. 
+        // DetailPanel is now managed explicitly by switches and Deselect calls.
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit _))
-            Close();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -129,15 +125,29 @@ public class DetailPanel : MonoBehaviour
     public void ShowBuilding(MonoBehaviour building)
     {
         if (building == null) return;
-        if (currentTarget == (object)building && panel.activeSelf) return;
+        
+        bool isAlreadySelected = (currentTarget == (object)building && panel.activeSelf);
         currentTarget = building;
 
+        RefreshBuildingContent(building);
+        
+        // Always play animation for consistency (even if already selected)
+        if (uiAnimator != null) uiAnimator.PlayEntryAnimation();
+    }
+
+    private void RefreshBuildingContent(MonoBehaviour building)
+    {
         if (BuildingDetails.TryGetValue(building.GetType(), out DetailData data))
         { Display(data.header, data.description); return; }
 
-        if (building is StructureNode sn &&
-            StructureDetails.TryGetValue(sn.GetRequiredTechFeature(), out DetailData sd))
-        { Display(sd.header, sd.description); return; }
+        if (building is TowerNode)
+        {
+            if (StructureDetails.TryGetValue("TelecomTowers", out DetailData td))
+            { Display(td.header, td.description); return; }
+        }
+
+        if (building is StructureNode sn)
+        { Display(StructureDetails.TryGetValue(sn.GetRequiredTechFeature(), out DetailData sd) ? sd.header : building.GetType().Name.ToUpper(), BuildBuildingDescription(sn)); return; }
 
         Display(building.GetType().Name.ToUpper(), "No description available.");
     }
@@ -190,12 +200,36 @@ public class DetailPanel : MonoBehaviour
         return sb.ToString().TrimEnd();
     }
 
+    private string BuildBuildingDescription(StructureNode building)
+    {
+        var sb = new StringBuilder();
+
+        // Get the base description from the dictionary
+        if (StructureDetails.TryGetValue(building.GetRequiredTechFeature(), out DetailData sd))
+            sb.AppendLine(sd.description);
+        else if (BuildingDetails.TryGetValue(building.GetType(), out DetailData data))
+            sb.AppendLine(data.description);
+
+        sb.AppendLine("");
+        sb.AppendLine($"Territory Expansion: {building.expansionRadius} Hexes");
+        sb.AppendLine($"Status: {(building.IsBuilt ? (building.IsPowered ? "OPERATIONAL" : "UNPOWERED") : "CONSTRUCTING...")}");
+        sb.AppendLine($"Maintenance: {building.goldUpkeep}G / turn");
+
+        return sb.ToString().TrimEnd();
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────────────────────────
     private void Display(string header, string description)
     {
-        if (headerText      != null) headerText.text      = header;
+        string finalHeader = header;
+        if (currentTarget is TowerNode tn && tn.state == TowerNode.TowerState.Hologram)
+            finalHeader = "[UNBUILT] " + header;
+        else if (currentTarget is StructureNode sn && !sn.IsBuilt)
+            finalHeader = "[UNBUILT] " + header;
+
+        if (headerText      != null) headerText.text      = finalHeader;
         if (descriptionText != null) descriptionText.text = description;
 
         if (!panel.activeSelf)
@@ -203,6 +237,12 @@ public class DetailPanel : MonoBehaviour
             panel.SetActive(true);
             if (uiAnimator != null) uiAnimator.PlayEntryAnimation();
         }
+        else
+        {
+            // Force re-trigger animation for "switch" feedback when already active
+            if (uiAnimator != null) uiAnimator.PlayEntryAnimation();
+        }
+
     }
 
     private bool IsPointerOverUI()

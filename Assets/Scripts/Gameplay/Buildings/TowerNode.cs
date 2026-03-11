@@ -25,7 +25,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public HexTile    tile;
     
     [Header("Stats")]
-    public int   baseRange      = 3;
+    public int   baseRange      = 1; // 7-tile cluster (center + neighbors)
     public int   baseRevenue    = 10; 
     public float baseDurability = 100f;
     public int   visionRange    = 3;
@@ -41,10 +41,14 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         get
         {
             if (TechManager.Instance == null) return baseRange;
-            float bonus = TechManager.Instance.GetInfraFlatBonus("TowerRange");
-            float multiplier = TechManager.Instance.GetInfraMultiplier("TowerRange");
+            float bonus = TechManager.Instance.GetInfraFlatBonus(owner, "TowerRange");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "TowerRange");
             if (multiplier <= 0) multiplier = 1f;
-            return Mathf.Max(1, Mathf.RoundToInt((baseRange + bonus) * multiplier));
+
+            // CAPPED for balance: Prevent a single tower from taking over the map via tech stacking.
+            int maxAllowedRange = 3;
+            int calculated = Mathf.RoundToInt((baseRange + bonus) * multiplier);
+            return Mathf.Clamp(calculated, 1, maxAllowedRange);
         }
     }
 
@@ -53,7 +57,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         get
         {
             if (TechManager.Instance == null) return baseRevenue;
-            float multiplier = TechManager.Instance.GetInfraMultiplier("TowerRevenue");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "TowerRevenue");
             if (multiplier <= 0) multiplier = 1f;
             return Mathf.RoundToInt(baseRevenue * multiplier);
         }
@@ -223,12 +227,12 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         if (state == TowerState.Hologram || state == TowerState.Destroyed) return;
         float decayPercent = 0.50f;
         if (TechManager.Instance != null)
-            decayPercent -= TechManager.Instance.GetInfraFlatBonus("WireDegradation");
+            decayPercent -= TechManager.Instance.GetInfraFlatBonus(owner, "WireDegradation");
 
         decayPercent = Mathf.Max(0.05f, decayPercent);
         float resistance = 1.0f;
         if (TechManager.Instance != null)
-            resistance = TechManager.Instance.GetInfraMultiplier("TowerDurability");
+            resistance = TechManager.Instance.GetInfraMultiplier(owner, "TowerDurability");
 
         if (resistance < 1.0f) resistance = 1.0f;
         currentDurability -= (baseDurability * decayPercent) / resistance;
@@ -347,6 +351,15 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         float hexSpacing = GridManager.Instance.hexSize * 1.732f;
         float visualRadius = CurrentRange * hexSpacing;
         rangeIndicator.transform.localScale = new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
+    }
+
+    private void OnMouseDown()
+    {
+        if (owner == null) return;
+        if (TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
+        if (owner.isAI) return;
+        
+        BuildingUIManager.Instance?.Open(this);
     }
 
     private void OnMouseEnter() => ShowRange(true);

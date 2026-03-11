@@ -49,8 +49,9 @@ public class UnitActionPanel : MonoBehaviour
     private struct ActionConfig
     {
         public string label;
-        public int cost;           // 0 = free; cost text hidden when 0
+        public int cost;           
         public bool interactable;
+        public bool isDisplay;      // For non-clickable placeholder text
         public System.Action onClick;
     }
 
@@ -110,9 +111,25 @@ public class UnitActionPanel : MonoBehaviour
         followTarget = unit.transform;
 
         ClearButtons();
+        
+        // Ensure unit has up-to-date tech flags (e.g. if a tech was researched this turn)
+        unit.CheckTechStatus();
 
         List<ActionConfig> actions = BuildActionsFor(unit);
-        if (actions.Count == 0) return;
+        
+        // --- NO-ACTION FALLBACK ---
+        // If there are no contextual actions (like Construct), show a placeholder 
+        // so the panel still appears and confirms the unit is selected/active.
+        if (actions.Count == 0)
+        {
+            actions.Add(new ActionConfig 
+            { 
+                label = "NO ACTIONS AVAILABLE", 
+                cost = 0, 
+                interactable = false, 
+                isDisplay = true 
+            });
+        }
 
         if (headerText != null)
         {
@@ -190,7 +207,7 @@ public class UnitActionPanel : MonoBehaviour
             if (builder.canConstructTower)
             {
                 int cost = builder.GetBuildingCost();
-                actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.ConstructAdjacentTower(); Close(); } });
+                actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.ConstructAdjacentInfrastructure(); Close(); } });
             }
             if (builder.canRepairInfrastructure)
             {
@@ -232,12 +249,12 @@ public class UnitActionPanel : MonoBehaviour
         else if (unit is Foremen foremen)
         {
             int cost = foremen.GetBuildingCost();
-            actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { foremen.ConstructAdjacentTower(); Close(); } });
+            actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { foremen.ConstructAdjacentInfrastructure(); Close(); } });
         }
         else if (unit is RoboWorker roboWorker)
         {
             int cost = roboWorker.GetBuildingCost();
-            actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { roboWorker.ConstructAdjacentTower(); Close(); } });
+            actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { roboWorker.ConstructAdjacentInfrastructure(); Close(); } });
         }
         else if (unit is ITPersonnel itPersonnel)
         {
@@ -324,7 +341,8 @@ public class UnitActionPanel : MonoBehaviour
         if (texts.Length >= 1)
         {
             texts[0].text  = config.label;
-            texts[0].color = config.interactable ? colorCanAfford : colorNotInteractable;
+            // Use same color logic as BuildingUIManager for consistency
+            texts[0].color = config.isDisplay ? Color.gray : (config.interactable ? colorCanAfford : colorNotInteractable);
         }
 
         if (texts.Length >= 2)
@@ -345,9 +363,12 @@ public class UnitActionPanel : MonoBehaviour
         Button btn = go.GetComponent<Button>();
         if (btn != null)
         {
-            btn.interactable = config.interactable;
-            System.Action cachedAction = config.onClick;
-            btn.onClick.AddListener(() => cachedAction?.Invoke());
+            btn.interactable = config.interactable && !config.isDisplay;
+            if (config.onClick != null)
+            {
+                System.Action cachedAction = config.onClick;
+                btn.onClick.AddListener(() => cachedAction?.Invoke());
+            }
         }
     }
 

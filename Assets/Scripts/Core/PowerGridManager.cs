@@ -36,6 +36,7 @@ public class PowerGridManager : MonoBehaviour
         {
             if (tile.placedTower is IPowerable pTower) pTower.IsPowered = false;
             if (tile.placedWire is IPowerable pWire) pWire.IsPowered = false;
+            if (tile.placedStructure is IPowerable pStruct) pStruct.IsPowered = false;
         }
 
         powerFlowMap.Clear();
@@ -68,7 +69,7 @@ public class PowerGridManager : MonoBehaviour
                 if (visited.Contains(neighbor)) continue;
 
                 // Check if this neighbor has anything that CAN receive power
-                if (neighbor.placedTower != null || neighbor.placedWire != null || neighbor.placedSignalNode != null)
+                if (neighbor.placedTower != null || neighbor.placedWire != null || neighbor.placedSignalNode != null || neighbor.placedStructure != null)
                 {
                     // If it's conductive, it goes in the queue to pass power forward
                     if (HasConductiveInfrastructure(neighbor))
@@ -172,6 +173,7 @@ public class PowerGridManager : MonoBehaviour
     private void UpdatePowerOnTile(HexTile tile, bool powered)
     {
         if (tile.placedTower is IPowerable pTower) pTower.UpdatePowerState(powered);
+        if (tile.placedStructure is IPowerable pStruct) pStruct.UpdatePowerState(powered);
         if (tile.placedWire is IPowerable pWire) 
         {
             // If Tesseract is active, force IsTechnicianActivated to true visually as well

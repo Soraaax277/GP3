@@ -165,8 +165,8 @@ public abstract class Unit : MonoBehaviour
             return;
         }
 
-        // TWEAK: Remove highlight the moment the move starts
-        if (!owner.isAI) SetSelected(false);
+        // Keep selection active during movement so the UI doesn't flicker away
+        // if (!owner.isAI) SetSelected(false); 
         
         StartCoroutine(MoveRoutine(tile, range));
     }
@@ -251,7 +251,9 @@ public abstract class Unit : MonoBehaviour
         {
             if (PlayerInput.Instance != null && PlayerInput.Instance.selectedUnit == this)
             {
-                PlayerInput.Instance.DeselectUnit();
+                // Refresh the action panel and detail panel after moving, in case new actions (like construction) are now possible.
+                UnitActionPanel.Instance?.Open(this);
+                DetailPanel.Instance?.ShowUnit(this);
             }
         }
     }

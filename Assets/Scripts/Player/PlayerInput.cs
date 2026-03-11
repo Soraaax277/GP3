@@ -38,10 +38,17 @@ public class PlayerInput : MonoBehaviour
                     // BLOCK: Only select units if it's the player's turn 
                     if (TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null && !TurnManager.Instance.currentPlayer.isAI)
                     {
-                        SelectUnit(unit);
-                        UnitActionPanel.Instance.Open(unit);
+                        // Ensure panels refresh on EVERY click, even if already selected
+                        if (UnitActionPanel.Instance != null)
+                            UnitActionPanel.Instance.Open(unit);
+
                         BuildingUIManager.Instance.Close();
                         if (DetailPanel.Instance != null) DetailPanel.Instance.ShowUnit(unit);
+
+                        if (selectedUnit != unit)
+                        {
+                            SelectUnit(unit);
+                        }
                         return;
                     }
                     else
@@ -60,10 +67,57 @@ public class PlayerInput : MonoBehaviour
                     return;
                 }
 
+                StructureNode structure = hit.collider.GetComponentInParent<StructureNode>();
+                if (structure != null)
+                {
+                    DeselectUnit();
+                    BuildingUIManager.Instance.Open(structure);
+                    UnitActionPanel.Instance.Close();
+                    return;
+                }
+
+                TowerNode tower = hit.collider.GetComponentInParent<TowerNode>();
+                if (tower != null)
+                {
+                    DeselectUnit();
+                    BuildingUIManager.Instance.Open(tower);
+                    UnitActionPanel.Instance.Close();
+                    return;
+                }
+
+                // --- NEW TILE CLICK FALLBACK ---
+                HexTile tile = hit.collider.GetComponent<HexTile>();
+                if (tile != null)
+                {
+                    if (tile.placedStructure != null)
+                    {
+                        DeselectUnit();
+                        BuildingUIManager.Instance.Open(tile.placedStructure);
+                        UnitActionPanel.Instance.Close();
+                        return;
+                    }
+                    if (tile.placedTower != null)
+                    {
+                        DeselectUnit();
+                        BuildingUIManager.Instance.Open(tile.placedTower);
+                        UnitActionPanel.Instance.Close();
+                        return;
+                    }
+                    if (tile.placedSignalNode != null)
+                    {
+                        DeselectUnit();
+                        BuildingUIManager.Instance.Open(tile.placedSignalNode);
+                        UnitActionPanel.Instance.Close();
+                        return;
+                    }
+                }
+
+                // If we reach here, we've clicked something that isn't a Unit or a Building (e.g., Ground)
                 DeselectAndClose();
             }
             else
             {
+                // Clicking into nothingness (void)
                 DeselectAndClose();
             }
         }
@@ -192,6 +246,12 @@ public class PlayerInput : MonoBehaviour
         selectedUnit.SetSelected(true);
 
         ClearHighlights();
+
+        // FIX: Ensure the detail panel always reveals itself when selecting a unit
+        if (DetailPanel.Instance != null && unit != null)
+        {
+            DetailPanel.Instance.ShowUnit(unit);
+        }
     }
 
     public void DeselectUnit()

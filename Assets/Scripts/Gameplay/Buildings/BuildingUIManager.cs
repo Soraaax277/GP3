@@ -156,6 +156,22 @@ public class BuildingUIManager : MonoBehaviour
         if (owner != null && owner.isAI) return;
         if (owner != null && TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
 
+        // ── Hook: show detail panel ───────────────────────────────────────────
+        if (DetailPanel.Instance != null)
+            DetailPanel.Instance.ShowBuilding(building);
+        // ─────────────────────────────────────────────────────────────────────
+
+        // Handle Unbuilt state: Skip the world-space "Build/Deploy" action panel
+        bool isUnbuilt = (building is TowerNode tn && tn.state == TowerNode.TowerState.Hologram) ||
+                         (building is StructureNode sn && !sn.IsBuilt);
+
+        if (isUnbuilt)
+        {
+            // Close the panel if it was open for something else
+            if (panel.activeSelf) Close();
+            return;
+        }
+
         currentBuilding = building;
         followTarget    = building.transform;
 
@@ -164,11 +180,6 @@ public class BuildingUIManager : MonoBehaviour
 
         if (CameraController.Instance != null)
             CameraController.Instance.SetBuildModeLock(true, followTarget.position);
-
-        // ── Hook: show detail panel ───────────────────────────────────────────
-        if (DetailPanel.Instance != null)
-            DetailPanel.Instance.ShowBuilding(building);
-        // ─────────────────────────────────────────────────────────────────────
 
         if      (building is SignalNode               hq)      { followTarget = hq.businessBuilding != null ? hq.businessBuilding.transform : hq.transform; ShowHQRoot(hq); }
         else if (building is BPOCenter                bpo)     ShowBPO(bpo);
@@ -347,7 +358,7 @@ public class BuildingUIManager : MonoBehaviour
         HexTile tile = hq.tile;
 
         TryAddUnitButton("Recruit Builder",         us.builderPrefab,        gold, tile, hq.owner, "Builder");
-        TryAddUnitButton("Recruit Wire Specialist", us.wireSpecialistPrefab, gold, tile, hq.owner, "WireSpecialist");
+        TryAddUnitButton("Recruit Wire Specialist", us.wireSpecialistPrefab, gold, tile, hq.owner, "Wire Specialist");
         TryAddUnitButton("Recruit Scout",           us.scoutPrefab,          gold, tile, hq.owner, "Scout");
         TryAddUnitButton("Recruit Technician",      us.technicianPrefab,     gold, tile, hq.owner, "Technician");
         TryAddUnitButton("Recruit Businessman",     us.businessmanPrefab,    gold, tile, hq.owner, "Businessman");
@@ -433,7 +444,7 @@ public class BuildingUIManager : MonoBehaviour
         TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, sc.owner, "MaintenanceCrew");
         TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, sc.owner, "Foreman");
         // FIX (Bug 3): Was "ITPersonel" (typo — single 'n'). IT Personnel never appeared even when unlocked.
-        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonnel");
+        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonel");
 
         // No units unlocked yet
         if (spawnedButtons.Count == 0)
@@ -469,7 +480,7 @@ public class BuildingUIManager : MonoBehaviour
         // ── Base Service Center roster ────────────────────────────────────────
         TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, asc.owner, "MaintenanceCrew");
         TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, asc.owner, "Foreman");
-        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, asc.owner, "ITPersonnel");
+        TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, asc.owner, "ITPersonel");
 
         // ── Advanced-only roster ──────────────────────────────────────────────
         TryAddUnitButton("Recruit Robo Worker",      us.roboWorkerPrefab,      gold, tile, asc.owner, "RoboWorker");

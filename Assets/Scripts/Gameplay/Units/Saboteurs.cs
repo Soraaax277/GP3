@@ -102,6 +102,15 @@ public class Saboteurs: Unit
         
         targetTower.TakeDamage(sabotageDamage);
 
+        // EXTRA: Sabotage the territory!
+        // Clear enemy influence and establish a small foothold (bypassing dominance)
+        HexTile rootTile = targetTower.tile;
+        if (rootTile != null)
+        {
+            rootTile.RemoveInfluence(targetTower.owner, 10);
+            rootTile.AddInfluence(owner, 5, true); // Specialists bypass the "First Influence" rule
+        }
+
         if (ShouldConsumeCharge())
             sabotageCharges = Mathf.Max(0, sabotageCharges - 1); // Uses build charges
             

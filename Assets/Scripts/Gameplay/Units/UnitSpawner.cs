@@ -57,7 +57,7 @@ public class UnitSpawner : MonoBehaviour
         return unit;
     }
 
-    public int GetRecruitmentCost(GameObject unitPrefab)
+    public int GetRecruitmentCost(GameObject unitPrefab, PlayerData player = null)
     {
         // Base costs per unit type
         int baseCost = 50; // Default
@@ -115,7 +115,7 @@ public class UnitSpawner : MonoBehaviour
         // Apply tech modifier
         if (TechManager.Instance != null)
         {
-            float multiplier = TechManager.Instance.GetInfraMultiplier("RecruitmentCost");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(player, "RecruitmentCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         
@@ -124,12 +124,32 @@ public class UnitSpawner : MonoBehaviour
 
     HexTile GetAdjacentFreeTile(HexTile centerTile)
     {
-        var tiles = GridManager.Instance.GetTilesInRange(centerTile, 1);
-        foreach (HexTile tile in tiles)
+        // Check all neighboring tiles (radius 1)
+        var neighbors = GridManager.Instance.GetNeighbors(centerTile);
+        foreach (HexTile tile in neighbors)
         {
-            if (!tile.IsOccupied() && !tile.HasTower())
+            if (tile == null) continue;
+            
+            // A tile is valid if it has no unit, no tower, and no structure
+            // (Note: HexTile.IsWalkable() might be too strict as it excludes any tile with hasStructure=true,
+            // even if the structure was just cleared. Checking raw occupation flags is safer here.)
+            bool isOccupied = tile.IsOccupied() || tile.HasTower() || tile.hasStructure || tile.placedUnit != null;
+            
+            if (!isOccupied && tile.type == HexTile.TileType.Land)
                 return tile;
         }
+
+        // If neighbors are full, try a slightly wider search (radius 2) to prevent softlocks
+        var widerArea = GridManager.Instance.GetTilesInRange(centerTile, 2);
+        foreach (HexTile tile in widerArea)
+        {
+            if (tile == centerTile || neighbors.Contains(tile)) continue;
+            
+            bool isOccupied = tile.IsOccupied() || tile.HasTower() || tile.hasStructure || tile.placedUnit != null;
+            if (!isOccupied && tile.type == HexTile.TileType.Land)
+                return tile;
+        }
+
         return null;
     }
 }

@@ -94,6 +94,17 @@ public class StructurePlacementManager : MonoBehaviour
 
         // Check for adjacency to owned network (HQ, Tower, Wire, or another Structure)
         PlayerData currentPlayer = TurnManager.Instance.currentPlayer;
+
+        // --- NEW: HQ RADIUS CHECK ---
+        // Allow placement anywhere within the influence circle of an owned HQ
+        foreach (SignalNode hq in currentPlayer.ownedNodes)
+        {
+            if (hq == null) continue;
+            float dist = GridManager.Instance.CubeDistance(hq.tile.cubeCoords, tile.cubeCoords);
+            if (dist <= hq.CurrentInfluenceRadius) return true;
+        }
+
+        // --- FALLBACK: Standard Adjacency ---
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
         {
             if (neighbor.placedNode      != null && neighbor.placedNode.owner      == currentPlayer) return true;
@@ -108,6 +119,18 @@ public class StructurePlacementManager : MonoBehaviour
     void PlaceStructure()
     {
         PlayerData owner = TurnManager.Instance.currentPlayer;
+
+        // Fetch cost from the component before instantiating the "real" one
+        StructureNode prefabNode = currentPrefab.GetComponent<StructureNode>();
+        int cost = (prefabNode != null) ? prefabNode.baseGoldCost : 100;
+
+        if (owner.resources < cost)
+        {
+            Debug.LogWarning($"[StructurePlacementManager] Not enough gold! Need {cost}G.");
+            return;
+        }
+
+        owner.resources -= cost;
 
         GameObject realStructure = Instantiate(
             currentPrefab,

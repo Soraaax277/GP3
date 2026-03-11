@@ -161,7 +161,7 @@ public class RoboMarshall : Unit
         int baseCost = 30; // Cheaper than human units
         if (TechManager.Instance != null)
         {
-            float multiplier = TechManager.Instance.GetInfraMultiplier("RepairCost");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "RepairCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;

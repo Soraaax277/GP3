@@ -33,7 +33,7 @@ public class TowerPlacementManager : MonoBehaviour
     public int GetCurrentTowerCost()
     {
         if (TechManager.Instance == null) return baseTowerCost;
-        float multiplier = TechManager.Instance.GetInfraMultiplier("TowerCost");
+        float multiplier = TechManager.Instance.GetInfraMultiplier(TurnManager.Instance?.currentPlayer, "TowerCost");
         return Mathf.Max(0, Mathf.RoundToInt(baseTowerCost * multiplier));
     }
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class SignalNode : MonoBehaviour
@@ -23,7 +23,7 @@ public class SignalNode : MonoBehaviour
         {
             int bonus = 0;
             if (TechManager.Instance != null)
-                bonus = Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus("TowerCapacity"));
+                bonus = Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus(owner, "TowerCapacity"));
             return maxTowers + bonus;
         }
     }
@@ -58,14 +58,16 @@ public class SignalNode : MonoBehaviour
         {
             if (TechManager.Instance == null) return baseInfluenceRadius;
 
-            float flatBonus  = TechManager.Instance.GetInfraFlatBonus("InfluenceRadius");
-            float multiplier = TechManager.Instance.GetInfraMultiplier("InfluenceRadius");
+            float flatBonus  = TechManager.Instance.GetInfraFlatBonus(owner, "InfluenceRadius");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "InfluenceRadius");
 
             // Safety: prevent zero/negative multiplier collapsing the radius
             if (multiplier <= 0f) multiplier = 1f;
 
+            // CAPPED for balance: Prevents HQ from claiming the entire map at once via stacked tech.
+            int maxAllowedRadius = 6;
             int result = Mathf.RoundToInt((baseInfluenceRadius + flatBonus) * multiplier);
-            return Mathf.Max(1, result);
+            return Mathf.Clamp(result, 1, maxAllowedRadius);
         }
     }
 
@@ -119,7 +121,7 @@ public class SignalNode : MonoBehaviour
     {
         float techBoost = 0f;
         if (TechManager.Instance != null)
-            techBoost = TechManager.Instance.GetInfraFlatBonus("BaseSignalBoost");
+            techBoost = TechManager.Instance.GetInfraFlatBonus(owner, "BaseSignalBoost");
         return baseSignalStrength + techBoost;
     }
 
@@ -137,7 +139,7 @@ public class SignalNode : MonoBehaviour
         float decayRate = 0.50f;
         if (TechManager.Instance != null)
         {
-            float reduction = TechManager.Instance.GetInfraFlatBonus("SignalDecayReduction");
+            float reduction = TechManager.Instance.GetInfraFlatBonus(owner, "SignalDecayReduction");
             decayRate = Mathf.Max(0.05f, decayRate - reduction);
         }
 
@@ -236,8 +238,8 @@ public class SignalNode : MonoBehaviour
         var tilesInRange = GridManager.Instance.GetTilesInRange(tile, CurrentInfluenceRadius);
         foreach (HexTile t in tilesInRange)
         {
-            // HQ provides a solid influence boost to its surrounding area
-            t.AddInfluence(owner, t.baseInfluence);
+            // HQ provides a solid influence boost and ALWAYS bypasses dominance to anchor the city.
+            t.AddInfluence(owner, t.baseInfluence, true);
         }
 
         if (TurnManager.Instance != null)

@@ -294,7 +294,7 @@ public class WireSpecialist : Unit
         int baseCost = 45;
         if (TechManager.Instance != null)
         {
-            float multiplier = TechManager.Instance.GetInfraMultiplier("RepairCost");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "RepairCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;

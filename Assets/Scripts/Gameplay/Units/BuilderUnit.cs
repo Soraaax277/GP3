@@ -124,7 +124,7 @@ public class BuilderUnit : Unit
     }
     
     
-    public void ConstructAdjacentTower()
+    public void ConstructAdjacentInfrastructure()
     {
         CheckTechStatus();
 
@@ -141,21 +141,28 @@ public class BuilderUnit : Unit
         }
 
         TowerNode targetTower = null;
+        StructureNode targetStructure = null;
         foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
         {
-            // TowerState.Unbuilt was renamed to TowerState.Hologram (System 3 three-phase build)
             if (neighbor.placedTower != null && neighbor.placedTower.state == TowerNode.TowerState.Hologram)
             {
                 targetTower = neighbor.placedTower;
                 break;
             }
+            if (neighbor.placedStructure != null && !neighbor.placedStructure.IsBuilt)
+            {
+                targetStructure = neighbor.placedStructure;
+                break;
+            }
         }
 
-        if (targetTower == null)
+
+        if (targetTower == null && targetStructure == null)
         {
-            Debug.Log("[Builder] No hologram tower (TowerState.Hologram) adjacent to construct! Neighbors checked: " + GridManager.Instance.GetNeighbors(currentTile).Count);
+            Debug.Log("[Builder] No hologram infrastructure (TowerState.Hologram or !IsBuilt) adjacent to construct!");
             return;
         }
+
 
         // Deduct building cost with tech modifier
         int buildCost = GetBuildingCost();
@@ -166,7 +173,9 @@ public class BuilderUnit : Unit
         }
 
         owner.resources -= buildCost;
-        targetTower.Build();
+        if (targetTower != null) targetTower.Build();
+        else if (targetStructure != null) targetStructure.Build();
+
 
         if (ShouldConsumeCharge())
             buildsRemaining = Mathf.Max(0, buildsRemaining - 1);
@@ -192,7 +201,7 @@ public class BuilderUnit : Unit
         int baseCost = 100; // Base building cost
         if (TechManager.Instance != null)
         {
-            float multiplier = TechManager.Instance.GetInfraMultiplier("BuildingCost");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "BuildingCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;
@@ -329,7 +338,7 @@ public class BuilderUnit : Unit
         int baseCost = 60; // Base repair cost
         if (TechManager.Instance != null)
         {
-            float multiplier = TechManager.Instance.GetInfraMultiplier("RepairCost");
+            float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "RepairCost");
             return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
         }
         return baseCost;
