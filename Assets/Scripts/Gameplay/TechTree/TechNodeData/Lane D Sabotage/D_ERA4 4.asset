@@ -16,8 +16,11 @@ MonoBehaviour:
   description: Sabotage attempts have a 20% chance to fully destroy target
   researchCost: 4900
   goldCost: 0
+  researchTurns: 18
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 7d31a909752553346a6fe8454752d3eb, type: 2}
   unlockEffects:

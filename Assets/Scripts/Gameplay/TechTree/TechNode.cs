@@ -12,6 +12,14 @@ public class TechNode : ScriptableObject
     public int researchCost; // Deducted from Research Points
     public int goldCost;     // Deducted from Gold (Resources)
 
+    [Header("Research Duration")]
+    [Tooltip("How many turns after purchase before this tech is fully integrated. " +
+             "0 = instant, unlocks the same turn it is purchased (default). " +
+             "1 = unlocks on the player's next turn. " +
+             "2 = unlocks after 2 turns, and so on. " +
+             "Costs are always deducted immediately on purchase.")]
+    public int researchTurns = 0;
+
     [Header("Tab Requirements")]
     [Tooltip("When TRUE, researching this node unlocks the Sabotage tab. Multiple nodes can have this set — the tab unlocks as soon as ANY one of them is researched.")]
     public bool unlocksSabotageTab = false;
@@ -19,7 +27,17 @@ public class TechNode : ScriptableObject
     [Header("Passive Research Bonus")]
     [Tooltip("Flat Research Points added to the player's per-turn RP income when this tech is unlocked. Stacks additively. Leave at 0 for no bonus.")]
     public int rpBonusPerTurn = 0;
-    
+
+    [Header("Era Fog Control")]
+    [Tooltip("TRUE if this is the column 1 node of an era. " +
+             "Researching it fades out the partial fog covering columns 2-5 of its era.")]
+    public bool isEraGateNode = false;
+
+    [Tooltip("TRUE if this is one of the final nodes of an era. " +
+             "When ALL required transition nodes are unlocked, the NEXT era's full fog " +
+             "fades out and its partial fog fades in, revealing column 1.")]
+    public bool isEraTransitionNode = false;
+
     [Header("Prerequisite Tech")]
     public List<TechNode> preReqs;
 
@@ -28,19 +46,7 @@ public class TechNode : ScriptableObject
 
     // -----------------------------------------------------------------------
     //  UNLOCK STATE — stored per-player in TechManager, NOT on this asset.
-    //
-    //  TechNode is a ScriptableObject: there is exactly ONE instance of each
-    //  asset shared by every player at runtime.  Storing _isUnlocked here
-    //  (even as [System.NonSerialized]) means Player 1 and the AI share the
-    //  same boolean — so any tech the AI researches immediately appears
-    //  unlocked in the human player's tree.
-    //
-    //  IsUnlocked / CanUnlock / UnlockTech now all require a PlayerData so
-    //  they delegate to TechManager's per-player unlock set.
     // -----------------------------------------------------------------------
-    // Added since a bug was found where the AI would research a tech and it would appear unlocked for the human player, since TechNode is a ScriptableObject and shared across all players.
-    // Now the unlock state is tracked in TechManager per player, and these methods check that instead.
-    // Feel free to explore other approaches if you think of a cleaner way to handle this, but this was the minimal change to fix the issue while keeping the same API for checking/unlocking techs.
 
     // Returns true if this node has been unlocked by the given player.
     public bool IsUnlockedBy(PlayerData player)
@@ -49,11 +55,20 @@ public class TechNode : ScriptableObject
         return TechManager.Instance.IsNodeUnlocked(player, this);
     }
 
-    // Returns true if the given player meets all prerequisites and has not
-    // yet unlocked this node.
+    // Returns true if the given player is currently in the process of
+    // researching this node (cost paid, turns ticking down, not yet complete).
+    public bool IsResearchingBy(PlayerData player)
+    {
+        if (TechManager.Instance == null || player == null) return false;
+        return TechManager.Instance.IsResearching(player, this);
+    }
+
+    // Returns true if the given player meets all prerequisites, is not
+    // already researching this node, and has not yet unlocked it.
     public bool CanUnlockFor(PlayerData player)
     {
-        if (IsUnlockedBy(player)) return false;
+        if (IsUnlockedBy(player))   return false;
+        if (IsResearchingBy(player)) return false; // already queued — prevent double-purchase
 
         foreach (var preReq in preReqs)
         {
@@ -63,6 +78,8 @@ public class TechNode : ScriptableObject
     }
 
     // Marks this node as unlocked for the given player via TechManager.
+    // Called by TechManager.CompleteResearch — do not call directly for
+    // queued techs, as effects are handled there too.
     public void UnlockFor(PlayerData player)
     {
         if (TechManager.Instance == null || player == null) return;
@@ -72,11 +89,9 @@ public class TechNode : ScriptableObject
 
     // -----------------------------------------------------------------------
     //  Legacy shims — kept so that any code still calling the old parameterless
-    //  API continues to compile.  They resolve the player from TurnManager so
-    //  behaviour is identical to before, but now operates per-player.
+    //  API continues to compile.
     // -----------------------------------------------------------------------
 
-    // Legacy: prefer IsUnlockedBy(player).
     public bool IsUnlocked
     {
         get
@@ -86,14 +101,12 @@ public class TechNode : ScriptableObject
         }
     }
 
-    // Legacy: prefer CanUnlockFor(player).
     public bool CanUnlock()
     {
         PlayerData p = TurnManager.Instance?.currentPlayer;
         return p != null && CanUnlockFor(p);
     }
 
-    // Legacy: prefer UnlockFor(player).
     public void UnlockTech()
     {
         PlayerData p = TurnManager.Instance?.currentPlayer;

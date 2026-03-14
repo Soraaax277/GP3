@@ -16,8 +16,11 @@ MonoBehaviour:
   description: Unlocks Scouts
   researchCost: 0
   goldCost: 0
+  researchTurns: 0
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs: []
   unlockEffects:
   - type: 1

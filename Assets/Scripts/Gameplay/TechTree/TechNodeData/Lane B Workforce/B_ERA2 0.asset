@@ -21,8 +21,11 @@ MonoBehaviour:
     Canteens building'
   researchCost: 190
   goldCost: 0
+  researchTurns: 3
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 4ec93084a13b2f64f9665ee8778aa397, type: 2}
   - {fileID: 11400000, guid: 576ad2de5fa5bb249b09bd97d417bb05, type: 2}

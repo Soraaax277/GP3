@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +2 to Max Wire Length +50% Wire Durability
   researchCost: 970
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 8516db20bc86e8841a56ab979eb441f8, type: 2}
   unlockEffects:

@@ -19,8 +19,11 @@ MonoBehaviour:
     radius'
   researchCost: 1200
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 1
   preReqs:
   - {fileID: 11400000, guid: ad6e88df62f1dbb4199e7f72b68de24e, type: 2}
   unlockEffects:

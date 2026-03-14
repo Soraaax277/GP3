@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -20% Movement Penalty on Rough Terrain
   researchCost: 220
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: f4f7415861ec49b46af718ef15c78010, type: 2}
   unlockEffects:

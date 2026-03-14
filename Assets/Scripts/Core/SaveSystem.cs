@@ -47,6 +47,16 @@ public static class SaveSystem
             var fDict = TechManager.Instance.GetInfraFlatStats();
             state.infraFlatKeys = fDict.Keys.ToList();
             state.infraFlatValues = fDict.Values.ToList();
+
+            // --- ACTIVE (IN-PROGRESS) RESEARCH ---
+            // Serialize both players' research queues as parallel name/turns lists.
+            var p1Research = TechManager.Instance.GetActiveResearchFor(TurnManager.Instance.players[0]);
+            state.playerActiveResearchNames  = p1Research.Keys.Select(n => n.techName).ToList();
+            state.playerActiveResearchTurns  = p1Research.Values.ToList();
+
+            var p2Research = TechManager.Instance.GetActiveResearchFor(TurnManager.Instance.players[1]);
+            state.enemyActiveResearchNames   = p2Research.Keys.Select(n => n.techName).ToList();
+            state.enemyActiveResearchTurns   = p2Research.Values.ToList();
         }
 
         SaveUnits(state);
@@ -94,6 +104,18 @@ public static class SaveSystem
             TechManager.Instance.LoadInfraStats(state.infraMultiplierKeys, state.infraMultiplierValues, state.infraFlatKeys, state.infraFlatValues);
             TechManager.Instance.LoadTechState(TurnManager.Instance.players[0], state.playerUnlockedTechs);
             TechManager.Instance.LoadTechState(TurnManager.Instance.players[1], state.enemyUnlockedTechs);
+
+            // --- ACTIVE (IN-PROGRESS) RESEARCH ---
+            // Restore queued research so ticking continues seamlessly from the save point.
+            TechManager.Instance.LoadActiveResearch(
+                TurnManager.Instance.players[0],
+                state.playerActiveResearchNames,
+                state.playerActiveResearchTurns);
+
+            TechManager.Instance.LoadActiveResearch(
+                TurnManager.Instance.players[1],
+                state.enemyActiveResearchNames,
+                state.enemyActiveResearchTurns);
         }
 
         LoadUnits(state);
@@ -305,7 +327,7 @@ public static class SaveSystem
             case "MaintenanceCrew": return spawner.maintenanceCrewPrefab;
             case "Foremen":         return spawner.foremenPrefab;
             case "ITPersonnel":     return spawner.itPersonnelPrefab;
-            case "Businessman":      return spawner.businessmanPrefab;
+            case "Businessman":     return spawner.businessmanPrefab;
             case "RoboMarshall":    return spawner.roboMarshallPrefab;
             case "RoboWorker":      return spawner.roboWorkerPrefab;
             case "Saboteurs":       return spawner.saboteurPrefab;

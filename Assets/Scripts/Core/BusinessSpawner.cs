@@ -12,7 +12,6 @@ public class BusinessSpawner : MonoBehaviour
             Debug.LogError("GridManager not ready!");
             return null;
         }
-
         if (businessPrefab == null)
         {
             Debug.LogError("Business prefab not assigned!");
@@ -33,8 +32,19 @@ public class BusinessSpawner : MonoBehaviour
         }
 
         HexTile chosenTile = freeTiles[Random.Range(0, freeTiles.Count)];
+        return SpawnBusiness(chosenTile, player);
+    }
 
-        Vector3 spawnPos = chosenTile.transform.position + new Vector3(0f, 1.51f, 0f);
+    public SignalNode SpawnBusiness(HexTile tile, PlayerData player)
+    {
+        if (tile == null || businessPrefab == null) return null;
+
+        Vector3 spawnPos = new Vector3(
+            tile.transform.position.x,
+            GetBusinessPlacementY(tile, businessPrefab),
+            tile.transform.position.z
+        );
+
         GameObject businessObj = Instantiate(businessPrefab, spawnPos, businessPrefab.transform.rotation);
 
         SignalNode node = businessObj.GetComponent<SignalNode>();
@@ -45,27 +55,48 @@ public class BusinessSpawner : MonoBehaviour
             return null;
         }
 
-        node.Initialize(chosenTile, player);
-
+        node.Initialize(tile, player);
         return node;
     }
 
-    public SignalNode SpawnBusiness(HexTile tile, PlayerData player)
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Collider-based placement helpers
+    //  Mirrors TowerPlacementManager so buildings sit flush on the tile surface
+    //  regardless of the hex tile's world-space Y, scale, or collider offset.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the world-space Y of the top surface of the tile's BoxCollider.
+    /// Falls back to the tile's pivot Y if no BoxCollider is found.
+    /// </summary>
+    private float GetTileSurfaceY(HexTile tile)
     {
-        if (tile == null || businessPrefab == null) return null;
+        BoxCollider box = tile.GetComponent<BoxCollider>();
+        if (box == null) return tile.transform.position.y;
 
-        Vector3 spawnPos = tile.transform.position + new Vector3(0f, 1.51f, 0f);
-        GameObject businessObj = Instantiate(businessPrefab, spawnPos, businessPrefab.transform.rotation);
+        float halfHeight = box.size.y * 0.5f * tile.transform.lossyScale.y;
+        float centerY    = box.center.y  * tile.transform.lossyScale.y;
+        return tile.transform.position.y + centerY + halfHeight;
+    }
 
-        SignalNode node = businessObj.GetComponent<SignalNode>();
-        if (node == null)
-        {
-            Destroy(businessObj);
-            return null;
-        }
+    /// <summary>
+    /// Temporarily instantiates the prefab to measure the distance from its
+    /// pivot down to the bottom of its MeshCollider. This offset is added to
+    /// the tile surface Y so the mesh base lands exactly on the tile surface.
+    /// Falls back to 0 if the prefab has no MeshCollider.
+    /// </summary>
+    private float GetBusinessPlacementY(HexTile tile, GameObject prefab)
+    {
+        float surfaceY = GetTileSurfaceY(tile);
 
-        node.Initialize(tile, player);
+        GameObject temp = Instantiate(prefab);
+        float bottomOffset = 0f;
 
-        return node;
+        MeshCollider mc = temp.GetComponentInChildren<MeshCollider>();
+        if (mc != null)
+            bottomOffset = temp.transform.position.y - mc.bounds.min.y;
+
+        Destroy(temp);
+        return surfaceY + bottomOffset;
     }
 }

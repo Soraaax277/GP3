@@ -16,8 +16,11 @@ MonoBehaviour:
   description: "+1 to Salesmen Influence Radius \n+1 Movement for Scouts"
   researchCost: 450
   goldCost: 0
+  researchTurns: 5
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 51b4f0c95c50971468fbc5d546bc910e, type: 2}
   unlockEffects:

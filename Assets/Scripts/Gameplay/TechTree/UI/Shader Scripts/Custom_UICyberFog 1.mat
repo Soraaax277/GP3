@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_UICyberFog 1
+  m_Shader: {fileID: 4800000, guid: 72040cd5e0d632a479ef896fee6a0e6f, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BaseOpacity: 0.5
+    - _CircuitOpacity: 0.45
+    - _CircuitScale: 15
+    - _CircuitSpeed: 0.4
+    - _ColorMask: 15
+    - _Density: 0.7
+    - _FadeBottom: 0
+    - _FadeLeft: 0.15
+    - _FadeRight: 0
+    - _FadeTop: 0
+    - _FogOpacity: 0.85
+    - _GlitchFrequency: 0.3
+    - _GlitchOpacity: 0.4
+    - _GlitchSpeed: 1.43
+    - _HexLineWidth: 0.03
+    - _HexOpacity: 0.35
+    - _HexPistonDepth: 0.2
+    - _HexPulseSpeed: 0.5
+    - _HexScale: 20
+    - _HexSmoothness: 0.01
+    - _HexSparsity: 0.3
+    - _ManualTime: 0
+    - _Scale: 6.5
+    - _ScanOpacity: 0.25
+    - _ScanSpeed: 0.6
+    - _Speed: 0.3
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _StreamCount: 8
+    - _StreamOpacity: 0.6
+    - _StreamSpeed: 1.5
+    - _StreamThickness: 0.003
+    m_Colors:
+    - _CircuitColor: {r: 0, g: 1, b: 0.7, a: 1}
+    - _ColorA: {r: 0, g: 0.02, b: 0.14999998, a: 1}
+    - _ColorB: {r: 0, g: 0.39999998, b: 0.8, a: 1}
+    - _ColorC: {r: 0, g: 1, b: 0.9, a: 1}
+    - _GlitchColor: {r: 0, g: 0.9, b: 1, a: 1}
+    - _HexActiveColor: {r: 0, g: 1, b: 0.9, a: 1}
+    - _HexColor: {r: 0, g: 0.8, b: 1, a: 1}
+    - _ScanColor: {r: 0, g: 0.6, b: 1, a: 1}
+    - _StreamColor: {r: 0, g: 1, b: 0.8, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

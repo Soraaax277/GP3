@@ -17,8 +17,11 @@ MonoBehaviour:
     Cost
   researchCost: 2500
   goldCost: 0
+  researchTurns: 10
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: c8493bb3a4a9da04581c086c9414e462, type: 2}
   unlockEffects:

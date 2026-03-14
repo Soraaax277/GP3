@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -25% to Structure Degradation Effects
   researchCost: 700
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: a5d1b8c7c4a88b042888d96a28003aed, type: 2}
   unlockEffects:

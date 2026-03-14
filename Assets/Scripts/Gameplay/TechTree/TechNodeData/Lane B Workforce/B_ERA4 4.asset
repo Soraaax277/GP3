@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +20% Maintenance Cost +3 Actions for all Workers
   researchCost: 3750
   goldCost: 0
+  researchTurns: 10
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 2eaab0ca7ec15f6459ee9e37f62a071a, type: 2}
   unlockEffects:

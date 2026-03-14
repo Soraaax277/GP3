@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +4 Max Tower Capacity
   researchCost: 370
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: f7c2ba7e509e3d546b30a38d002c1825, type: 2}
   - {fileID: 11400000, guid: b57729b9072ef7f4daf3e878fde60e1e, type: 2}

@@ -17,8 +17,11 @@ MonoBehaviour:
     +25% Durability (Repairmen only)
   researchCost: 875
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 8516db20bc86e8841a56ab979eb441f8, type: 2}
   unlockEffects:

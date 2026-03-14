@@ -21,13 +21,19 @@ public class GameState
     
     public List<string> playerUnlockedTechs;
     public List<string> enemyUnlockedTechs;
+
+    // In-progress (queued) research — parallel lists: name + turns remaining.
+    // Populated by TechManager.GetActiveResearchFor; restored via LoadActiveResearch.
+    public List<string> playerActiveResearchNames;
+    public List<int>    playerActiveResearchTurns;
+    public List<string> enemyActiveResearchNames;
+    public List<int>    enemyActiveResearchTurns;
     
     // Infra Stats (Strings for serializable dict)
     public List<string> infraMultiplierKeys;
     public List<float> infraMultiplierValues;
     public List<string> infraFlatKeys;
     public List<float> infraFlatValues;
-    
     
     public List<UnitData> playerUnits;
     public List<UnitData> enemyUnits;
@@ -46,6 +52,10 @@ public class GameState
         tileInfluences = new List<TileInfluenceData>();
         playerUnlockedTechs = new List<string>();
         enemyUnlockedTechs = new List<string>();
+        playerActiveResearchNames = new List<string>();
+        playerActiveResearchTurns = new List<int>();
+        enemyActiveResearchNames  = new List<string>();
+        enemyActiveResearchTurns  = new List<int>();
         infraMultiplierKeys = new List<string>();
         infraMultiplierValues = new List<float>();
         infraFlatKeys = new List<string>();

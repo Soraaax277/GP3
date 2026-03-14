@@ -16,7 +16,12 @@ MonoBehaviour:
   description: Unlocks Business Centers -20% Salesmen and Scout Recruitment and Maintenance
     Cost +1 Max Tower Capacity Unlocks BPO Workers
   researchCost: 320
-  researchBonus: 2
+  goldCost: 0
+  researchTurns: 4
+  unlocksSabotageTab: 0
+  rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: bba3a91ada892f8429336f61fdc59247, type: 2}
   - {fileID: 11400000, guid: 79643457fff91ec48b42e1b4f9aa2fe7, type: 2}
@@ -36,13 +41,28 @@ MonoBehaviour:
     statToUpgrade: 
     amount: 1
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 0
     targetUnits: []
     statToUpgrade: 
     amount: -20
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0
   - type: 0
     targetUnits: []
     statToUpgrade: 
     amount: 1
     skillName: 
+    infraStatName: 
+    infraValueMod: 0
+    isMultiplier: 0
+    featureName: 
+    isHardwareEra: 0

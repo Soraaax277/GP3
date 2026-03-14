@@ -19,8 +19,11 @@ MonoBehaviour:
     Gain'
   researchCost: 6000
   goldCost: 0
+  researchTurns: 12
   unlocksSabotageTab: 0
   rpBonusPerTurn: 3
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 09b2c1c14d29b7440bdedd276761f565, type: 2}
   - {fileID: 11400000, guid: 55e3d04f2be01c14d942dd1626f64cea, type: 2}

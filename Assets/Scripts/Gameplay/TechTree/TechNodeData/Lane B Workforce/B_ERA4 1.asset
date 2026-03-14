@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +20% Durability on Repairs +20% Structure Durability
   researchCost: 3200
   goldCost: 0
+  researchTurns: 10
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: dc3c715772a135749a21675d3773be19, type: 2}
   unlockEffects:

@@ -16,8 +16,11 @@ MonoBehaviour:
   description: "-20% Final Revenue Gain \n-1 Turns needed to produce Workers"
   researchCost: 400
   goldCost: 0
+  researchTurns: 5
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: d0187bf5c034d0745a790bf6133aab41, type: 2}
   unlockEffects:

@@ -22,12 +22,15 @@ MonoBehaviour:
 
     20% Influence Radius for all Structures
 
-    +4 Max
-    Tower Capacity'
+    +4 Max Tower
+    Capacity'
   researchCost: 3000
   goldCost: 0
+  researchTurns: 8
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 1
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 581a0d8e1226ed64ca9e302375db8285, type: 2}
   - {fileID: 11400000, guid: b897afca447905f4998a249e048a308f, type: 2}

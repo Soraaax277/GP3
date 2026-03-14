@@ -16,8 +16,11 @@ MonoBehaviour:
   description: Total Revenue Gain from Towers is Doubled
   researchCost: 3800
   goldCost: 0
+  researchTurns: 12
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 5416c083077ebf74ba808ca97d5662ab, type: 2}
   - {fileID: 11400000, guid: 1d798cf30db092c469f6547252812519, type: 2}

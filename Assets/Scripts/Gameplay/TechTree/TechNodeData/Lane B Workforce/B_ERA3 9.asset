@@ -16,8 +16,11 @@ MonoBehaviour:
   description: Unlocks Advanced Service Center
   researchCost: 2500
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: d8026b5943995914d8a2c597dbe8adc6, type: 2}
   - {fileID: 11400000, guid: 858c55dc617928243acde029f23f4f24, type: 2}

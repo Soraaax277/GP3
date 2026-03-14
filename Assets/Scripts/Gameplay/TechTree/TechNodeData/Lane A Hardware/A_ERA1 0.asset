@@ -16,7 +16,11 @@ MonoBehaviour:
   description: Unlocks Telecom Towers
   researchCost: 0
   goldCost: 0
+  researchTurns: 0
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 1
+  isEraTransitionNode: 0
   preReqs: []
   unlockEffects:
   - type: 4

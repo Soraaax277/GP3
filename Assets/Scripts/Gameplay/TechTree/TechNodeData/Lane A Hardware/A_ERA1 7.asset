@@ -17,8 +17,11 @@ MonoBehaviour:
     HQ Influence Radius\r\nUnlocks Power Boxes"
   researchCost: 120
   goldCost: 0
+  researchTurns: 2
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 1
   preReqs:
   - {fileID: 11400000, guid: 06eca37e3f69c3f4f941d083753b651a, type: 2}
   unlockEffects:

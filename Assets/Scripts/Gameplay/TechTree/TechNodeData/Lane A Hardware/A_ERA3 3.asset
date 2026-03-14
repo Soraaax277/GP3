@@ -18,8 +18,11 @@ MonoBehaviour:
     +20% Wire Cost'
   researchCost: 1050
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 36bcb09851339d147b733a142739cf46, type: 2}
   unlockEffects:

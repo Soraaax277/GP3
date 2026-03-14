@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +50% Structure and  Wiring Durability Unlocks BPO Centers
   researchCost: 550
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: df0742d218cca3f44b19f79fde11da4a, type: 2}
   unlockEffects:

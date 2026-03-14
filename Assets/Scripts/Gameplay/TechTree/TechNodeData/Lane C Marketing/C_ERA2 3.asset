@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -1 Turns to produce Salesmen
   researchCost: 250
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: c8e8924009f3c6a4b9e7b486d729b712, type: 2}
   unlockEffects:

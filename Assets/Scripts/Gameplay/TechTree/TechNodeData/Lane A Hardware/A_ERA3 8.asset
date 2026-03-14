@@ -18,8 +18,11 @@ MonoBehaviour:
     +10% Tower Influence Radius'
   researchCost: 1350
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 1
   preReqs:
   - {fileID: 11400000, guid: c8375567cb0130349b6e17102c19a83b, type: 2}
   unlockEffects:

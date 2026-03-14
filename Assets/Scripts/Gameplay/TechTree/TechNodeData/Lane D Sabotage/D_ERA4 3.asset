@@ -16,8 +16,11 @@ MonoBehaviour:
   description: Scouts now have permanent vision over revealed areas
   researchCost: 4700
   goldCost: 0
+  researchTurns: 12
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: d3069caab54e3f04b81c46767a7e6e83, type: 2}
   unlockEffects:

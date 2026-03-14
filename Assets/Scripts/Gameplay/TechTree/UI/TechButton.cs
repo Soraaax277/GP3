@@ -16,7 +16,6 @@ public class TechButton : MonoBehaviour
     {
         InitializeComponents();
 
-        // Add Listener to click
         if (button != null)
         {
             button.onClick.RemoveAllListeners();
@@ -26,7 +25,6 @@ public class TechButton : MonoBehaviour
         UpdateNodeVisuals();
     }
 
-    // Helper to ensure components are found even if Start() hasn't run yet
     private void InitializeComponents()
     {
         if (button == null) button = GetComponent<Button>();
@@ -37,20 +35,18 @@ public class TechButton : MonoBehaviour
         if (parentButtonImage != null)
         {
             parentButtonImage.color = Color.clear;
-            parentButtonImage.raycastTarget = true; // MUST stay true for pointer events to work
+            parentButtonImage.raycastTarget = true;
         }
 
-        // Find child image if not assigned manually
         if (targetImage == null)
         {
-            // Try to find an image in children that isn't the parent button image itself
             Image[] images = GetComponentsInChildren<Image>(true);
-            foreach(var img in images)
+            foreach (var img in images)
             {
-                if(img.gameObject != this.gameObject)
+                if (img.gameObject != this.gameObject)
                 {
                     targetImage = img;
-                    break; // Found first child image
+                    break;
                 }
             }
         }
@@ -68,30 +64,36 @@ public class TechButton : MonoBehaviour
     {
         InitializeComponents();
 
-        // Ensure we have necessary components before proceeding
         if (tech == null || button == null || targetImage == null) return;
 
-        // Ensure we check the HUMAN player's status (Player 0)
         PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
             ? GameManager.Instance.players[0] : null;
 
         if (humanPlayer == null) return;
 
-        // Apply logic to tint the child image sprite
         if (tech.IsUnlockedBy(humanPlayer))
         {
+            // Fully unlocked — warm gold tint.
             button.interactable = true;
-            targetImage.color = new Color(1f, 0.95f, 0.8f, 1f); 
+            targetImage.color = new Color(1f, 0.95f, 0.8f, 1f);
+        }
+        else if (tech.IsResearchingBy(humanPlayer))
+        {
+            // Cost paid, integration in progress — cyan tint to signal activity.
+            // The info panel will show the exact turn countdown when selected.
+            button.interactable = true;
+            targetImage.color = new Color(0.5f, 0.9f, 1f, 1f);
         }
         else if (tech.CanUnlockFor(humanPlayer))
         {
+            // Available to purchase — full white, no tint.
             button.interactable = true;
-            targetImage.color = Color.white; 
+            targetImage.color = Color.white;
         }
         else
         {
+            // Locked — gray/desaturated.
             button.interactable = true;
-            // Gray tint desaturates and darkens the colored sprite underneath
             targetImage.color = new Color(0.7f, 0.7f, 0.7f, 1f);
         }
     }

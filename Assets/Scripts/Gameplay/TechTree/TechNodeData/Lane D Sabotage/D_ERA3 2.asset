@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -15% Saboteur Recruitment Cost
   researchCost: 1800
   goldCost: 0
+  researchTurns: 7
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: d3a8a73a183dae94db2b892c0f6c4a27, type: 2}
   unlockEffects:

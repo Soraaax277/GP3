@@ -17,8 +17,11 @@ MonoBehaviour:
     to towers. Maintenance Crew can now repair Towers
   researchCost: 1100
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: b37a9cad3e30faa40a004c89ad5a5a0f, type: 2}
   - {fileID: 11400000, guid: f8c1226d5be453543b9ee165c4a06dd3, type: 2}

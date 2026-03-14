@@ -19,8 +19,11 @@ MonoBehaviour:
     Centers'
   researchCost: 275
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: c0a6b47f2907e5b44911242f8388093b, type: 2}
   unlockEffects:

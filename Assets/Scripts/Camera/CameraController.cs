@@ -10,6 +10,11 @@ public class CameraController : MonoBehaviour
     [Tooltip("Drag your UnitActionPanel and BuildUIManager Panel here. If any are active, movement is blocked.")]
     public List<GameObject> blockingPanels = new List<GameObject>();
 
+    [Tooltip("Drag panels here (e.g. ActiveResearchPanel) that should block scroll and drag " +
+             "only while the mouse is physically hovering over them. " +
+             "Unlike blockingPanels, these do NOT block camera movement when merely visible.")]
+    public List<RectTransform> hoverBlockingPanels = new List<RectTransform>();
+
     [Header("Movement Settings")]
     public float panSpeed = 20f;  
     public float scrollSpeed = 20f;
@@ -82,23 +87,60 @@ public class CameraController : MonoBehaviour
         return false;
     }
 
+    // Returns true if the mouse cursor is currently inside any of the
+    // hoverBlockingPanels RectTransforms. Used to suppress scroll and
+    // left-drag when the player is interacting with a UI scroll rect.
+    private bool IsMouseOverHoverPanel()
+    {
+        if (hoverBlockingPanels == null || hoverBlockingPanels.Count == 0) return false;
+
+        // We need the camera that renders the UI Canvas. For Screen Space Overlay
+        // canvases the camera argument is null; for Screen Space Camera or World
+        // Space canvases pass the canvas camera. Null works for Overlay mode.
+        foreach (var rect in hoverBlockingPanels)
+        {
+            if (rect == null || !rect.gameObject.activeInHierarchy) continue;
+
+            // Determine the canvas camera for this panel (null = Overlay canvas).
+            Canvas canvas = rect.GetComponentInParent<Canvas>();
+            Camera canvasCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                ? canvas.worldCamera
+                : null;
+
+            if (RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition, canvasCam))
+                return true;
+        }
+        return false;
+    }
+
     private void HandleMovement()
     {
         Vector3 pos = transform.position;
 
-        // WASD
+        // WASD — never blocked by hover panels; only affects pan, not scroll.
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
         pos += transform.right * h * panSpeed * Time.deltaTime;
         pos += transform.forward * v * panSpeed * Time.deltaTime;
 
-        // Mouse Drag (Left)
-        if (Input.GetMouseButtonDown(0)) leftDragOrigin = Input.mousePosition;
-        if (Input.GetMouseButton(0))
+        bool hoverBlocked = IsMouseOverHoverPanel();
+
+        // Mouse Drag (Left) — suppressed while hovering a UI scroll panel.
+        if (!hoverBlocked)
         {
-            Vector3 difference = Input.mousePosition - leftDragOrigin;
-            Vector3 move = new Vector3(-difference.x, 0f, -difference.y) * panSpeed * Time.deltaTime * 0.1f;
-            pos += transform.TransformDirection(move);
+            if (Input.GetMouseButtonDown(0)) leftDragOrigin = Input.mousePosition;
+            if (Input.GetMouseButton(0))
+            {
+                Vector3 difference = Input.mousePosition - leftDragOrigin;
+                Vector3 move = new Vector3(-difference.x, 0f, -difference.y) * panSpeed * Time.deltaTime * 0.1f;
+                pos += transform.TransformDirection(move);
+                leftDragOrigin = Input.mousePosition;
+            }
+        }
+        else
+        {
+            // Keep the drag origin in sync so releasing over the panel and then
+            // dragging elsewhere doesn't cause a sudden camera jump.
             leftDragOrigin = Input.mousePosition;
         }
 
@@ -119,8 +161,9 @@ public class CameraController : MonoBehaviour
             rightDragOrigin = Input.mousePosition;
         }
 
-        // Zoom
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        // Zoom — suppressed while hovering a UI scroll panel so the
+        // ScrollRect can consume the scroll wheel event instead.
+        float scroll = hoverBlocked ? 0f : Input.GetAxis("Mouse ScrollWheel");
         pos.y -= scroll * scrollSpeed * 100f * Time.deltaTime;
         
         // Clamping

@@ -16,8 +16,11 @@ MonoBehaviour:
   description: + 4 to Scout Vision while next to a Telecom Tower
   researchCost: 900
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 57786e10278514645accbd4493b973ed, type: 2}
   unlockEffects:

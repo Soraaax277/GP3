@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +10% on Tower Influence Radius
   researchCost: 280
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 72e66b5cf1f01e44bb6cea27e3b2fb63, type: 2}
   unlockEffects:

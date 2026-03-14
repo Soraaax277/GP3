@@ -16,8 +16,11 @@ MonoBehaviour:
   description: 'Builders can now also do repairs to Infrastructure '
   researchCost: 1000
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 3dc120dd889c0684e853f1077d1a0ffb, type: 2}
   - {fileID: 11400000, guid: 35a903d090c76d347b7895ce7c9f9be2, type: 2}

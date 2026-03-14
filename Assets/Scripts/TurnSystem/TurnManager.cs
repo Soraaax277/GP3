@@ -112,6 +112,15 @@ public class TurnManager : MonoBehaviour
             Debug.LogError("TurnManager: Missing EconomyManager!");
         }
 
+        // --- RESEARCH TICK ---
+        // Decrements in-progress research counters for the current player.
+        // Any tech whose counter reaches 0 is completed here (effects fire,
+        // UI is notified) before the player takes their actions this turn.
+        if (TechManager.Instance != null)
+        {
+            TechManager.Instance.TickResearch(currentPlayer);
+        }
+
         // --- PHASE 3: RESEARCH PROCESSING ---
         if (ResearchProjectHandler.Instance != null)
         {

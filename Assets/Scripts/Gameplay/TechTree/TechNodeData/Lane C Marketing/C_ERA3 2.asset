@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +1 to Salesmen Influence Radius
   researchCost: 650
   goldCost: 0
+  researchTurns: 6
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 137b37a97e56940438e77c87d4611049, type: 2}
   unlockEffects:

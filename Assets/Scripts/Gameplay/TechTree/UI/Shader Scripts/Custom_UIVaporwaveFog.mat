@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_UIVaporwaveFog
+  m_Shader: {fileID: 4800000, guid: 02ac6463600181f478b81c0ba834b623, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BaseOpacity: 0.45
+    - _ColorMask: 15
+    - _Density: 0.75
+    - _FadeBottom: 0
+    - _FadeLeft: 0
+    - _FadeRight: 0
+    - _FadeTop: 0
+    - _FogOpacity: 0.85
+    - _GlowIntensity: 0.8
+    - _GlowScale: 3
+    - _GlowSpeed: 0.6
+    - _LineCount: 20
+    - _LineFadeLength: 0.4
+    - _LineOpacity: 0.6
+    - _LineSpeed: 0.2
+    - _LineThickness: 0.004
+    - _ManualTime: 0
+    - _Scale: 5
+    - _ScanlineCount: 150
+    - _ScanlineOpacity: 0.245
+    - _ScanlineSpeed: 0.3
+    - _Speed: 0.4
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    m_Colors:
+    - _ColorA: {r: 0.114556946, g: 0.5803922, b: 0, a: 1}
+    - _ColorB: {r: 0, g: 0, b: 0, a: 1}
+    - _ColorC: {r: 0, g: 0.9339623, b: 0.5295501, a: 1}
+    - _GlowColor: {r: 1, g: 0.9847092, b: 0, a: 1}
+    - _LineColor: {r: 0, g: 1, b: 1, a: 1}
+    - _ScanlineColor: {r: 0.519198, g: 1, b: 0.3915094, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

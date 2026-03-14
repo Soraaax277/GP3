@@ -5,8 +5,7 @@ public class TechManager : MonoBehaviour
 {
     public static TechManager Instance;
 
-    // Per-player active (persistent) effects — previously a single shared list,
-    // which caused AI tech buffs to be applied to the human player's units.
+    // Per-player active (persistent) effects
     private Dictionary<PlayerData, List<TechEffect>> _playerActiveEffects
         = new Dictionary<PlayerData, List<TechEffect>>();
 
@@ -18,27 +17,20 @@ public class TechManager : MonoBehaviour
         return _playerActiveEffects[player];
     }
 
-    // Legacy property kept so any code referencing activeEffects still compiles.
     private List<TechEffect> activeEffects => GetActiveEffectsFor(TurnManager.Instance?.currentPlayer);
 
     // -----------------------------------------------------------------------
     //  PER-PLAYER UNLOCK STATE
-    //  TechNode is a ScriptableObject — one shared asset instance for all
-    //  players.  We store which nodes each player has unlocked here so that
-    //  the AI researching a tech does not also unlock it for the human player.
-    //  Key: PlayerData reference  |  Value: set of unlocked TechNode assets.
     // -----------------------------------------------------------------------
     private Dictionary<PlayerData, HashSet<TechNode>> _playerUnlocks
         = new Dictionary<PlayerData, HashSet<TechNode>>();
 
-    /// Returns true if the given player has already unlocked this node.
     public bool IsNodeUnlocked(PlayerData player, TechNode node)
     {
         if (player == null || node == null) return false;
         return _playerUnlocks.TryGetValue(player, out var set) && set.Contains(node);
     }
 
-    /// Records that the given player has unlocked this node.
     public void MarkNodeUnlocked(PlayerData player, TechNode node)
     {
         if (player == null || node == null) return;
@@ -47,24 +39,90 @@ public class TechManager : MonoBehaviour
         _playerUnlocks[player].Add(node);
     }
 
-    // Per-player unit unlock names (previously a single shared HashSet)
+    // -----------------------------------------------------------------------
+    //  IN-PROGRESS RESEARCH QUEUE
+    //  Key: PlayerData  |  Value: (TechNode → turns remaining)
+    //  Cost is paid immediately on purchase. Effects activate when turns hit 0.
+    // -----------------------------------------------------------------------
+    private Dictionary<PlayerData, Dictionary<TechNode, int>> _activeResearch
+        = new Dictionary<PlayerData, Dictionary<TechNode, int>>();
+
+    /// Returns true if the player has paid for this node and it is ticking down.
+    public bool IsResearching(PlayerData player, TechNode node)
+    {
+        if (player == null || node == null) return false;
+        return _activeResearch.TryGetValue(player, out var dict) && dict.ContainsKey(node);
+    }
+
+    /// Returns the number of turns still remaining before the node completes.
+    /// Returns 0 if the node is not currently being researched.
+    public int GetResearchTurnsRemaining(PlayerData player, TechNode node)
+    {
+        if (player == null || node == null) return 0;
+        if (_activeResearch.TryGetValue(player, out var dict) && dict.TryGetValue(node, out int turns))
+            return turns;
+        return 0;
+    }
+
+    /// Returns a snapshot of all nodes currently being researched by the player,
+    /// mapped to their remaining turn count. Safe to iterate; it is a copy.
+    public Dictionary<TechNode, int> GetActiveResearchFor(PlayerData player)
+    {
+        if (player == null) return new Dictionary<TechNode, int>();
+        if (_activeResearch.TryGetValue(player, out var dict))
+            return new Dictionary<TechNode, int>(dict);
+        return new Dictionary<TechNode, int>();
+    }
+
+    /// Called once per player turn (from TurnManager.StartTurn via TickResearch hook).
+    /// Decrements all in-progress research counters for that player and completes
+    /// any that have reached zero.
+    public void TickResearch(PlayerData player)
+    {
+        if (player == null) return;
+        if (!_activeResearch.TryGetValue(player, out var dict) || dict.Count == 0) return;
+
+        // Collect keys first to avoid modifying the dictionary while iterating.
+        List<TechNode> nodes = new List<TechNode>(dict.Keys);
+        List<TechNode> toComplete = new List<TechNode>();
+
+        foreach (TechNode node in nodes)
+        {
+            dict[node]--;
+            Debug.Log($"[TechManager] '{node.techName}' for {player.playerName}: {dict[node]} turns remaining.");
+            if (dict[node] <= 0)
+                toComplete.Add(node);
+        }
+
+        foreach (TechNode node in toComplete)
+        {
+            dict.Remove(node);
+            CompleteResearch(player, node);
+        }
+
+        // Refresh the tech tree UI if it is currently open (human player only).
+        if (!player.isAI && TechTreeWindowManager.Instance != null && TechTreeWindowManager.IsTechTreeOpen)
+        {
+            TechTreeWindowManager.Instance.RefreshAllTechButtons();
+            TechTreeWindowManager.Instance.UpdateAllLines();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    //  PER-PLAYER MISC STATE
+    // -----------------------------------------------------------------------
     private Dictionary<PlayerData, HashSet<string>> _playerUnlockedUnitNames
         = new Dictionary<PlayerData, HashSet<string>>();
 
-    // Per-player feature unlocks (previously a single shared HashSet)
     private Dictionary<PlayerData, HashSet<string>> _playerUnlockedFeatures
         = new Dictionary<PlayerData, HashSet<string>>();
 
-    // Per-player RP bonus (previously a single global int)
     private Dictionary<PlayerData, int> _playerRPBonusPerTurn
         = new Dictionary<PlayerData, int>();
 
-    // Per-player sabotage tab unlock flag (previously a single global bool)
     private Dictionary<PlayerData, bool> _playerSabotageTabUnlocked
         = new Dictionary<PlayerData, bool>();
 
-    // Legacy accessors — resolve to the current player so existing callers compile unchanged.
-    // Where possible, prefer the explicit-player overloads below.
     public HashSet<string> unlockedUnitNames =>
         GetOrCreateSet(_playerUnlockedUnitNames, TurnManager.Instance?.currentPlayer);
     public HashSet<string> unlockedFeatures =>
@@ -73,13 +131,9 @@ public class TechManager : MonoBehaviour
     public HashSet<string> GetUnlockedUnitNamesFor(PlayerData player) =>
         GetOrCreateSet(_playerUnlockedUnitNames, player);
 
-    // Exposes the feature set for a specific player — used by DebugCheatManager
-    // to force-unlock features by their exact string keys without going through TechNodes.
     public HashSet<string> GetOrCreateFeatureSetFor(PlayerData player) =>
         GetOrCreateSet(_playerUnlockedFeatures, player);
 
-    // Explicit-player version of UnlockFeature — used by DebugCheatManager so
-    // features are always written to the correct player regardless of whose turn it is.
     public void UnlockFeatureFor(PlayerData player, string featureName)
     {
         if (player == null || string.IsNullOrEmpty(featureName)) return;
@@ -125,8 +179,6 @@ public class TechManager : MonoBehaviour
         if (player == null || techNames == null) return;
         
         HashSet<TechNode> unlockedSet = new HashSet<TechNode>();
-        
-        // Find all tech nodes in the project to match names
         TechNode[] allNodes = Resources.FindObjectsOfTypeAll<TechNode>();
         
         foreach (string name in techNames)
@@ -136,28 +188,48 @@ public class TechManager : MonoBehaviour
                 if (node.techName == name)
                 {
                     unlockedSet.Add(node);
-                    // Also trigger their effects if they aren't already active?
-                    // Actually, for infra/feature unlocks, we should re-apply them.
-                    foreach (var effect in node.unlockEffects)
-                    {
-                        // We need a subtle way to re-apply without double-charging or side effects
-                        // but most effects are idempotent (setting a bool, adding to a HashSet)
-                        // infra multipliers might STACK though, so we must be careful.
-                    }
                     break;
                 }
             }
         }
         
         _playerUnlocks[player] = unlockedSet;
-        
-        // Refresh persistent state based on unlocked nodes
         RefreshPlayerTechStats(player);
+    }
+
+    /// Restores active (in-progress) research from a save file.
+    /// techNames and turnsRemaining are parallel lists produced by SaveSystem.
+    public void LoadActiveResearch(PlayerData player, List<string> techNames, List<int> turnsRemaining)
+    {
+        if (player == null || techNames == null || turnsRemaining == null) return;
+        if (techNames.Count != turnsRemaining.Count)
+        {
+            Debug.LogWarning("[TechManager] LoadActiveResearch: list length mismatch, skipping.");
+            return;
+        }
+
+        if (!_activeResearch.ContainsKey(player))
+            _activeResearch[player] = new Dictionary<TechNode, int>();
+
+        TechNode[] allNodes = Resources.FindObjectsOfTypeAll<TechNode>();
+
+        for (int i = 0; i < techNames.Count; i++)
+        {
+            foreach (TechNode node in allNodes)
+            {
+                if (node.techName == techNames[i])
+                {
+                    _activeResearch[player][node] = turnsRemaining[i];
+                    Debug.Log($"[TechManager] Restored in-progress research: '{node.techName}' " +
+                              $"({turnsRemaining[i]} turns left) for {player.playerName}");
+                    break;
+                }
+            }
+        }
     }
 
     private void RefreshPlayerTechStats(PlayerData player)
     {
-        // Clear and rebuild player-specific tech flags (don't clear global infra stats here)
         GetOrCreateSet(_playerUnlockedUnitNames, player).Clear();
         GetOrCreateSet(_playerUnlockedFeatures, player).Clear();
         _playerRPBonusPerTurn[player] = 0;
@@ -167,13 +239,10 @@ public class TechManager : MonoBehaviour
         {
             foreach (var node in nodes)
             {
-                // RP Bonus
                 _playerRPBonusPerTurn[player] += node.rpBonusPerTurn;
                 
-                // Sabotage
                 if (node.unlocksSabotageTab) _playerSabotageTabUnlocked[player] = true;
 
-                // Effects
                 foreach (var effect in node.unlockEffects)
                 {
                     switch (effect.type)
@@ -210,44 +279,9 @@ public class TechManager : MonoBehaviour
     private Dictionary<string, float> infraFlatBonuses  = new Dictionary<string, float>();
 
     // -----------------------------------------------------------------------
-    //  Valid Infrastructure Stat Names (for ApplyInfrastructureUpgrade)
-    // -----------------------------------------------------------------------
-    // ECONOMY / TOWERS
-    //   "TowerRevenue"         – multiplier  – gold income per active tower
-    //   "TowerRange"           – flat + mult – hex broadcast radius
-    //   "TowerDurability"      – multiplier  – reduces incoming decay damage
-    //   "TowerCapacity"        – flat        – extra towers per HQ
-    //
-    // WIRES
-    //   "WireDurability"       – multiplier  – increases wire max HP
-    //   "WireDegradation"      – flat        – reduces per-turn decay rate
-    //   "WireLength"           – flat        – max hex distance for wire placement
-    //   "WireCost"             – multiplier  – gold cost per wire tile (negative = cheaper)
-    //
-    // SIGNAL NETWORK (System 2)
-    //   "BaseSignalBoost"      – flat        – adds to HQ base signal output
-    //   "SignalDecayReduction" – flat        – reduces per-hop signal loss
-    //                                         (default 50%; 0.10 bonus → 40%)
-    //
-    // HQ PLACEMENT
-    //   "InfluenceRadius"      – flat        – expands tower placement radius
-    //
-    // WORKFORCE UPGRADES (System 4)
-    //   "MaintenanceCost"      – multiplier  – upkeep cost for all infrastructure/units (negative = cheaper)
-    //   "RecruitmentCost"      – multiplier  – cost to spawn units (negative = cheaper)
-    //   "BuildingCost"         – multiplier  – cost to build towers (negative = cheaper)
-    //   "RepairCost"           – multiplier  – cost to repair structures (negative = cheaper)
-    //   "StructureDurability"  – multiplier  – durability for towers and wires
-    //   "RepairEfficiency"     – multiplier  – HP restored when repairing (applied to Technician units)
-    //   "StructureDegradation" – multiplier  – decay rate for towers (negative = slower decay)
-    //
-
-    // ERA UPGRADES (System 1)
-    //   Not stored in dictionaries. Use EffectType.UpgradePlayerEra on a TechEffect,
-    //   or call UpgradeHardwareEra() / UpgradeWorkforceEra() directly.
+    //  Valid Infrastructure Stat Names (unchanged — see original comments)
     // -----------------------------------------------------------------------
 
-    //  DEBUG / TESTING
     [Header("Debug")]
     [Tooltip("DEBUG: When enabled, all tech nodes can be researched for free. Does NOT modify ScriptableObject data. Disable before shipping!")]
     public bool freeResearchMode = false;
@@ -262,17 +296,23 @@ public class TechManager : MonoBehaviour
         Instance = this;
     }
 
-    //  RESEARCH
+    // -----------------------------------------------------------------------
+    //  RESEARCH — public entry point (called by UI and AI)
+    //
+    //  Flow:
+    //    1. Validate prerequisites and affordability.
+    //    2. Deduct costs immediately.
+    //    3a. researchTurns <= 1  → CompleteResearch() right away (old behaviour).
+    //    3b. researchTurns  > 1  → Queue in _activeResearch; effects fire later
+    //                              when TickResearch() counts down to zero.
+    // -----------------------------------------------------------------------
     public void ResearchTech(TechNode tech)
     {
         if (tech == null) return;
         
-        // Get the actual current player (works for AI too)
         PlayerData player = null;
         if (TurnManager.Instance != null)
-        {
             player = TurnManager.Instance.currentPlayer;
-        }
         else
         {
             Debug.LogWarning("TechManager: No TurnManager found, using Player 0 default.");
@@ -280,19 +320,26 @@ public class TechManager : MonoBehaviour
         }
 
         if (player == null) return;
-        if (tech.IsUnlockedBy(player)) return;
+        if (tech.IsUnlockedBy(player))
+        {
+            Debug.Log($"[TechManager] '{tech.techName}' is already unlocked for {player.playerName}.");
+            return;
+        }
+        if (IsResearching(player, tech))
+        {
+            Debug.Log($"[TechManager] '{tech.techName}' is already in the research queue for {player.playerName}.");
+            return;
+        }
 
         // COST CHECKS
-        // Skipped entirely when freeResearchMode is on. ScriptableObject data is untouched.
         if (!freeResearchMode)
         {
-            if (player.researchPoints < tech.researchCost) 
+            if (player.researchPoints < tech.researchCost)
             {
                 Debug.Log($"Cannot Research {tech.techName}: Not enough RP! " +
                           $"(Have: {player.researchPoints}, Need: {tech.researchCost})");
                 return;
             }
-
             if (player.resources < tech.goldCost)
             {
                 Debug.Log($"Cannot Research {tech.techName}: Not enough Gold! " +
@@ -301,14 +348,13 @@ public class TechManager : MonoBehaviour
             }
         }
 
-        if (!tech.CanUnlockFor(player)) 
+        if (!tech.CanUnlockFor(player))
         {
-            Debug.Log("Prerequisites not met!");
+            Debug.Log($"[TechManager] Prerequisites not met for '{tech.techName}'!");
             return;
         }
 
-        // PAY THE COST
-        // Not deducted in freeResearchMode — player resources are left unchanged.
+        // PAY THE COST (always upfront, even for queued research)
         if (!freeResearchMode)
         {
             player.researchPoints -= tech.researchCost;
@@ -319,42 +365,66 @@ public class TechManager : MonoBehaviour
             Debug.LogWarning($"[TechManager] freeResearchMode ON — '{tech.techName}' researched at no cost.");
         }
 
-        // UNLOCK
-        tech.UnlockFor(player); 
-        
-        if (GameStatusUI.Instance != null)
+        // INSTANT vs QUEUED
+        // researchTurns == 0 → complete immediately (same turn as purchase).
+        // researchTurns  > 0 → queue; TickResearch counts down each of the
+        //                       player's turns and completes when it hits 0.
+        if (tech.researchTurns <= 0)
         {
-            // GameStatusUI.Instance.UpdateUI();
+            // Instant — complete on the same turn as purchase.
+            CompleteResearch(player, tech);
         }
+        else
+        {
+            // Queue the research. Effects will fire in TickResearch().
+            if (!_activeResearch.ContainsKey(player))
+                _activeResearch[player] = new Dictionary<TechNode, int>();
+            _activeResearch[player][tech] = tech.researchTurns;
+
+            Debug.Log($"[TechManager] '{tech.techName}' queued: completes in {tech.researchTurns} " +
+                      $"turn{(tech.researchTurns == 1 ? "" : "s")} for {player.playerName}. Cost paid.");
+
+            // Refresh the UI so the node shows "IN RESEARCH" immediately.
+            if (!player.isAI && TechTreeWindowManager.Instance != null)
+            {
+                TechTreeWindowManager.Instance.RefreshAllTechButtons();
+                TechTreeWindowManager.Instance.UpdateAllLines();
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    //  COMPLETE RESEARCH — activates all effects for a finished tech.
+    //  Called either instantly (researchTurns == 0) or by TickResearch().
+    // -----------------------------------------------------------------------
+    private void CompleteResearch(PlayerData player, TechNode tech)
+    {
+        if (player == null || tech == null) return;
+
+        // Mark as unlocked in the per-player set.
+        tech.UnlockFor(player);
 
         // ACTIVATE EFFECTS
         if (tech.unlockEffects != null)
         {
             foreach (var effect in tech.unlockEffects)
             {
-                // ActivateEffect() dispatches internally to TechManager / TurnManager
                 effect.ActivateEffect();
 
-                // Determine persistence — only unit-targeting effects need to be
-                // remembered so they can be re-applied to units spawned later.
                 switch (effect.type)
                 {
-                    // One-shot effects: fire and forget, do NOT track in activeEffects.
                     case EffectType.UpgradeInfrastructure:
                     case EffectType.UnlockFeature:
                     case EffectType.UpgradePlayerEra:
-                        // Already handled inside ActivateEffect(). Nothing else to do.
+                        // One-shot — already handled inside ActivateEffect().
                         break;
 
-                    // Persistent unit-stat effects: apply to existing units now,
-                    // and remember for units spawned later.
                     case EffectType.UpgradeUnitStat:
                     case EffectType.UnlockSkill:
                         GetActiveEffectsFor(player).Add(effect);
                         ApplyEffectToExistingUnits(effect, player);
                         break;
 
-                    // UnlockUnit: register the unit name AND apply to existing units.
                     case EffectType.UnlockUnit:
                         GetActiveEffectsFor(player).Add(effect);
                         ApplyEffectToExistingUnits(effect, player);
@@ -362,92 +432,83 @@ public class TechManager : MonoBehaviour
                         {
                             var unitNames = GetOrCreateSet(_playerUnlockedUnitNames, player);
                             foreach (var unit in effect.targetUnits)
-                            {
                                 if (unit != null) unitNames.Add(unit.name);
-                            }
                         }
                         break;
                 }
             }
         }
-        
-        // Accumulate passive RP bonus from this node
+
+        // Accumulate passive RP bonus.
         if (tech.rpBonusPerTurn > 0)
         {
             if (!_playerRPBonusPerTurn.ContainsKey(player)) _playerRPBonusPerTurn[player] = 0;
             _playerRPBonusPerTurn[player] += tech.rpBonusPerTurn;
-            Debug.Log($"[TechManager] {player.playerName} passive RP bonus is now +{_playerRPBonusPerTurn[player]}/turn");
+            Debug.Log($"[TechManager] {player.playerName} passive RP bonus: +{_playerRPBonusPerTurn[player]}/turn");
         }
 
-        // Unlock Sabotage tab if this node is flagged for it
+        // Sabotage tab unlock.
         if (tech.unlocksSabotageTab && !IsSabotageTabUnlockedFor(player))
         {
             _playerSabotageTabUnlocked[player] = true;
             Debug.Log($"[TechManager] Sabotage tab unlocked by '{tech.techName}' for {player.playerName}!");
 
-            // Only refresh the UI button if this is the human player's unlock
             if (!player.isAI && TechTreeWindowManager.Instance != null)
                 TechTreeWindowManager.Instance.RefreshSabotageButton();
         }
 
-        // Refresh Build UI — reopen the current building panel so costs/availability update immediately
+        // Refresh Build UI.
         if (BuildingUIManager.Instance != null && BuildingUIManager.Instance.panel.activeSelf)
         {
             SignalNode current = BuildingUIManager.Instance.GetCurrentBusiness();
             if (current != null)
                 BuildingUIManager.Instance.Open(current);
         }
-        
-        Debug.Log($"Successfully researched {tech.techName}. " +
+
+        // Refresh Tech Tree UI (handles both instant and delayed completions).
+        if (!player.isAI && TechTreeWindowManager.Instance != null)
+        {
+            TechTreeWindowManager.Instance.RefreshAllTechButtons();
+            TechTreeWindowManager.Instance.RefreshSabotageButton();
+            TechTreeWindowManager.Instance.UpdateAllLines();
+            TechTreeWindowManager.Instance.RefreshAllEraFog(instant: false);
+        }
+
+        Debug.Log($"[TechManager] '{tech.techName}' completed for {player.playerName}. " +
                   $"Remaining RP: {player.researchPoints}, Gold: {player.resources}");
     }
 
+    // -----------------------------------------------------------------------
+    //  DEBUG / FORCE UNLOCK (bypasses queue — instant, no cost)
+    // -----------------------------------------------------------------------
     public void UnlockTechExplicitly(string techName)
     {
-         // Find node by name (Search in Resources or use an asset map)
-         TechNode[] allNodes = Resources.FindObjectsOfTypeAll<TechNode>();
-         foreach (var node in allNodes)
-         {
-             if (node.techName == techName || node.name == techName)
-             {
-                 ResearchTechForce(node);
-                 return;
-             }
-         }
+        TechNode[] allNodes = Resources.FindObjectsOfTypeAll<TechNode>();
+        foreach (var node in allNodes)
+        {
+            if (node.techName == techName || node.name == techName)
+            {
+                ResearchTechForce(node);
+                return;
+            }
+        }
     }
 
     private void ResearchTechForce(TechNode tech)
     {
         PlayerData player = TurnManager.Instance != null ? TurnManager.Instance.currentPlayer : null;
         if (player == null || tech == null) return;
-        
-        // No cost deduction here
-        tech.UnlockFor(player);
-        
-        if (tech.unlockEffects != null)
-        {
-            foreach (var effect in tech.unlockEffects)
-            {
-                effect.ActivateEffect();
-                // Persist if needed (copied logic from ResearchTech)
-                if (effect.type == EffectType.UpgradeUnitStat || effect.type == EffectType.UnlockSkill || effect.type == EffectType.UnlockUnit)
-                {
-                     GetActiveEffectsFor(player).Add(effect);
-                     ApplyEffectToExistingUnits(effect, player);
-                }
-            }
-        }
+
+        // Remove from queue if it was in there, then complete immediately.
+        if (_activeResearch.TryGetValue(player, out var dict))
+            dict.Remove(tech);
+
+        CompleteResearch(player, tech);
     }
 
     // -----------------------------------------------------------------------
     //  ERA UPGRADE METHODS  (System 1)
-    //  Called by TechEffect.ActivateEffect() when type == UpgradePlayerEra,
-    //  or can be called directly from other systems.
     // -----------------------------------------------------------------------
-
-    // Advances the player's Hardware Era by one step (up to Futuristic).
-    // Reduces the obsolete-tech influence penalty when the World Era is ahead.
-    // Triggered in the Inspector via: EffectType = UpgradePlayerEra, isHardwareEra = TRUE.
     public void UpgradeHardwareEra(PlayerData player)
     {
         if (player == null) return;
@@ -468,9 +529,6 @@ public class TechManager : MonoBehaviour
             TurnManager.Instance.NotifyStatusChanged();
     }
 
-    // Advances the player's Workforce Era by one step (up to Futuristic).
-    // Reduces the labor-mismatch upkeep penalty when Hardware is ahead of Workforce.
-    // Triggered in the Inspector via: EffectType = UpgradePlayerEra, isHardwareEra = FALSE.
     public void UpgradeWorkforceEra(PlayerData player)
     {
         if (player == null) return;
@@ -491,7 +549,9 @@ public class TechManager : MonoBehaviour
             TurnManager.Instance.NotifyStatusChanged();
     }
 
-    //  FEATURE / INFRA LOGIC 
+    // -----------------------------------------------------------------------
+    //  FEATURE / INFRA LOGIC
+    // -----------------------------------------------------------------------
     public void UnlockFeature(string featureName)
     {
         PlayerData player = TurnManager.Instance?.currentPlayer;
@@ -533,16 +593,16 @@ public class TechManager : MonoBehaviour
     public float GetInfraMultiplier(string statName) =>
         infraMultipliers.ContainsKey(statName) ? infraMultipliers[statName] : 1.0f;
 
-    // Overload: accepts PlayerData for call-site compatibility (player arg currently unused as stats are global)
     public float GetInfraMultiplier(PlayerData player, string statName) => GetInfraMultiplier(statName);
 
     public float GetInfraFlatBonus(string statName) =>
         infraFlatBonuses.ContainsKey(statName) ? infraFlatBonuses[statName] : 0f;
 
-    // Overload: accepts PlayerData for call-site compatibility (player arg currently unused as stats are global)
     public float GetInfraFlatBonus(PlayerData player, string statName) => GetInfraFlatBonus(statName);
 
-    //  UNIT EFFECT APPLICATION  
+    // -----------------------------------------------------------------------
+    //  UNIT EFFECT APPLICATION
+    // -----------------------------------------------------------------------
     private void ApplyEffectToExistingUnits(TechEffect effect, PlayerData player)
     {
         if (TurnManager.Instance == null) return;
@@ -550,11 +610,8 @@ public class TechManager : MonoBehaviour
         foreach (Unit unit in TurnManager.Instance.GetAllUnits())
         {
             if (unit.owner != player) continue;
-            
             if (IsUnitTarget(unit, effect.targetUnits))
-            {
                 ApplyStatToUnit(unit, effect);
-            }
         }
     }
 
@@ -564,9 +621,7 @@ public class TechManager : MonoBehaviour
         foreach (var effect in GetActiveEffectsFor(unit.owner))
         {
             if (IsUnitTarget(unit, effect.targetUnits))
-            {
                 ApplyStatToUnit(unit, effect);
-            }
         }
     }
 
@@ -579,9 +634,7 @@ public class TechManager : MonoBehaviour
         else if (effect.type == EffectType.UnlockSkill)
         {
             if (unit is BuilderUnit builder && effect.skillName == "ConstructTower")
-            {
                 builder.UnlockConstruction();
-            }
         }
     }
 

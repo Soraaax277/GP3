@@ -44,15 +44,31 @@ public class TechTreeWindowManager : MonoBehaviour
     [SerializeField] private Button btnWorkforce;
     [SerializeField] private Button btnServices;
     [SerializeField] private Button btnSabotage;
-    
+
     [Header("Click Settings")]
     [SerializeField] private GameObject[] objectsToIgnore;
 
+    [Header("Fog Shader Images")]
+    [Tooltip("Assign all Image components using a fog shader (decorative fog). " +
+             "These are driven by ManualTime every frame.")]
+    [SerializeField] private List<Image> fogImages;
+
+    [Header("Category Fog Managers")]
+    [Tooltip("TechCategoryFogManager on the Hardware panel.")]
+    [SerializeField] private TechCategoryFogManager hardwareFogManager;
+    [Tooltip("TechCategoryFogManager on the Workforce panel.")]
+    [SerializeField] private TechCategoryFogManager workforceFogManager;
+    [Tooltip("TechCategoryFogManager on the Services panel.")]
+    [SerializeField] private TechCategoryFogManager servicesFogManager;
+    [Tooltip("TechCategoryFogManager on the Sabotage panel.")]
+    [SerializeField] private TechCategoryFogManager sabotageFogManager;
+
+    // Private
+    private List<Material> _fogMaterials = new List<Material>();
     private GameObject currentActiveCategory;
     private TechNode currentSelectedNode;
     private GameObject pendingCategoryPanel; 
     private string pendingCategoryName;
-
     private Vector2 pointerDownPosition;
     private const float dragThreshold = 10f; 
 
@@ -69,51 +85,50 @@ public class TechTreeWindowManager : MonoBehaviour
         if (gameHUD != null) gameHUD.SetActive(true);
         if (upgradeInfoPanel != null) upgradeInfoPanel.SetActive(false);
 
-        // Initialize Confirm Button State
         if (confirmButtonText != null) confirmButtonText.text = "PURCHASE";
         if (confirmUpgradeButton != null) confirmUpgradeButton.interactable = false;
 
-        // Sabotage tab starts locked until the required TechNode is researched
         RefreshSabotageButton();
 
-        // LISTENERS 
         if (btnHardware) btnHardware.onClick.AddListener(() => RequestCategorySwitch(panelHardware, "Hardware"));
         if (btnWorkforce) btnWorkforce.onClick.AddListener(() => RequestCategorySwitch(panelWorkforce, "Workforce"));
         if (btnServices) btnServices.onClick.AddListener(() => RequestCategorySwitch(panelServices, "Services"));
         if (btnSabotage) btnSabotage.onClick.AddListener(() => RequestCategorySwitch(panelSabotage, "Sabotage"));
-
         if (openButton) openButton.onClick.AddListener(OpenTechTree);
         if (closeButton) closeButton.onClick.AddListener(CloseTechTree);
         if (confirmUpgradeButton) confirmUpgradeButton.onClick.AddListener(ConfirmPurchase);
 
-        // Initial Setup: Ensure everything is hidden so the first Open triggers the animation correctly
         if (panelHardware) panelHardware.SetActive(false);
         if (panelWorkforce) panelWorkforce.SetActive(false);
         if (panelServices) panelServices.SetActive(false);
         if (panelSabotage) panelSabotage.SetActive(false);
         
-        currentActiveCategory = null; 
+        currentActiveCategory = null;
+
+        // Instance fog shader materials so each Image is independent
+        _fogMaterials.Clear();
+        foreach (var img in fogImages)
+        {
+            if (img == null) continue;
+            var mat = Instantiate(img.material);
+            img.material = mat;
+            _fogMaterials.Add(mat);
+        }
     }
 
-    
-    //  SABOTAGE BUTTON LOCK
-    //  Grayed out until a TechNode with unlocksSabotageTab = true is researched.
-    //  Called on: Open, ConfirmPurchase, and by TechManager when the flag flips.
+    // -------------------------------------------------------------------------
+    // SABOTAGE BUTTON LOCK
+    // -------------------------------------------------------------------------
     public void RefreshSabotageButton()
     {
         if (btnSabotage == null) return;
 
-        // Ensure we check the HUMAN player's status, not just whatever the current turn is
-        PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
-            ? GameManager.Instance.players[0] : null;
-
+        PlayerData humanPlayer = GetHumanPlayer();
         bool unlocked = TechManager.Instance != null && humanPlayer != null && 
                         TechManager.Instance.IsSabotageTabUnlockedFor(humanPlayer);
 
         btnSabotage.interactable = unlocked;
 
-        // Gray out the button visually using the CanvasGroup if one exists,
-        // otherwise the Button's own interactable state handles the tint.
         var cg = btnSabotage.GetComponent<CanvasGroup>();
         if (cg != null)
         {
@@ -121,20 +136,17 @@ public class TechTreeWindowManager : MonoBehaviour
             cg.blocksRaycasts = unlocked;
         }
 
-        // If the sabotage panel is currently open and we just got locked, switch away
         if (!unlocked && currentActiveCategory == panelSabotage)
-        {
             RequestCategorySwitch(panelHardware, "Hardware");
-        }
     }
 
+    // -------------------------------------------------------------------------
     // TRANSITION LOGIC
+    // -------------------------------------------------------------------------
     public void RequestCategorySwitch(GameObject targetPanel, string categoryName)
     {
-        // Guard clause: Don't animate if we are already here
         if (currentActiveCategory == targetPanel) return;
 
-        // Close panel immediately so it animates out INSIDE the shutter
         CloseInfoPanel(); 
 
         pendingCategoryPanel = targetPanel;
@@ -162,6 +174,9 @@ public class TechTreeWindowManager : MonoBehaviour
     {
         Shader.SetGlobalFloat("_UI_UnscaledTime", Time.unscaledTime);
 
+        foreach (var mat in _fogMaterials)
+            if (mat != null) mat.SetFloat("_ManualTime", Time.unscaledTime);
+
         if (techTreePanel != null && !techTreePanel.activeSelf)
         {
             if (upgradeInfoPanel != null && upgradeInfoPanel.activeSelf) CloseInfoPanel();
@@ -179,7 +194,6 @@ public class TechTreeWindowManager : MonoBehaviour
             }
 
             if (Input.GetMouseButtonDown(0)) pointerDownPosition = Input.mousePosition;
-
             if (Input.GetMouseButtonUp(0))
             {
                 float distance = Vector2.Distance(pointerDownPosition, Input.mousePosition);
@@ -201,7 +215,8 @@ public class TechTreeWindowManager : MonoBehaviour
             if (hitObj.GetComponentInParent<TechButton>() != null) { clickedSafeZone = true; break; }
             if (upgradeInfoPanel != null && upgradeInfoPanel.activeSelf)
             {
-                if (hitObj.transform.IsChildOf(upgradeInfoPanel.transform) || hitObj == upgradeInfoPanel) { clickedSafeZone = true; break; }
+                if (hitObj.transform.IsChildOf(upgradeInfoPanel.transform) || hitObj == upgradeInfoPanel)
+                { clickedSafeZone = true; break; }
             }
             if (objectsToIgnore != null)
             {
@@ -219,7 +234,6 @@ public class TechTreeWindowManager : MonoBehaviour
 
         if (!clickedSafeZone)
         {
-            // Release the locked TechNodeButton (reverts it to normal scale and original rotation)
             UIAnimator.DeactivateCurrentTechButton();
             CloseInfoPanel();
         }
@@ -228,14 +242,10 @@ public class TechTreeWindowManager : MonoBehaviour
     public void SelectTechNode(TechNode node)
     {
         currentSelectedNode = node;
-
         if (upgradeInfoPanel != null)
         {
-            // If the panel is already open, refresh its content in-place
             if (upgradeInfoPanel.activeSelf)
-            {
                 UpdateInfoPanelUI();
-            }
             else
             {
                 upgradeInfoPanel.SetActive(true);
@@ -243,9 +253,7 @@ public class TechTreeWindowManager : MonoBehaviour
             }
             
             if (confirmButtonText != null && confirmButtonText.text == "PURCHASE")
-            {
                 TriggerButtonAnim(confirmUpgradeButton);
-            }
         }
     }
 
@@ -273,55 +281,75 @@ public class TechTreeWindowManager : MonoBehaviour
             currentSelectedNode = null;
         }
 
-        // When the info panel closes (e.g. category switch), also release the locked TechNodeButton
         UIAnimator.DeactivateCurrentTechButton();
-
         if (confirmUpgradeButton != null) confirmUpgradeButton.interactable = false;
     }
 
     private void UpdateInfoPanelUI()
     {
         if (currentSelectedNode == null) return;
+
+        PlayerData humanPlayer   = GetHumanPlayer();
+        bool isUnlocked          = humanPlayer != null && currentSelectedNode.IsUnlockedBy(humanPlayer);
+        bool isResearching       = humanPlayer != null && currentSelectedNode.IsResearchingBy(humanPlayer);
+        int  turnsRemaining      = isResearching
+                                    ? TechManager.Instance.GetResearchTurnsRemaining(humanPlayer, currentSelectedNode)
+                                    : 0;
+        bool canUnlock           = humanPlayer != null && currentSelectedNode.CanUnlockFor(humanPlayer);
+        int  playerRP            = humanPlayer != null ? humanPlayer.researchPoints : 0;
+        bool canAfford           = playerRP >= currentSelectedNode.researchCost;
+
+        // --- TITLE ---
         if (infoTitleText != null) infoTitleText.text = currentSelectedNode.techName;
-        if (infoDescriptionText != null) 
+
+        // --- DESCRIPTION ---
+        if (infoDescriptionText != null)
         {
-            infoDescriptionText.text = $"{currentSelectedNode.description}\n\n" +
-                                       $"<color=yellow>Cost: {currentSelectedNode.researchCost} RP</color>";
+            string costLine = $"<color=yellow>Cost: {currentSelectedNode.researchCost} RP</color>";
+
+            string durationLine = "";
+            if (currentSelectedNode.researchTurns > 1)
+            {
+                durationLine = isResearching
+                    ? $"\n<color=cyan>Integrating… {turnsRemaining} turn{(turnsRemaining == 1 ? "" : "s")} remaining</color>"
+                    : $"\n<color=#aaaaaa>Research time: {currentSelectedNode.researchTurns} turns</color>";
+            }
+
+            infoDescriptionText.text = $"{currentSelectedNode.description}\n\n{costLine}{durationLine}";
         }
 
-        // Check Player Resources (Human Player at index 0)
-        PlayerData humanPlayer = (GameManager.Instance != null && GameManager.Instance.players.Count > 0) 
-            ? GameManager.Instance.players[0] : null;
-
-        bool isUnlocked = humanPlayer != null && currentSelectedNode.IsUnlockedBy(humanPlayer);
-        bool canUnlock = humanPlayer != null && currentSelectedNode.CanUnlockFor(humanPlayer);
-        
-        int playerRP = humanPlayer != null ? humanPlayer.researchPoints : 0;
-        bool canAfford = playerRP >= currentSelectedNode.researchCost;
-
+        // --- BUTTON STATE ---
         if (confirmUpgradeButton != null && confirmButtonText != null)
         {
             if (isUnlocked)
             {
-                confirmUpgradeButton.interactable = false; 
+                confirmUpgradeButton.interactable = false;
                 confirmButtonText.text = "UNLOCKED";
+            }
+            else if (isResearching)
+            {
+                // Cost already paid; node is ticking down — prevent re-purchase.
+                confirmUpgradeButton.interactable = false;
+                confirmButtonText.text = $"IN RESEARCH ({turnsRemaining})";
             }
             else if (canUnlock)
             {
                 if (canAfford)
                 {
-                    confirmUpgradeButton.interactable = true; 
-                    confirmButtonText.text = "PURCHASE";
+                    confirmUpgradeButton.interactable = true;
+                    confirmButtonText.text = currentSelectedNode.researchTurns > 1
+                        ? $"BEGIN RESEARCH"
+                        : "PURCHASE";
                 }
                 else
                 {
-                    confirmUpgradeButton.interactable = false; 
+                    confirmUpgradeButton.interactable = false;
                     confirmButtonText.text = "TOO EXPENSIVE";
                 }
             }
             else
             {
-                confirmUpgradeButton.interactable = false; 
+                confirmUpgradeButton.interactable = false;
                 confirmButtonText.text = "LOCKED";
             }
         }
@@ -329,40 +357,53 @@ public class TechTreeWindowManager : MonoBehaviour
 
     public void ConfirmPurchase()
     {
-        if (currentSelectedNode != null)
-        {
-            // Uses the TechManager bridge instead of direct unlock
-            // Research via the Manager (handles cost & applying effects)
-            if (TechManager.Instance != null)
-            {
-                TechManager.Instance.ResearchTech(currentSelectedNode);
-            }
-            else
-            {
-                // Fallback just in case TechManager is missing (for safety)
-                if (currentSelectedNode.CanUnlock()) currentSelectedNode.UnlockTech();
-            }
+        if (currentSelectedNode == null) return;
 
-            // Refresh UI (Visuals only)
-            UpdateInfoPanelUI();
-            RefreshAllTechButtons();
-            RefreshSabotageButton();
-            UpdateAllLines(); // For the connection lines
+        if (TechManager.Instance != null)
+            TechManager.Instance.ResearchTech(currentSelectedNode);
+        else
+        {
+            // Fallback (no TechManager) — instant unlock via legacy API.
+            if (currentSelectedNode.CanUnlock()) currentSelectedNode.UnlockTech();
         }
+
+        // Always refresh UI after a purchase attempt regardless of queued vs instant.
+        UpdateInfoPanelUI();
+        RefreshAllTechButtons();
+        RefreshSabotageButton();
+        UpdateAllLines();
+        RefreshAllEraFog(instant: false);
     }
 
-    private void RefreshAllTechButtons()
+    public void RefreshAllTechButtons()
     {
         TechButton[] buttons = FindObjectsByType<TechButton>(FindObjectsInactive.Include, FindObjectsSortMode.None); 
-        foreach(var btn in buttons) if(btn != null) btn.UpdateNodeVisuals();
+        foreach (var btn in buttons) if (btn != null) btn.UpdateNodeVisuals();
     }
 
-    private void UpdateAllLines()
+    // Made public so TechManager.TickResearch can trigger a line refresh when
+    // a queued tech completes outside of a normal UI purchase flow.
+    public void UpdateAllLines()
     {
         TechLine[] lines = FindObjectsByType<TechLine>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var line in lines) if (line != null) line.UpdateVisuals(true);
     }
 
+    // -------------------------------------------------------------------------
+    // ERA FOG REFRESH
+    // -------------------------------------------------------------------------
+    public void RefreshAllEraFog(bool instant)
+    {
+        PlayerData humanPlayer = GetHumanPlayer();
+        if (humanPlayer == null) return;
+
+        hardwareFogManager?.RefreshAll(humanPlayer, instant);
+        workforceFogManager?.RefreshAll(humanPlayer, instant);
+        servicesFogManager?.RefreshAll(humanPlayer, instant);
+        sabotageFogManager?.RefreshAll(humanPlayer, instant);
+    }
+
+    // -------------------------------------------------------------------------
     public void SwitchCategory(GameObject targetPanel, string categoryName)
     {
         currentActiveCategory = targetPanel;
@@ -378,13 +419,14 @@ public class TechTreeWindowManager : MonoBehaviour
             currentActiveCategory.SetActive(true);
             ResetCategoryScroll(currentActiveCategory);
         }
+
+        RefreshAllEraFog(instant: true);
     }
 
     public void ResetCategoryScroll(GameObject categoryObj)
     {
         ScrollRect scroll = categoryObj.GetComponentInParent<ScrollRect>();
         if (scroll == null) scroll = categoryObj.GetComponent<ScrollRect>();
-
         if (scroll != null && scroll.content != null)
         {
             scroll.velocity = Vector2.zero;
@@ -408,23 +450,18 @@ public class TechTreeWindowManager : MonoBehaviour
     {
         if (techTreePanel != null) techTreePanel.SetActive(true);
         
-        // Force the system to think no category is selected at the start, even if panelHardware is the default active one in the hierarchy.
-        // This bypasses the check in RequestCategorySwitch, forcing the animation to play
-        // for the default category (Hardware) when the window opens.
         currentActiveCategory = null; 
-
-        // Trigger the switch to default (Hardware) WITH animation
         RequestCategorySwitch(panelHardware, "Hardware");
-
         RefreshAllTechButtons();
         RefreshSabotageButton();
+
+        RefreshAllEraFog(instant: true);
 
         TriggerButtonAnim(btnHardware);
         TriggerButtonAnim(btnWorkforce);
         TriggerButtonAnim(btnServices);
         TriggerButtonAnim(btnSabotage);
         TriggerButtonAnim(closeButton);
-
         Time.timeScale = 0f;
         yield break;
     }
@@ -454,5 +491,22 @@ public class TechTreeWindowManager : MonoBehaviour
             techTreeAnimator.AnimateExit(finishClosing);
         else
             finishClosing.Invoke();
+    }
+
+    private void OnDestroy()
+    {
+        foreach (var mat in _fogMaterials)
+            if (mat != null) Destroy(mat);
+        _fogMaterials.Clear();
+    }
+
+    // -------------------------------------------------------------------------
+    // HELPERS
+    // -------------------------------------------------------------------------
+    private PlayerData GetHumanPlayer()
+    {
+        return (GameManager.Instance != null && GameManager.Instance.players.Count > 0)
+            ? GameManager.Instance.players[0]
+            : null;
     }
 }

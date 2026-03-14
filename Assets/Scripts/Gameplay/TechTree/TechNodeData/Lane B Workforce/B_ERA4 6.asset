@@ -17,8 +17,11 @@ MonoBehaviour:
     Unlocks Robo-Workers and Robo-Marshalls Unlocks Worker Factories (Robot Production)
   researchCost: 5000
   goldCost: 0
+  researchTurns: 14
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 13285121ebd77d349be687708c062c16, type: 2}
   - {fileID: 11400000, guid: bc41c348247aec34886f0e0b6da2d722, type: 2}

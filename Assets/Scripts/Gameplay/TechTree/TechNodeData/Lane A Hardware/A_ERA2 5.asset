@@ -19,8 +19,11 @@ MonoBehaviour:
     within Influence'
   researchCost: 350
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: fe73be03ffa0bda4a938a7d4a26169eb, type: 2}
   unlockEffects:

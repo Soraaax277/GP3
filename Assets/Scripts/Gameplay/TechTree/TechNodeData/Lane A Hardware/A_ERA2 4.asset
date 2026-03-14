@@ -18,8 +18,11 @@ MonoBehaviour:
     +15% Wire Durability'
   researchCost: 310
   goldCost: 0
+  researchTurns: 4
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: bd3c049b4b928204bbf70ba369bd8118, type: 2}
   unlockEffects:
