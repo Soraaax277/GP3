@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +1 to Scout Vision
   researchCost: 39
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 296259ff0c79b5f4b8a778e9a8d36376, type: 2}
   unlockEffects:

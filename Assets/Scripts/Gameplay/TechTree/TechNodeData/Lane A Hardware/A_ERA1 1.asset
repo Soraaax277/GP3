@@ -16,7 +16,11 @@ MonoBehaviour:
   description: 10% Revenue Gain from Towers.
   researchCost: 5
   goldCost: 0
+  researchTurns: 1
+  unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: bac0c16e2243e494d8cded0a203385ad, type: 2}
   unlockEffects:

@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -5% Maintenance Cost
   researchCost: 7
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: caae3db48063fbf4fb8c175ba6ffb7ee, type: 2}
   unlockEffects:

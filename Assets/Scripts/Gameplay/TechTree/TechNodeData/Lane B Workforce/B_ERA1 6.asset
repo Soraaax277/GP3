@@ -18,8 +18,11 @@ MonoBehaviour:
     +10% Durability restored in repairs'
   researchCost: 34
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 4e6f6897c782f844399580a879e8fdaa, type: 2}
   unlockEffects:

@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -10% Recruitment Cost
   researchCost: 30
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 1
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 978f80d9fefc1314a9fc16f1971feea1, type: 2}
   unlockEffects:

@@ -18,8 +18,11 @@ MonoBehaviour:
     Unlocks Maintenance Crew unit'
   researchCost: 65
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: cd9323f318b3a004d82c066a6ebfd692, type: 2}
   - {fileID: 11400000, guid: 388ab0074d281754cb4b7e6fc4c7c06d, type: 2}

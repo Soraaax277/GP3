@@ -18,7 +18,7 @@ public class TechNode : ScriptableObject
              "1 = unlocks on the player's next turn. " +
              "2 = unlocks after 2 turns, and so on. " +
              "Costs are always deducted immediately on purchase.")]
-    public int researchTurns = 0;
+    public int researchTurns;
 
     [Header("Tab Requirements")]
     [Tooltip("When TRUE, researching this node unlocks the Sabotage tab. Multiple nodes can have this set — the tab unlocks as soon as ANY one of them is researched.")]

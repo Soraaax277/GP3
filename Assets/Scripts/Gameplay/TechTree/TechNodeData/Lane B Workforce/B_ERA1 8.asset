@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +1 to Worker Movement
   researchCost: 80
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 2
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: bf1cf360dfa7c4243a888b33d80964fa, type: 2}
   - {fileID: 11400000, guid: d982a0809a592eb44aab66c44e2675e1, type: 2}

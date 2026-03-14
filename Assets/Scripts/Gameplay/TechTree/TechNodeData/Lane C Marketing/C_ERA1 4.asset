@@ -16,8 +16,11 @@ MonoBehaviour:
   description: -1 Turns needed to produce Scouts
   researchCost: 65
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 17514a9a5b7ddf0498354e70746aceea, type: 2}
   - {fileID: 11400000, guid: a7bce195cb41dea44a857b94184dcede, type: 2}

@@ -16,8 +16,11 @@ MonoBehaviour:
   description: +1 Movement for Scouts
   researchCost: 9
   goldCost: 0
+  researchTurns: 1
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
+  isEraGateNode: 0
+  isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 9aaaef03af7734147bcad96e9b8970bd, type: 2}
   unlockEffects:
