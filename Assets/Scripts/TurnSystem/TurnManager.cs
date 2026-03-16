@@ -188,9 +188,13 @@ public class TurnManager : MonoBehaviour
         }
 
         // Fire OnTurnStarted AFTER fog-of-war has been updated.
-        // DebugCheatManager listens to this to re-apply map reveal + enemy
-        // unit visibility every turn, overriding FieldOfViewManager's output.
         OnTurnStarted?.Invoke(currentPlayer);
+
+        // FINAL STEP: Update borders now that EVERYTHING (Fog of War & Influence) is ready
+        if (InfluenceBorderRenderer.Instance != null)
+        {
+            InfluenceBorderRenderer.Instance.UpdateBorders();
+        }
 
         // CAMERA TRACKING
         HandleCameraFocus(currentPlayer);

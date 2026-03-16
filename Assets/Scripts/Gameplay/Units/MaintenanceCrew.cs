@@ -148,7 +148,7 @@ public class MaintenanceCrew : Unit
         return GetRepairCost(); // Delegates to the parameterless version
     }
 
-    void Die()
+    public override void Die()
     {
         if (currentTile != null) currentTile.placedUnit = null;
         

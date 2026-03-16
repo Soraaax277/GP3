@@ -19,6 +19,7 @@ public abstract class Unit : MonoBehaviour
     public int visionRange = 2;
     public int movementRemaining;
     public bool isMoving;
+    public bool isDestroyed { get; protected set; }
     
     public bool forceCanAct = false;
     
@@ -130,6 +131,11 @@ public abstract class Unit : MonoBehaviour
     {
         canAct = false;
         // movementRemaining remains as is, allowing units to move after actions
+        
+        if (QuestManager.Instance != null && owner != null)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "UnitWorked");
+        }
     }
 
     public void SetSelected(bool selected)
@@ -155,20 +161,24 @@ public abstract class Unit : MonoBehaviour
         }
     }
 
-    // Accepts 2 arguments as required by PlayerInput and EnemyAI
-    public void MoveTo(HexTile tile, int range)
+    // Simplified override for subclasses
+    public virtual bool MoveTo(HexTile tile)
     {
-        if (isMoving) return;
+        return MoveTo(tile, movementRemaining);
+    }
+
+    // Main movement method
+    public virtual bool MoveTo(HexTile tile, int range)
+    {
+        if (isMoving) return false;
         if (!gameObject.activeInHierarchy)
         {
             Debug.LogWarning($"[Unit] MoveTo called on inactive GameObject: {name}. Skipping.");
-            return;
+            return false;
         }
 
-        // Keep selection active during movement so the UI doesn't flicker away
-        // if (!owner.isAI) SetSelected(false); 
-        
         StartCoroutine(MoveRoutine(tile, range));
+        return true;
     }
 
     public virtual int GetRefillCost()
@@ -247,13 +257,48 @@ public abstract class Unit : MonoBehaviour
         currentTile.placedUnit = this;
         isMoving = false;
 
+        // QUEST HOOKS
+        if (QuestManager.Instance != null && owner != null)
+        {
+            // 1. Worker in expansion path (moved to neutral territory)
+            if (this is BuilderUnit && currentTile.GetOwner() == null)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "WorkerInExpansionPath");
+            }
+
+            // 2. Unit next to enemy structure
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+            {
+                if (neighbor.placedTower != null && neighbor.placedTower.owner != owner)
+                {
+                    QuestManager.Instance.SetQuestFlag(owner, "UnitNextToEnemyStructure");
+                }
+                if (neighbor.placedSignalNode != null && neighbor.placedSignalNode.owner != owner)
+                {
+                    QuestManager.Instance.SetQuestFlag(owner, "UnitNextToEnemyStructure");
+                    QuestManager.Instance.SetQuestFlag(owner, "ScoutedEnemyHQ");
+                }
+            }
+            
+            // 3. Grouped 3 combat units
+            int clusterCount = 0;
+            var cluster = GridManager.Instance.GetTilesInRange(currentTile, 3);
+            foreach (var c in cluster) {
+                if (c.placedUnit != null && c.placedUnit.owner == owner)
+                    clusterCount++;
+            }
+            if (clusterCount >= 3)
+                QuestManager.Instance.SetQuestFlag(owner, "Grouped3CombatUnits");
+        }
+
         if (!owner.isAI)
         {
             if (PlayerInput.Instance != null && PlayerInput.Instance.selectedUnit == this)
             {
-                // Refresh the action panel and detail panel after moving, in case new actions (like construction) are now possible.
-                UnitActionPanel.Instance?.Open(this);
-                DetailPanel.Instance?.ShowUnit(this);
+                // Refresh the action panel and detail panel after moving. 
+                // We pass 'true' for 'silent' to update the content WITHOUT re-triggering the slide-in animations.
+                UnitActionPanel.Instance?.Open(this, true);
+                DetailPanel.Instance?.ShowUnit(this, true);
             }
         }
     }
@@ -315,7 +360,10 @@ public abstract class Unit : MonoBehaviour
 
     public virtual void Die()
     {
-        currentTile.placedUnit = null;
+        if (isDestroyed) return;
+        isDestroyed = true;
+
+        if (currentTile != null) currentTile.placedUnit = null;
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterUnit(this);
         

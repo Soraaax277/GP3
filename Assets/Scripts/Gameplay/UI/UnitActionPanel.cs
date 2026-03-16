@@ -43,6 +43,7 @@ public class UnitActionPanel : MonoBehaviour
     // ── Private state ─────────────────────────────────────────────────────────
     private Transform followTarget;
     private Unit currentUnit;
+    private HexTile lastRefreshTile;
     private readonly List<GameObject> spawnedButtons = new List<GameObject>();
 
     // ── Internal data ─────────────────────────────────────────────────────────
@@ -87,6 +88,7 @@ public class UnitActionPanel : MonoBehaviour
     {
         if (!panel.activeSelf || followTarget == null) return;
 
+        // Position tracking
         if (mainCamera != null)
         {
             Vector3 offset = mainCamera.transform.rotation * menuOffset;
@@ -97,29 +99,46 @@ public class UnitActionPanel : MonoBehaviour
         {
             panel.transform.position = followTarget.position + menuOffset;
         }
+
+        // DYNAMIC REFRESH: If unit is moving, its context (available actions) changes.
+        // Refresh buttons when the unit enters a new tile to show new context (like Construct).
+        if (currentUnit != null && currentUnit.isMoving && currentUnit.currentTile != lastRefreshTile)
+        {
+            Refresh(true);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Open / Close
     // ─────────────────────────────────────────────────────────────────────────
 
-    public void Open(Unit unit)
+    public void Open(Unit unit, bool silent = false)
     {
         if (unit == null) return;
 
         currentUnit  = unit;
         followTarget = unit.transform;
 
+        Refresh(silent);
+
+        panel.SetActive(true);
+
+        if (CameraController.Instance != null)
+            CameraController.Instance.SetBuildModeLock(true, followTarget.position);
+    }
+
+    public void Refresh(bool silent = false)
+    {
+        if (currentUnit == null) return;
+
+        lastRefreshTile = currentUnit.currentTile;
         ClearButtons();
         
-        // Ensure unit has up-to-date tech flags (e.g. if a tech was researched this turn)
-        unit.CheckTechStatus();
+        // Ensure unit has up-to-date tech flags
+        currentUnit.CheckTechStatus();
 
-        List<ActionConfig> actions = BuildActionsFor(unit);
+        List<ActionConfig> actions = BuildActionsFor(currentUnit);
         
-        // --- NO-ACTION FALLBACK ---
-        // If there are no contextual actions (like Construct), show a placeholder 
-        // so the panel still appears and confirms the unit is selected/active.
         if (actions.Count == 0)
         {
             actions.Add(new ActionConfig 
@@ -133,9 +152,6 @@ public class UnitActionPanel : MonoBehaviour
 
         if (headerText != null)
         {
-            string displayName = UnitDisplayNames.ContainsKey(unit.GetType())
-                ? UnitDisplayNames[unit.GetType()]
-                : unit.GetType().Name.ToUpper();
             headerText.text = $"SELECT AN ACTION:";
         }
 
@@ -143,21 +159,12 @@ public class UnitActionPanel : MonoBehaviour
             SpawnButton(action);
 
         RefreshScrollRect();
-
-        panel.SetActive(true);
-
-        if (CameraController.Instance != null)
-            CameraController.Instance.SetBuildModeLock(true, followTarget.position);
     }
 
     public void Close()
     {
-        if (currentUnit != null && !currentUnit.isMoving)
-        {
-            currentUnit.SetSelected(false);
-            if (PlayerInput.Instance != null && PlayerInput.Instance.selectedUnit == currentUnit)
-                PlayerInput.Instance.DeselectUnit();
-        }
+        // REMOVED: Deselection logic. Close() now only hides the UI.
+        // deselecting should be handled by PlayerInput explicitly.
 
         UIAnimator animator = panel.GetComponent<UIAnimator>();
         if (animator != null)

@@ -10,5 +10,14 @@ public class SignalBooster : StructureNode
         base.Initialize(tile, player);
     }
 
+    public override void Build()
+    {
+        base.Build();
+        if (QuestManager.Instance != null && owner != null)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "BoostedSignalRange");
+        }
+    }
+
     public override string GetRequiredTechFeature() => "SignalBooster";
 }

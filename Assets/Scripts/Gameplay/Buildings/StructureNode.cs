@@ -50,6 +50,12 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
         
         ApplyInfluence(); 
+
+        // 3D PRINTER: Instant Construction
+        if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlockedFor(player, "3DPrinter"))
+        {
+            Build();
+        }
     }
 
     public virtual void Build()
@@ -61,6 +67,12 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
         ApplyInfluence();
+
+        // QUEST HOOK: High Tier Building
+        if (QuestManager.Instance != null && owner != null && expansionRadius >= 3)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "PlacedHighTierBuilding");
+        }
     }
 
     public virtual void UpdatePowerState(bool powered)
@@ -115,6 +127,11 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
             IsBroken = false;
             currentHiddenDurability = hiddenDurability;
             Debug.Log($"[Structure] {name} has been REPAIRED!");
+            
+            if (QuestManager.Instance != null && owner != null)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "RepairedStructure");
+            }
         }
         currentDurability = Mathf.Min(currentDurability + amount, baseDurability);
         

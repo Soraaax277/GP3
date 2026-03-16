@@ -165,6 +165,21 @@ public class SalesMarketer : Unit
     public override void OnTurnStart(PlayerData activePlayer)
     {
         base.OnTurnStart(activePlayer);
+        if (owner == activePlayer && QuestManager.Instance != null && currentTile != null)
+        {
+            if (currentTile.GetOwner() == null)
+                QuestManager.Instance.SetQuestFlag(owner, "MarketerInNeutral");
+        }
+    }
+
+    public override bool MoveTo(HexTile targetTile)
+    {
+        bool success = base.MoveTo(targetTile);
+        if (success && QuestManager.Instance != null && targetTile.GetOwner() == null)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "MarketerInNeutral");
+        }
+        return success;
     }
 
     void CreateRangeIndicator()
@@ -236,11 +251,17 @@ public class SalesMarketer : Unit
             {
                 if (tile.GetInfluence(enemy) > 0)
                 {
+                    PlayerData oldOwner = tile.GetOwner();
                     if (Random.value <= denyChance)
                     {
                         tile.RemoveInfluence(enemy, denyAmount);
                         tilesAffected++;
                         Debug.Log($"[SalesMarketer] Successfully denied influence for {enemy.playerName} at {tile.name}");
+
+                        if (QuestManager.Instance != null && tile.GetOwner() != oldOwner)
+                        {
+                            QuestManager.Instance.SetQuestFlag(owner, "FlippedTilesWithMarketing");
+                        }
                     }
                 }
             }
@@ -260,6 +281,8 @@ public class SalesMarketer : Unit
         }
             
         ConsumeAction();
+        if (QuestManager.Instance != null && owner != null && owner.hardwareEra == TurnManager.PlayerEra.Futuristic)
+             QuestManager.Instance.SetQuestFlag(owner, "NeuralMarketingUsed");
     }
 
     public void ClaimInfluence()
@@ -271,8 +294,14 @@ public class SalesMarketer : Unit
         // 1. Chance to add own influence (Improve tile)
         if (Random.value < 0.5f)
         {
+            PlayerData oldOwner = currentTile.GetOwner();
             currentTile.AddInfluence(owner, denyAmount, true); // Specialist bypasses "First Influence" rule
             Debug.Log($"[SalesMarketer] Improved influence on {currentTile.name} by {denyAmount}");
+
+            if (QuestManager.Instance != null && currentTile.GetOwner() != oldOwner && currentTile.GetOwner() == owner)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "FlippedTilesWithMarketing");
+            }
         }
 
         // 2. Chance to remove other's influence (Deny) — also deducts from their score

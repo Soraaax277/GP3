@@ -170,7 +170,27 @@ public class HexTile : MonoBehaviour
 
         if (!influenceByPlayer.ContainsKey(player))
             influenceByPlayer[player] = 0;
+
+        PlayerData oldOwner = GetOwner();
         influenceByPlayer[player] += amount;
+        PlayerData newOwner = GetOwner();
+
+        if (QuestManager.Instance != null && oldOwner != player && newOwner == player)
+        {
+            // QUEST HOOK: Claimed Chokepoint
+            // Heuristic: Tile is strategically significant if it has many neighbors that aren't yours yet
+            int foreignNeighbors = 0;
+            var neighbors = GridManager.Instance.GetNeighbors(this);
+            foreach (var n in neighbors)
+            {
+                if (n.GetOwner() != player) foreignNeighbors++;
+            }
+
+            if (foreignNeighbors >= 5)
+            {
+                QuestManager.Instance.SetQuestFlag(player, "ClaimedChokepoint");
+            }
+        }
     }
 
     public void RemoveInfluence(PlayerData player, int amount)

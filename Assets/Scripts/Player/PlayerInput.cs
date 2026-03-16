@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -123,6 +123,9 @@ public class PlayerInput : MonoBehaviour
         }
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                return;
+
             if (selectedUnit == null || !selectedUnit.CanAct)
                 return;
 

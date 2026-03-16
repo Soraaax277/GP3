@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 
 public class UnitSpawner : MonoBehaviour
 {
@@ -52,6 +53,29 @@ public class UnitSpawner : MonoBehaviour
         if (TechManager.Instance != null)
         {
             TechManager.Instance.ApplyEffectsToNewUnit(unit);
+        }
+
+        // QUEST HOOKS
+        if (QuestManager.Instance != null)
+        {
+            if (unit is Saboteurs) QuestManager.Instance.SetQuestFlag(owner, "RecruitedSaboteur");
+            
+            if (unit is RoboWorker || unit is RoboMarshall)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "DeployedCyberUnit");
+                QuestManager.Instance.SetQuestFlag(owner, "DeployedSyntheticSurveillance");
+                
+                // For "Three Mechanical Workers", we can check the current count
+                int mechanicalCount = TurnManager.Instance.GetAllUnits().Count(u => u != null && u.owner == owner && (u is RoboWorker || u is RoboMarshall));
+                if (mechanicalCount >= 3) QuestManager.Instance.SetQuestFlag(owner, "ThreeMechanicalWorkers");
+            }
+
+            // If player has researched 3D Printing (placeholder feature name "3DPrinter")
+            if (TechManager.Instance != null && TechManager.Instance.IsFeatureUnlockedFor(owner, "3DPrinter"))
+            {
+                unit.canAct = true; // Instant Spawn action
+                QuestManager.Instance.SetQuestFlag(owner, "Used3DPrinterTech");
+            }
         }
 
         return unit;

@@ -149,4 +149,9 @@ public class EconomyManager : MonoBehaviour
     {
         return CalculateTotalUpkeep(player);
     }
+
+    public int CalculateNetGoldIncome(PlayerData player)
+    {
+        return GetProjectedGoldIncome(player) - GetProjectedUpkeep(player);
+    }
 }

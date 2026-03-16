@@ -6,6 +6,11 @@ public class Tesseract : StructureNode
     {
         base.Initialize(tile, player);
         ApplyTesseractEffect(true);
+
+        if (QuestManager.Instance != null && player != null)
+        {
+            QuestManager.Instance.SetQuestFlag(player, "ConnectedDigitalNode");
+        }
     }
 
     private void ApplyTesseractEffect(bool active)

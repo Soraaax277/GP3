@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class BuilderUnit : Unit
 {
@@ -173,8 +173,25 @@ public class BuilderUnit : Unit
         }
 
         owner.resources -= buildCost;
+        bool isCanteen = (targetStructure is Canteen);
+        
         if (targetTower != null) targetTower.Build();
         else if (targetStructure != null) targetStructure.Build();
+
+        // QUEST HOOKS
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "WorkerClearedTerrain");
+            if (isCanteen)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "BuiltCanteen");
+            }
+            else if (targetStructure != null)
+            {
+                // Any other basic structural building (not the tower)
+                QuestManager.Instance.SetQuestFlag(owner, "BuiltStructuralBuilding");
+            }
+        }
 
 
         if (ShouldConsumeCharge())

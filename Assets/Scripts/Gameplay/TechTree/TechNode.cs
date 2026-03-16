@@ -7,6 +7,7 @@ public class TechNode : ScriptableObject
     [Header("Info")] 
     public string techName; 
     [TextArea] public string description;
+    public TurnManager.GameEra eraRequirement = TurnManager.GameEra.Industrial;
     
     [Header("Costs")]
     public int researchCost; // Deducted from Research Points

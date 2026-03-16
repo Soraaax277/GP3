@@ -105,9 +105,13 @@ public class DetailPanel : MonoBehaviour
 
     private void Update()
     {
-        // Sticky selection: don't close on empty clicks. 
-        // DetailPanel is now managed explicitly by switches and Deselect calls.
-
+        // LIVE REFRESH: If we are viewing a unit, keep its stats (movement, charges)
+        // updated in real time as it moves or works.
+        if (panel != null && panel.activeSelf && currentTarget is Unit unit)
+        {
+            // Update the text silently so it doesn't trigger the slide-in animation
+            Display(BuildUnitHeader(unit), BuildUnitDescription(unit), true);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -115,41 +119,41 @@ public class DetailPanel : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────────────
 
     // Always rebuilds so live stats (charges, movement, etc.) stay current.
-    public void ShowUnit(Unit unit)
+    public void ShowUnit(Unit unit, bool silent = false)
     {
         if (unit == null) return;
         currentTarget = unit;
-        Display(BuildUnitHeader(unit), BuildUnitDescription(unit));
+        Display(BuildUnitHeader(unit), BuildUnitDescription(unit), silent);
     }
 
-    public void ShowBuilding(MonoBehaviour building)
+    public void ShowBuilding(MonoBehaviour building, bool silent = false)
     {
         if (building == null) return;
         
         bool isAlreadySelected = (currentTarget == (object)building && panel.activeSelf);
         currentTarget = building;
 
-        RefreshBuildingContent(building);
+        RefreshBuildingContent(building, silent);
         
         // Always play animation for consistency (even if already selected)
-        if (uiAnimator != null) uiAnimator.PlayEntryAnimation();
+        if (!silent && uiAnimator != null) uiAnimator.PlayEntryAnimation();
     }
 
-    private void RefreshBuildingContent(MonoBehaviour building)
+    private void RefreshBuildingContent(MonoBehaviour building, bool silent = false)
     {
         if (BuildingDetails.TryGetValue(building.GetType(), out DetailData data))
-        { Display(data.header, data.description); return; }
+        { Display(data.header, data.description, silent); return; }
 
         if (building is TowerNode)
         {
             if (StructureDetails.TryGetValue("TelecomTowers", out DetailData td))
-            { Display(td.header, td.description); return; }
+            { Display(td.header, td.description, silent); return; }
         }
 
         if (building is StructureNode sn)
-        { Display(StructureDetails.TryGetValue(sn.GetRequiredTechFeature(), out DetailData sd) ? sd.header : building.GetType().Name.ToUpper(), BuildBuildingDescription(sn)); return; }
+        { Display(StructureDetails.TryGetValue(sn.GetRequiredTechFeature(), out DetailData sd) ? sd.header : building.GetType().Name.ToUpper(), BuildBuildingDescription(sn), silent); return; }
 
-        Display(building.GetType().Name.ToUpper(), "No description available.");
+        Display(building.GetType().Name.ToUpper(), "No description available.", silent);
     }
 
     public void Close()
@@ -221,7 +225,7 @@ public class DetailPanel : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────────────────────────
-    private void Display(string header, string description)
+    private void Display(string header, string description, bool silent = false)
     {
         string finalHeader = header;
         if (currentTarget is TowerNode tn && tn.state == TowerNode.TowerState.Hologram)
@@ -235,12 +239,13 @@ public class DetailPanel : MonoBehaviour
         if (!panel.activeSelf)
         {
             panel.SetActive(true);
-            if (uiAnimator != null) uiAnimator.PlayEntryAnimation();
+            if (!silent && uiAnimator != null) uiAnimator.PlayEntryAnimation();
         }
         else
         {
             // Force re-trigger animation for "switch" feedback when already active
-            if (uiAnimator != null) uiAnimator.PlayEntryAnimation();
+            // ONLY if not silent. Silent updates are for real-time movement.
+            if (!silent && uiAnimator != null) uiAnimator.PlayEntryAnimation();
         }
 
     }

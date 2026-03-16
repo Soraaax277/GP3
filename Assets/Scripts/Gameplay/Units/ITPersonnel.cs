@@ -150,7 +150,7 @@ public class ITPersonnel : Unit
         return baseCost;
     }
 
-    void Die()
+    public override void Die()
     {
         if (currentTile != null) currentTile.placedUnit = null;
         

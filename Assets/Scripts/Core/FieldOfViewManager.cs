@@ -20,6 +20,7 @@ public class FieldOfViewManager : MonoBehaviour
         if (GridManager.Instance == null) return;
 
         // 1. Reset current visibility
+        int newlyExploredTotal = 0;
         foreach (HexTile tile in GridManager.Instance.GetAllTiles())
         {
             tile.isVisible = false;
@@ -28,7 +29,7 @@ public class FieldOfViewManager : MonoBehaviour
         // 2. Grant vision from SignalNodes (HQs)
         foreach (var node in localPlayer.ownedNodes)
         {
-            if (node != null) RevealTiles(node.ParentTile, hqVisionRange);
+            if (node != null) newlyExploredTotal += RevealTiles(node.ParentTile, hqVisionRange);
         }
 
         // 3. Grant vision from Towers
@@ -36,7 +37,7 @@ public class FieldOfViewManager : MonoBehaviour
         {
             if (tower.owner == localPlayer && !tower.IsDestroyed())
             {
-                RevealTiles(tower.tile, towerVisionRange);
+                newlyExploredTotal += RevealTiles(tower.tile, towerVisionRange);
             }
         }
 
@@ -47,8 +48,42 @@ public class FieldOfViewManager : MonoBehaviour
             {
                 // Scout units get a bonus
                 int range = (unit is ScoutUnit) ? unitVisionRange + 2 : unitVisionRange;
-                RevealTiles(unit.currentTile, range);
+                int revealedByUnit = RevealTiles(unit.currentTile, range);
+                newlyExploredTotal += revealedByUnit;
+
+                // QUEST HOOK: Scout vision/movement
+                if (unit is ScoutUnit && revealedByUnit > 0)
+                {
+                    QuestManager.Instance?.SetQuestFlag(localPlayer, "ScoutEdgeVision");
+                }
             }
+        }
+
+        // QUEST HOOK: Intel on Three Enemies
+        if (QuestManager.Instance != null && TurnManager.Instance != null)
+        {
+            HashSet<PlayerData> visibleEnemies = new HashSet<PlayerData>();
+            foreach (HexTile tile in GridManager.Instance.GetAllTiles())
+            {
+                if (tile.isVisible)
+                {
+                    PlayerData tileOwner = tile.GetOwner();
+                    if (tileOwner != null && tileOwner != localPlayer)
+                        visibleEnemies.Add(tileOwner);
+
+                    if (tile.placedUnit != null && tile.placedUnit.owner != localPlayer)
+                        visibleEnemies.Add(tile.placedUnit.owner);
+                }
+            }
+            if (visibleEnemies.Count >= 3)
+            {
+                QuestManager.Instance.SetQuestFlag(localPlayer, "IntelOnThreeEnemies");
+            }
+        }
+
+        if (newlyExploredTotal >= 2)
+        {
+            QuestManager.Instance?.SetQuestFlag(localPlayer, "RevealedTwoHexes");
         }
 
         // 5. Update visuals and hide enemy units
@@ -59,15 +94,18 @@ public class FieldOfViewManager : MonoBehaviour
             HexFogRenderer.Instance.UpdateFog();
     }
 
-    private void RevealTiles(HexTile center, int range)
+    private int RevealTiles(HexTile center, int range)
     {
-        if (center == null) return;
+        if (center == null) return 0;
+        int newlyExploredCount = 0;
         List<HexTile> visibleTiles = GridManager.Instance.GetTilesInRange(center, range);
         foreach (HexTile tile in visibleTiles)
         {
+            if (!tile.isExplored) newlyExploredCount++;
             tile.isExplored = true;
             tile.isVisible = true;
         }
+        return newlyExploredCount;
     }
 
     private void UpdateVisibilityState()
@@ -104,6 +142,12 @@ public class FieldOfViewManager : MonoBehaviour
             if (tile.placedSignalNode != null)
             {
                 UpdateBuildingVisibility(tile.placedSignalNode.gameObject, tile);
+
+                // QUEST HOOK: Scouted Enemy HQ
+                if (tile.isVisible && tile.placedSignalNode.owner != humanPlayer && QuestManager.Instance != null)
+                {
+                    QuestManager.Instance.SetQuestFlag(humanPlayer, "ScoutedEnemyHQ");
+                }
             }
             
             // 3. Handle Resource Geysers
@@ -111,13 +155,40 @@ public class FieldOfViewManager : MonoBehaviour
             if (geyser != null)
             {
                 geyser.gameObject.SetActive(tile.isVisible);
+                
+                // QUEST HOOK: Vision of Hidden Enemy Geyser
+                if (tile.isVisible && tile.GetOwner() != null && tile.GetOwner() != humanPlayer && QuestManager.Instance != null)
+                {
+                    QuestManager.Instance.SetQuestFlag(humanPlayer, "VisionOfHiddenEnemyGeyser");
+                }
             }
 
-            // 4. Handle Saboteurs
+            // 4. Handle Intimidation Tactics (Enemy units near yours)
+            if (tile.isVisible && tile.placedUnit != null && tile.placedUnit.owner != humanPlayer && QuestManager.Instance != null)
+            {
+                var nearby = GridManager.Instance.GetTilesInRange(tile, 2);
+                foreach (var n in nearby)
+                {
+                    if (n.placedUnit != null && n.placedUnit.owner == humanPlayer)
+                    {
+                        QuestManager.Instance.SetQuestFlag(humanPlayer, "IntimidationTactics");
+                        break;
+                    }
+                }
+            }
+
+            // 5. Handle Saboteurs
             NomadicSaboteur saboteur = tile.GetComponentInChildren<NomadicSaboteur>();
             if (saboteur != null)
             {
                 saboteur.gameObject.SetActive(tile.isVisible);
+                
+                // QUEST HOOK: Intercepted Saboteur
+                if (tile.isVisible && QuestManager.Instance != null)
+                {
+                    // If it's on a tile we just saw, it's intercepted
+                    QuestManager.Instance.SetQuestFlag(humanPlayer, "InterceptedSaboteur");
+                }
             }
         }
     }

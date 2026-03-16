@@ -381,6 +381,10 @@ public class TechManager : MonoBehaviour
                 _activeResearch[player] = new Dictionary<TechNode, int>();
             _activeResearch[player][tech] = tech.researchTurns;
 
+            // QUEST HOOK: Begin Era 2 tech
+            if (QuestManager.Instance != null && tech.eraRequirement == TurnManager.GameEra.EarlyEighties)
+                QuestManager.Instance.SetQuestFlag(player, "ResearchEra2Tech");
+
             Debug.Log($"[TechManager] '{tech.techName}' queued: completes in {tech.researchTurns} " +
                       $"turn{(tech.researchTurns == 1 ? "" : "s")} for {player.playerName}. Cost paid.");
 
@@ -403,6 +407,45 @@ public class TechManager : MonoBehaviour
 
         // Mark as unlocked in the per-player set.
         tech.UnlockFor(player);
+
+        // QUEST HOOKS
+        if (QuestManager.Instance != null)
+        {
+            // Main Quest 10: Company Transportation or Professional Services
+            if (tech.techName.Contains("Transportation") || tech.techName.Contains("Logistics")) 
+                QuestManager.Instance.SetQuestFlag(player, "UnlockedTransport");
+            if (tech.techName.Contains("Service")) 
+                QuestManager.Instance.SetQuestFlag(player, "UnlockedService");
+            
+            if (tech.techName.Contains("Workforce"))
+                QuestManager.Instance.SetQuestFlag(player, "FinishedWorkforceTech");
+
+            if (tech.techName.Contains("Artificial") || tech.techName.Contains(" AI"))
+                QuestManager.Instance.SetQuestFlag(player, "ResearchAITech");
+
+            if (tech.techName.Contains("Illicit") || tech.techName.Contains("Shadow"))
+                QuestManager.Instance.SetQuestFlag(player, "UnlockedIllicitPractices");
+
+            if (tech.techName.Contains("Grid Efficiency"))
+                QuestManager.Instance.SetQuestFlag(player, "ResearchedGridEfficiency");
+
+            if (tech.techName.Contains("Worker Wages") || tech.techName.Contains("Silicon Boom"))
+                QuestManager.Instance.SetQuestFlag(player, "ResearchedSiliconBoom");
+
+            if (tech.techName.Contains("Tower") && tech.techName.Contains("Range"))
+            {
+                // Check if any tower is now at max range
+                foreach (var tower in TurnManager.Instance.GetAllTowers())
+                {
+                    if (tower.owner == player && tower.CurrentRange >= 3) // 3 is capped max
+                    {
+                        QuestManager.Instance.SetQuestFlag(player, "MaximizedTowerRadius");
+                        break;
+                    }
+                }
+                QuestManager.Instance.SetQuestFlag(player, "UpgradedTower");
+            }
+        }
 
         // ACTIVATE EFFECTS
         if (tech.unlockEffects != null)

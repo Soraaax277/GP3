@@ -25,6 +25,11 @@ public class ResourceGeyser : MonoBehaviour
                 owner.resources += goldBonus;
                 owner.researchPoints += rpBonus;
                 Debug.Log($"[Geyser] {owner.playerName} collected {goldBonus} Gold and {rpBonus} RP from Geyser!");
+
+                if (QuestManager.Instance != null)
+                {
+                    QuestManager.Instance.SetQuestFlag(owner, "SiphonedResource");
+                }
             }
         }
 

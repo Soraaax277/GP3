@@ -193,6 +193,7 @@ public class BuildingUIManager : MonoBehaviour
         // consistent convention and safe-guards against future refactoring.
         else if (building is AdvancedBusinessCenter   abc)     ShowAdvancedBusinessCenter(abc);
         else if (building is Canteen                  canteen) ShowCanteen(canteen);
+        else if (building is WireNode                 wire)    ShowWirePanel(wire);
         else
         {
             ClearButtons();
@@ -751,6 +752,35 @@ public class BuildingUIManager : MonoBehaviour
             Vector2 pos = contentRect.anchoredPosition;
             pos.y = 0f;
             contentRect.anchoredPosition = pos;
+        }
+    }
+    private void ShowWirePanel(WireNode wire)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "POWER WIRE";
+        
+        PlayerData p = wire.owner;
+        bool canUpgrade = TechManager.Instance != null && TechManager.Instance.IsFeatureUnlockedFor(p, "DialupInfrastructure");
+        
+        if (!wire.isDigital)
+        {
+             SpawnButton(new ActionConfig
+             {
+                 label = "Upgrade to Digital",
+                 cost = 25,
+                 interactable = canUpgrade,
+                 onClick = () => {
+                     if (p.resources >= 25) {
+                         p.resources -= 25;
+                         wire.UpgradeToDigital();
+                         ShowWirePanel(wire);
+                     }
+                 }
+             });
+        }
+        else
+        {
+             SpawnDisplayRow("Wire is Digital");
         }
     }
 }

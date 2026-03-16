@@ -18,6 +18,29 @@ public class Saboteurs: Unit
         SetMoveRange(2);
         CheckTechStatus();
     }
+
+    public override void OnTurnStart(PlayerData activePlayer)
+    {
+        base.OnTurnStart(activePlayer);
+        if (owner == activePlayer && QuestManager.Instance != null && !isDestroyed)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "SaboteurSurvivedTurn");
+        }
+    }
+
+    public override bool MoveTo(HexTile targetTile)
+    {
+        bool success = base.MoveTo(targetTile);
+        if (success && QuestManager.Instance != null)
+        {
+            // QUEST HOOK: Sneaked Saboteur (moved into enemy territory)
+            if (targetTile.GetOwner() != null && targetTile.GetOwner() != owner)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "SneakedSaboteur");
+            }
+        }
+        return success;
+    }
     
     public override void CheckTechStatus()
     {
@@ -102,6 +125,12 @@ public class Saboteurs: Unit
         
         targetTower.TakeDamage(sabotageDamage);
 
+        if (QuestManager.Instance != null)
+        {
+            if (targetTower.IsDestroyed())
+                QuestManager.Instance.SetQuestFlag(owner, "DestroyedBuildingWithSaboteur");
+        }
+
         // EXTRA: Sabotage the territory!
         // Clear enemy influence and establish a small foothold (bypassing dominance)
         HexTile rootTile = targetTower.tile;
@@ -131,7 +160,7 @@ public class Saboteurs: Unit
         }
     }
     
-    void Die()
+    public override void Die()
     {
         if (currentTile != null) currentTile.placedUnit = null;
 

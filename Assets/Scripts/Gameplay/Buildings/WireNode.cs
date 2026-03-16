@@ -6,6 +6,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     public PlayerData owner      { get; private set; }
     public bool       IsPowered  { get; set; }
     public bool       IsTechnicianActivated { get; set; }
+    public bool       isDigital { get; private set; }
 
     [Header("Stats")]
     public float baseDurability = 100f;
@@ -60,6 +61,14 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
 
         if (PowerGridManager.Instance != null)
             PowerGridManager.Instance.RefreshGrid();
+
+        // QUEST HOOKS
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.SetQuestFlag(owner, "LaidWire");
+            if (tile.type == HexTile.TileType.Water)
+                QuestManager.Instance.SetQuestFlag(owner, "WireDifficultTerrain");
+        }
     }
 
     void CacheRenderers()
@@ -99,7 +108,12 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
             }
             else if (powered)
             {
-                targetColor = new Color(0.75f, 0.75f, 0.75f); // Grid power but NO license
+                targetColor = isDigital ? new Color(0.5f, 0.9f, 0.9f) : new Color(0.75f, 0.75f, 0.75f); // Grid power but NO license
+            }
+            
+            if (isDigital && powered && IsTechnicianActivated)
+            {
+                targetColor = new Color(0f, 0.8f, 1f); // Neon Cyan for Digital Active
             }
             
             foreach (Renderer r in visualRenderers)
@@ -198,6 +212,27 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
         // Re-enter the power grid so connected towers/wires can become active again
         if (PowerGridManager.Instance != null)
             PowerGridManager.Instance.RefreshGrid();
+    }
+
+    public void UpgradeToDigital()
+    {
+        if (isDigital) return;
+        isDigital = true;
+        
+        if (owner != null && QuestManager.Instance != null)
+        {
+            // We use a specific flag structure for counting: 'DigitalWireCount_{playerId}'
+            string key = "DigitalWireCount_" + owner.playerId;
+            int count = PlayerPrefs.GetInt(key, 0) + 1;
+            PlayerPrefs.SetInt(key, count);
+            
+            if (count >= 3)
+            {
+                QuestManager.Instance.SetQuestFlag(owner, "Upgraded3WiresDigital");
+            }
+        }
+        
+        UpdatePowerState(IsPowered);
     }
 
     // -----------------------------------------------------------------------
