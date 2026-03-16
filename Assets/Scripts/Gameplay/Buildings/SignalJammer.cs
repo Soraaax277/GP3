@@ -65,6 +65,8 @@ public class SignalJammer : StructureNode
             t.AddInfluence(owner, baseInfluenceAmount, true);
         }
 
+        ActionLogUI.PostFiltered(owner, "Signal Jammer stripping enemy influence!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
+
         if (QuestManager.Instance != null && owner != null && hexesStripped >= 3)
         {
             QuestManager.Instance.SetQuestFlag(owner, "StrippedThreeOverlappingHexes");

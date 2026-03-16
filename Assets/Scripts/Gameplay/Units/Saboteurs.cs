@@ -124,6 +124,7 @@ public class Saboteurs: Unit
         }
         
         targetTower.TakeDamage(sabotageDamage);
+        ActionLogUI.PostFiltered(owner, "Saboteur struck enemy Tower!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
 
         if (QuestManager.Instance != null)
         {
@@ -137,7 +138,8 @@ public class Saboteurs: Unit
         if (rootTile != null)
         {
             rootTile.RemoveInfluence(targetTower.owner, 10);
-            rootTile.AddInfluence(owner, 5, true); // Specialists bypass the "First Influence" rule
+            rootTile.AddInfluence(owner, 5, true); 
+            ActionLogUI.PostFiltered(owner, "Territory sabotaged!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
         }
 
         if (ShouldConsumeCharge())

@@ -113,6 +113,7 @@ public class SignalNode : MonoBehaviour
         // VISUALS: HQs are ALWAYS powered and active
         SetRangeColor(new Color(0f, 1f, 0f, 0.4f)); 
 
+        ActionLogUI.PostFiltered(player, "established a NEW CONNECTION!", ActionLogUI.Colors.Construction);
         Debug.Log($"[SignalNode] Initialized and Registered as Power Source for {player.playerName} at {hexTile.name}");
     }
 

@@ -163,8 +163,7 @@ public class WireSpecialist : Unit
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayWirePlacement(tile.transform.position);
 
-        if (FeedbackController.Instance != null)
-            FeedbackController.Instance.PlayWirePlacement(tile.transform.position);
+        ActionLogUI.PostFiltered(owner, "Laid down a new wire segment.", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
 
         if (ShouldConsumeCharge())
             wiresRemaining--;

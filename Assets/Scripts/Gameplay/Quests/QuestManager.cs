@@ -324,6 +324,67 @@ public class QuestManager : MonoBehaviour
         }
     }
 
+    public QuestState GetQuestState()
+    {
+        QuestState state = new QuestState();
+        if (TurnManager.Instance == null || TurnManager.Instance.players.Count < 2) return state;
+
+        int p1 = TurnManager.Instance.players[0].playerId;
+        int p2 = TurnManager.Instance.players[1].playerId;
+
+        if (activeQuests.ContainsKey(p1)) state.playerActiveQuestIds = activeQuests[p1].Select(q => q.id).ToList();
+        if (allCompletedQuests.ContainsKey(p1)) state.playerCompletedQuestIds = allCompletedQuests[p1].ToList();
+        if (questFlags.ContainsKey(p1)) state.playerQuestFlags = questFlags[p1].ToList();
+
+        if (activeQuests.ContainsKey(p2)) state.enemyActiveQuestIds = activeQuests[p2].Select(q => q.id).ToList();
+        if (allCompletedQuests.ContainsKey(p2)) state.enemyCompletedQuestIds = allCompletedQuests[p2].ToList();
+        if (questFlags.ContainsKey(p2)) state.enemyQuestFlags = questFlags[p2].ToList();
+
+        return state;
+    }
+
+    public void LoadQuestState(QuestState state)
+    {
+        if (state == null || TurnManager.Instance == null || TurnManager.Instance.players.Count < 2) return;
+        int p1 = TurnManager.Instance.players[0].playerId;
+        int p2 = TurnManager.Instance.players[1].playerId;
+
+        EnsurePlayerRecords(p1);
+        EnsurePlayerRecords(p2);
+
+        activeQuests[p1].Clear();
+        questCompletionStatus[p1].Clear();
+        foreach (var id in state.playerActiveQuestIds)
+        {
+            var q = allQuests.FirstOrDefault(x => x.id == id);
+            if (q != null)
+            {
+                activeQuests[p1].Add(q);
+                questCompletionStatus[p1][id] = false;
+            }
+        }
+        allCompletedQuests[p1] = new HashSet<string>(state.playerCompletedQuestIds);
+        questFlags[p1] = new HashSet<string>(state.playerQuestFlags);
+        foreach (var id in state.playerCompletedQuestIds) questCompletionStatus[p1][id] = true;
+
+        activeQuests[p2].Clear();
+        questCompletionStatus[p2].Clear();
+        foreach (var id in state.enemyActiveQuestIds)
+        {
+            var q = allQuests.FirstOrDefault(x => x.id == id);
+            if (q != null)
+            {
+                activeQuests[p2].Add(q);
+                questCompletionStatus[p2][id] = false;
+            }
+        }
+        allCompletedQuests[p2] = new HashSet<string>(state.enemyCompletedQuestIds);
+        questFlags[p2] = new HashSet<string>(state.enemyQuestFlags);
+        foreach (var id in state.enemyCompletedQuestIds) questCompletionStatus[p2][id] = true;
+
+        UpdateLocalPlayerUI();
+    }
+
     private void InitQuests()
     {
         // ERA 1: Industrial (Turns 2-25)

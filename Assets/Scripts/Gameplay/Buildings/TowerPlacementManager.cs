@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class TowerPlacementManager : MonoBehaviour
 {
@@ -217,6 +217,8 @@ public class TowerPlacementManager : MonoBehaviour
 
         TowerNode node = realTower.GetComponent<TowerNode>();
         node.Initialize(hoveredTile, towerOwner, selectedBusiness);
+        
+        ActionLogUI.PostFiltered(towerOwner, "Placed Tower blueprint.", ActionLogUI.Colors.Construction);
         
         // Update Fog of War immediately when a tower is placed
         if (FieldOfViewManager.Instance != null && towerOwner != null && !towerOwner.isAI)

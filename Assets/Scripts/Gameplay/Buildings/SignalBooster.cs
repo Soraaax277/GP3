@@ -13,6 +13,7 @@ public class SignalBooster : StructureNode
     public override void Build()
     {
         base.Build();
+        ActionLogUI.PostFiltered(owner, $"Signal Booster calibrated at radius {expansionRadius}!", ActionLogUI.Colors.Construction);
         if (QuestManager.Instance != null && owner != null)
         {
             QuestManager.Instance.SetQuestFlag(owner, "BoostedSignalRange");

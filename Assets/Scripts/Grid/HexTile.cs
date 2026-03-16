@@ -175,6 +175,15 @@ public class HexTile : MonoBehaviour
         influenceByPlayer[player] += amount;
         PlayerData newOwner = GetOwner();
 
+        if (oldOwner != newOwner && newOwner != null)
+        {
+            if (oldOwner != null)
+            {
+                // Flipping territory
+                ActionLogUI.PostFiltered(newOwner, $"Captured {oldOwner.playerName}'s territory!", newOwner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player, !newOwner.isAI || !oldOwner.isAI);
+            }
+        }
+
         if (QuestManager.Instance != null && oldOwner != player && newOwner == player)
         {
             // QUEST HOOK: Claimed Chokepoint

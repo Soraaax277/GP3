@@ -20,6 +20,10 @@ public class Tesseract : StructureNode
         // For simplicity, let's assume we can set a flag in PowerGridManager or similar.
         // If PowerGridManager doesn't support this yet, we'll need to update it.
         Debug.Log($"[Tesseract] Global power effect {(active ? "Activated" : "Deactivated")}");
+        if (active)
+            ActionLogUI.PostFiltered(owner, "Global Tesseract Power Grid ACTIVATED!", ActionLogUI.Colors.Construction);
+        else
+            ActionLogUI.PostFiltered(owner, "Global Tesseract Power Offline!", ActionLogUI.Colors.Construction);
         
         if (PowerGridManager.Instance != null)
         {

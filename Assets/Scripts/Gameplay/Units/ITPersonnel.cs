@@ -110,12 +110,14 @@ public class ITPersonnel : Unit
         if (targetTower != null)
         {
             targetTower.Repair(repairEfficiency);
+            ActionLogUI.PostFiltered(owner, "IT Specialist repaired a Tower.", ActionLogUI.Colors.Unit);
             Debug.Log($"[ITPersonnel] Tower repair complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}).");
         }
         else if (targetWire != null)
         {
             float healAmount = targetWire.MaxDurability * repairEfficiency;
             targetWire.currentDurability = Mathf.Min(targetWire.currentDurability + healAmount, targetWire.MaxDurability);
+            ActionLogUI.PostFiltered(owner, "IT Specialist repaired a Wire.", ActionLogUI.Colors.Unit);
             Debug.Log($"[ITPersonnel] Wire repair complete, restored {healAmount} HP (cost: {repairCost}).");
         }
 
