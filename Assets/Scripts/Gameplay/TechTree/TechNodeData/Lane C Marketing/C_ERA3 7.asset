@@ -21,7 +21,7 @@ MonoBehaviour:
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
   isEraGateNode: 0
-  isEraTransitionNode: 0
+  isEraTransitionNode: 1
   preReqs:
   - {fileID: 11400000, guid: ac5551b838598a1468afc30be45e23db, type: 2}
   - {fileID: 11400000, guid: 3fde934239ba02247a2007ecd7437c7e, type: 2}

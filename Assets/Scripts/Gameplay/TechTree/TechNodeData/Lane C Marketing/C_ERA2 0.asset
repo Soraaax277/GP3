@@ -20,7 +20,7 @@ MonoBehaviour:
   researchTurns: 3
   unlocksSabotageTab: 0
   rpBonusPerTurn: 0
-  isEraGateNode: 0
+  isEraGateNode: 1
   isEraTransitionNode: 0
   preReqs:
   - {fileID: 11400000, guid: 492684dbbe2da2145b88201b69010d11, type: 2}
