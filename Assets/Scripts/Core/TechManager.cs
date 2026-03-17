@@ -166,6 +166,12 @@ public class TechManager : MonoBehaviour
         return _playerSabotageTabUnlocked.TryGetValue(player, out bool v) && v;
     }
 
+    public void SetSabotageTabUnlocked(PlayerData player)
+    {
+        if (player == null) return;
+        _playerSabotageTabUnlocked[player] = true;
+    }
+
     public List<TechNode> GetUnlockedNodes(PlayerData player)
     {
         if (player == null) return new List<TechNode>();
@@ -286,6 +292,9 @@ public class TechManager : MonoBehaviour
     [Tooltip("DEBUG: When enabled, all tech nodes can be researched for free. Does NOT modify ScriptableObject data. Disable before shipping!")]
     public bool freeResearchMode = false;
 
+    [Tooltip("DEBUG: When enabled, all tech nodes complete instantly regardless of their researchTurns value. Does NOT modify ScriptableObject data. Disable before shipping!")]
+    public bool instantResearchMode = false;
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -369,7 +378,7 @@ public class TechManager : MonoBehaviour
         // researchTurns == 0 → complete immediately (same turn as purchase).
         // researchTurns  > 0 → queue; TickResearch counts down each of the
         //                       player's turns and completes when it hits 0.
-        if (tech.researchTurns <= 0)
+        if (tech.researchTurns <= 0 || instantResearchMode)
         {
             // Instant — complete on the same turn as purchase.
             CompleteResearch(player, tech);

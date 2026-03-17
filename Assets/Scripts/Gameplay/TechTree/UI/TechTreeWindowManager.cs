@@ -3,7 +3,25 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
-using System.Collections; 
+using System.Collections;
+using System;
+using DG.Tweening;
+
+[Serializable]
+public class ImageSpriteSwap
+{
+    public Image targetImage;
+    public Sprite newSprite;
+}
+
+[Serializable]
+public class TechNodeSpriteSwap
+{
+    public TechNode triggerNode;
+    public List<ImageSpriteSwap> swaps;
+    public TMPro.TextMeshProUGUI[] textTargets;
+    public Color textColor;
+}
 
 public class TechTreeWindowManager : MonoBehaviour
 {
@@ -63,7 +81,16 @@ public class TechTreeWindowManager : MonoBehaviour
     [Tooltip("TechCategoryFogManager on the Sabotage panel.")]
     [SerializeField] private TechCategoryFogManager sabotageFogManager;
 
+    [Header("Shutter Trigger Node")]
+    [Tooltip("Assign TechNodes here. The shutter animation replays each time any of these nodes is unlocked.")]
+    [SerializeField] private TechNode[] shutterTriggerNodes;
+
+    [Header("Sprite Swaps")]
+    [Tooltip("Each entry binds a TechNode to an Image + replacement Sprite. The swap happens at the midpoint of the techTreeAnimator shutter.")]
+    [SerializeField] private TechNodeSpriteSwap[] spriteSwaps;
+
     // Private
+    private HashSet<TechNode> _firedShutterNodes = new HashSet<TechNode>();
     private List<Material> _fogMaterials = new List<Material>();
     private GameObject currentActiveCategory;
     private TechNode currentSelectedNode;
@@ -86,7 +113,14 @@ public class TechTreeWindowManager : MonoBehaviour
         if (upgradeInfoPanel != null) upgradeInfoPanel.SetActive(false);
 
         if (confirmButtonText != null) confirmButtonText.text = "PURCHASE";
-        if (confirmUpgradeButton != null) confirmUpgradeButton.interactable = false;
+        if (confirmUpgradeButton != null)
+        {
+            confirmUpgradeButton.interactable = false;
+            // Ensure a CanvasGroup exists for fading
+            if (confirmUpgradeButton.GetComponent<CanvasGroup>() == null)
+                confirmUpgradeButton.gameObject.AddComponent<CanvasGroup>();
+            SetConfirmButtonVisible(false, instant: true);
+        }
 
         RefreshSabotageButton();
 
@@ -131,9 +165,17 @@ public class TechTreeWindowManager : MonoBehaviour
 
         var cg = btnSabotage.GetComponent<CanvasGroup>();
         if (cg != null)
-        {
-            cg.alpha = unlocked ? 1f : 0.4f;
             cg.blocksRaycasts = unlocked;
+
+        if (btnSabotage.transform.childCount > 0)
+        {
+            var img = btnSabotage.transform.GetChild(0).GetComponent<Image>();
+            if (img != null)
+            {
+                Color c = img.color;
+                c.a = unlocked ? 1f : 0f;
+                img.color = c;
+            }
         }
 
         if (!unlocked && currentActiveCategory == panelSabotage)
@@ -170,6 +212,8 @@ public class TechTreeWindowManager : MonoBehaviour
         SwitchCategory(pendingCategoryPanel, pendingCategoryName);
     }
 
+
+
     private void Update()
     {
         Shader.SetGlobalFloat("_UI_UnscaledTime", Time.unscaledTime);
@@ -181,6 +225,24 @@ public class TechTreeWindowManager : MonoBehaviour
         {
             if (upgradeInfoPanel != null && upgradeInfoPanel.activeSelf) CloseInfoPanel();
             return; 
+        }
+
+        // Shutter trigger — fires once per node when any assigned node is unlocked
+        if (shutterTriggerNodes != null)
+        {
+            PlayerData humanPlayer = GetHumanPlayer();
+            if (humanPlayer != null)
+            {
+                foreach (var node in shutterTriggerNodes)
+                {
+                    if (node == null || _firedShutterNodes.Contains(node)) continue;
+                    if (node.IsUnlockedBy(humanPlayer))
+                    {
+                        _firedShutterNodes.Add(node);
+                        PlayShutterSequence(node);
+                    }
+                }
+            }
         }
 
         if (IsTechTreeOpen)
@@ -251,7 +313,7 @@ public class TechTreeWindowManager : MonoBehaviour
                 upgradeInfoPanel.SetActive(true);
                 UpdateInfoPanelUI();
             }
-            
+            SetConfirmButtonVisible(true, instant: false);
             if (confirmButtonText != null && confirmButtonText.text == "PURCHASE")
                 TriggerButtonAnim(confirmUpgradeButton);
         }
@@ -283,6 +345,7 @@ public class TechTreeWindowManager : MonoBehaviour
 
         UIAnimator.DeactivateCurrentTechButton();
         if (confirmUpgradeButton != null) confirmUpgradeButton.interactable = false;
+        SetConfirmButtonVisible(false, instant: false);
     }
 
     private void UpdateInfoPanelUI()
@@ -305,17 +368,42 @@ public class TechTreeWindowManager : MonoBehaviour
         // --- DESCRIPTION ---
         if (infoDescriptionText != null)
         {
-            string costLine = $"<color=yellow>Cost: {currentSelectedNode.researchCost} RP</color>";
+            // Research cost
+            string costLine = $"Cost: {currentSelectedNode.researchCost} RP";
 
-            string durationLine = "";
-            if (currentSelectedNode.researchTurns > 1)
+            // Prerequisites — unlocked ones are shown with strikethrough, hide section if none exist
+            string prereqLine = "";
+            if (currentSelectedNode.preReqs != null && currentSelectedNode.preReqs.Count > 0)
             {
-                durationLine = isResearching
-                    ? $"\n<color=cyan>Integrating… {turnsRemaining} turn{(turnsRemaining == 1 ? "" : "s")} remaining</color>"
-                    : $"\n<color=#aaaaaa>Research time: {currentSelectedNode.researchTurns} turns</color>";
+                var reqEntries = new List<string>();
+                foreach (var req in currentSelectedNode.preReqs)
+                {
+                    if (req == null) continue;
+                    if (req.IsUnlockedBy(humanPlayer))
+                        reqEntries.Add($"<s>{req.techName}</s>");
+                    else
+                        reqEntries.Add(req.techName);
+                }
+                if (reqEntries.Count > 0)
+                {
+                    string reqList = "\n  • " + string.Join("\n  • ", reqEntries);
+                    prereqLine = $"\nRequires:{reqList}";
+                }
             }
 
-            infoDescriptionText.text = $"{currentSelectedNode.description}\n\n{costLine}{durationLine}";
+            // Research duration
+            string durationLine = currentSelectedNode.researchTurns > 0
+                ? isResearching
+                    ? $"\nIntegrating… {turnsRemaining} turn{(turnsRemaining == 1 ? "" : "s")} remaining"
+                    : $"\nResearch duration: {currentSelectedNode.researchTurns} turn{(currentSelectedNode.researchTurns == 1 ? "" : "s")}"
+                : "\nResearch duration: Instant";
+
+            // Passive RP bonus
+            string passiveLine = currentSelectedNode.rpBonusPerTurn > 0
+                ? $"\nPassive: +{currentSelectedNode.rpBonusPerTurn} RP/turn"
+                : "";
+
+            infoDescriptionText.text = $"{currentSelectedNode.description}\n\n{costLine}{prereqLine}{durationLine}{passiveLine}";
         }
 
         // --- BUTTON STATE ---
@@ -453,7 +541,6 @@ public class TechTreeWindowManager : MonoBehaviour
         currentActiveCategory = null; 
         RequestCategorySwitch(panelHardware, "Hardware");
         RefreshAllTechButtons();
-        RefreshSabotageButton();
 
         RefreshAllEraFog(instant: true);
 
@@ -462,6 +549,8 @@ public class TechTreeWindowManager : MonoBehaviour
         TriggerButtonAnim(btnServices);
         TriggerButtonAnim(btnSabotage);
         TriggerButtonAnim(closeButton);
+
+        RefreshSabotageButton(); // Must be AFTER TriggerButtonAnim — anims reset alpha
         Time.timeScale = 0f;
         yield break;
     }
@@ -498,6 +587,90 @@ public class TechTreeWindowManager : MonoBehaviour
         foreach (var mat in _fogMaterials)
             if (mat != null) Destroy(mat);
         _fogMaterials.Clear();
+    }
+
+    // -------------------------------------------------------------------------
+    private void PlayShutterSequence(TechNode triggerNode)
+    {
+        if (categoryShutter == null && techTreeAnimator == null) return;
+
+        // Step 2 — fires at techTreeAnimator midpoint: swap sprites then let shutters open.
+        void OnTechTreeMidpoint()
+        {
+            techTreeAnimator.onShutterClosed.RemoveAllListeners();
+            ApplySpriteSwapsFor(triggerNode);
+        }
+
+        // Step 1 — fires at categoryShutter midpoint: start techTreeAnimator.
+        void OnCategoryMidpoint()
+        {
+            categoryShutter.onShutterClosed.RemoveAllListeners();
+            if (techTreeAnimator != null)
+            {
+                techTreeAnimator.onShutterClosed.RemoveAllListeners();
+                techTreeAnimator.onShutterClosed.AddListener(OnTechTreeMidpoint);
+                techTreeAnimator.PlayEntryAnimation();
+            }
+        }
+
+        if (categoryShutter != null)
+        {
+            categoryShutter.onShutterClosed.RemoveAllListeners();
+            categoryShutter.onShutterClosed.AddListener(OnCategoryMidpoint);
+            categoryShutter.PlayEntryAnimation();
+        }
+        else if (techTreeAnimator != null)
+        {
+            techTreeAnimator.onShutterClosed.RemoveAllListeners();
+            techTreeAnimator.onShutterClosed.AddListener(OnTechTreeMidpoint);
+            techTreeAnimator.PlayEntryAnimation();
+        }
+    }
+
+    private void ApplySpriteSwapsFor(TechNode triggerNode)
+    {
+        if (spriteSwaps == null || triggerNode == null) return;
+        foreach (var entry in spriteSwaps)
+        {
+            if (entry == null || entry.triggerNode != triggerNode) continue;
+            if (entry.swaps != null)
+            {
+                foreach (var swap in entry.swaps)
+                {
+                    if (swap == null) continue;
+                    if (swap.targetImage != null && swap.newSprite != null)
+                        swap.targetImage.sprite = swap.newSprite;
+                }
+            }
+            if (entry.textTargets != null)
+            {
+                foreach (var tmp in entry.textTargets)
+                    if (tmp != null) tmp.color = entry.textColor;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    private void SetConfirmButtonVisible(bool visible, bool instant)
+    {
+        if (confirmUpgradeButton == null) return;
+        var cg = confirmUpgradeButton.GetComponent<CanvasGroup>();
+        if (cg == null) return;
+        float target = visible ? 1f : 0f;
+        // Enable raycasts/interactable immediately on show so button is ready when fade finishes.
+        // Disable them immediately on hide so clicks are blocked during the fade out.
+        cg.blocksRaycasts = visible;
+        cg.interactable = visible;
+        if (instant)
+        {
+            DOTween.Kill(cg);
+            cg.alpha = target;
+        }
+        else
+        {
+            DOTween.Kill(cg);
+            cg.DOFade(target, 0.2f).SetUpdate(true);
+        }
     }
 
     // -------------------------------------------------------------------------

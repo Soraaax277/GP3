@@ -15,6 +15,7 @@ using System.Collections.Generic;
 //   F4  — Apply ALL active cheats at once
 //   F5  — Reveal entire map (disable fog of war) + reveal all enemy units
 //   F6  — Force-unlock all building/unit features by name
+//   F7  — Toggle instant research (0-turn completion)
 //
 // REMOVE THIS FILE BEFORE SHIPPING.
 public class DebugCheatManager : MonoBehaviour
@@ -42,6 +43,9 @@ public class DebugCheatManager : MonoBehaviour
 
     [Tooltip("Also enable TechManager.freeResearchMode so researching nodes costs nothing.")]
     public bool cheatFreeResearch = true;
+
+    [Tooltip("Make all tech nodes complete instantly regardless of their researchTurns value. Does NOT modify ScriptableObject data.")]
+    public bool cheatInstantResearch = true;
 
     [Tooltip("Set every tile to isExplored + isVisible on apply, and hide the fog mesh/particles.\n" +
              "Re-applies automatically every turn start so FieldOfViewManager cannot undo it.\n" +
@@ -127,7 +131,10 @@ public class DebugCheatManager : MonoBehaviour
 
         // Sync freeResearchMode now that everything is initialised
         if (TechManager.Instance != null)
+        {
             TechManager.Instance.freeResearchMode = cheatFreeResearch;
+            TechManager.Instance.instantResearchMode = cheatInstantResearch;
+        }
 
         ApplyAllCheats();
     }
@@ -143,6 +150,7 @@ public class DebugCheatManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F4)) ApplyAllCheats();
         if (Input.GetKeyDown(KeyCode.F5)) { CheatRevealMap(); RevealAllEnemyUnits(); }
         if (Input.GetKeyDown(KeyCode.F6)) CheatUnlockAllFeatures();
+        if (Input.GetKeyDown(KeyCode.F7)) ToggleInstantResearch();
 
         // ── Per-frame clamp ────────────────────────────────────────────────
         if (!clampEveryFrame) return;
@@ -177,7 +185,10 @@ public class DebugCheatManager : MonoBehaviour
         }
 
         if (TechManager.Instance != null)
+        {
             TechManager.Instance.freeResearchMode = cheatFreeResearch;
+            TechManager.Instance.instantResearchMode = cheatInstantResearch;
+        }
 
         Debug.Log("[DebugCheatManager] All cheats applied.");
     }
@@ -257,14 +268,32 @@ public class DebugCheatManager : MonoBehaviour
                 }
             }
 
-            // 3. Sabotage tab
-            if (node.unlocksSabotageTab && TechTreeWindowManager.Instance != null && !player.isAI)
-                TechTreeWindowManager.Instance.RefreshSabotageButton();
+            // 3. Sabotage tab — must set the flag in TechManager, not just refresh the button
+            if (node.unlocksSabotageTab)
+                TechManager.Instance.SetSabotageTabUnlocked(player);
 
             unlocked++;
         }
 
+        // Refresh the entire tech tree UI so fog, lines, buttons, and sabotage tab reflect the new state.
+        if (!player.isAI && TechTreeWindowManager.Instance != null)
+        {
+            TechTreeWindowManager.Instance.RefreshAllTechButtons();
+            TechTreeWindowManager.Instance.UpdateAllLines();
+            TechTreeWindowManager.Instance.RefreshAllEraFog(instant: true);
+            TechTreeWindowManager.Instance.RefreshSabotageButton();
+        }
+
         Debug.Log($"[DebugCheatManager] Unlocked {unlocked} tech node(s) for {player.playerName}.");
+    }
+
+    [ContextMenu("Cheat: Toggle Instant Research")]
+    public void ToggleInstantResearch()
+    {
+        cheatInstantResearch = !cheatInstantResearch;
+        if (TechManager.Instance != null)
+            TechManager.Instance.instantResearchMode = cheatInstantResearch;
+        Debug.Log($"[DebugCheatManager] Instant research: {(cheatInstantResearch ? "ON" : "OFF")}");
     }
 
     // <summary>Sets gold to goldAmount for the human player.</summary>
