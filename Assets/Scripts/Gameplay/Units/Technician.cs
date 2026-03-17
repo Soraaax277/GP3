@@ -91,7 +91,7 @@ public class Technician : Unit
         }
 
         targetWire.IsTechnicianActivated = true;
-        Debug.Log($"[Technician] Successfully activated Wire at {targetWire.ParentTile.cubeCoords}!");
+        ActionLogUI.PostFiltered(owner, "Technician powered up the grid!", ActionLogUI.Colors.Unit);
 
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayTechnicianAction(targetWire.transform.position);
@@ -154,12 +154,21 @@ public class Technician : Unit
         if (owner.resources < repairCost) return;
 
         owner.resources -= repairCost;
-        if (targetTower != null) targetTower.Repair(repairEfficiency);
-        else if (targetStructure != null) targetStructure.Repair(20f * repairEfficiency);
+        if (targetTower != null)
+        {
+            targetTower.Repair(repairEfficiency);
+            ActionLogUI.PostFiltered(owner, "Technician repaired Tower", ActionLogUI.Colors.Unit);
+        }
+        else if (targetStructure != null)
+        {
+            targetStructure.Repair(20f * repairEfficiency);
+            ActionLogUI.PostFiltered(owner, "Technician repaired Structure", ActionLogUI.Colors.Unit);
+        }
         else if (targetWire != null)
         {
             float healAmount = targetWire.MaxDurability * repairEfficiency;
             targetWire.currentDurability = Mathf.Min(targetWire.currentDurability + healAmount, targetWire.MaxDurability);
+            ActionLogUI.PostFiltered(owner, "Technician repaired Wire", ActionLogUI.Colors.Unit);
         }
 
         if (ShouldConsumeCharge())

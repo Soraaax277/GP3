@@ -38,15 +38,18 @@ public class GameState
     public List<UnitData> playerUnits;
     public List<UnitData> enemyUnits;
     public List<BuildingData> buildings;
+    public List<StructureData> structures;
     public List<TowerData> towers;
     public List<WireData> wires;
     public List<TileInfluenceData> tileInfluences;
+    public QuestState questState;
 
     public GameState()
     {
         playerUnits = new List<UnitData>();
         enemyUnits = new List<UnitData>();
         buildings = new List<BuildingData>();
+        structures = new List<StructureData>();
         towers = new List<TowerData>();
         wires = new List<WireData>();
         tileInfluences = new List<TileInfluenceData>();
@@ -60,7 +63,33 @@ public class GameState
         infraMultiplierValues = new List<float>();
         infraFlatKeys = new List<string>();
         infraFlatValues = new List<float>();
+        questState = new QuestState();
     }
+}
+
+[Serializable]
+public class StructureData
+{
+    public string structureType;
+    public string featureKey;
+    public int tileX;
+    public int tileY;
+    public bool isPlayerOwned;
+    public bool isBuilt;
+    public bool isBroken;
+    public float currentDurability;
+}
+
+[Serializable]
+public class QuestState
+{
+    public List<string> playerActiveQuestIds = new List<string>();
+    public List<string> playerCompletedQuestIds = new List<string>();
+    public List<string> playerQuestFlags = new List<string>();
+    
+    public List<string> enemyActiveQuestIds = new List<string>();
+    public List<string> enemyCompletedQuestIds = new List<string>();
+    public List<string> enemyQuestFlags = new List<string>();
 }
 
 [Serializable]

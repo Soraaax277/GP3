@@ -50,6 +50,9 @@ public class UnitSpawner : MonoBehaviour
         Unit unit = unitObj.GetComponent<Unit>();
         unit.Initialize(spawnTile, owner);
 
+        string friendlyName = unit.GetType().Name.Replace("Unit", "");
+        ActionLogUI.PostFiltered(owner, $"Recruited {friendlyName}", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
+
         if (TechManager.Instance != null)
         {
             TechManager.Instance.ApplyEffectsToNewUnit(unit);

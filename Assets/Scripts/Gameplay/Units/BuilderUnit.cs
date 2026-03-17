@@ -175,8 +175,17 @@ public class BuilderUnit : Unit
         owner.resources -= buildCost;
         bool isCanteen = (targetStructure is Canteen);
         
-        if (targetTower != null) targetTower.Build();
-        else if (targetStructure != null) targetStructure.Build();
+        if (targetTower != null)
+        {
+            targetTower.Build();
+            ActionLogUI.PostFiltered(owner, "New Tower has been constructed.", ActionLogUI.Colors.Construction);
+        }
+        else if (targetStructure != null)
+        {
+            targetStructure.Build();
+            string friendlyName = targetStructure.GetType().Name.Replace("Unit", "");
+            ActionLogUI.PostFiltered(owner, $"{friendlyName} constructed", ActionLogUI.Colors.Construction);
+        }
 
         // QUEST HOOKS
         if (QuestManager.Instance != null)
@@ -269,8 +278,16 @@ public class BuilderUnit : Unit
         }
 
         owner.resources -= repairCost;
-        if (targetTower != null) targetTower.Repair(repairEfficiency);
-        else if (targetStructure != null) targetStructure.Repair(20f * repairEfficiency);
+        if (targetTower != null)
+        {
+            targetTower.Repair(repairEfficiency);
+            ActionLogUI.PostFiltered(owner, "Builder repaired Tower", ActionLogUI.Colors.Unit);
+        }
+        else if (targetStructure != null)
+        {
+            targetStructure.Repair(20f * repairEfficiency);
+            ActionLogUI.PostFiltered(owner, "Builder repaired Structure", ActionLogUI.Colors.Unit);
+        }
 
         if (ShouldConsumeCharge())
             buildsRemaining = Mathf.Max(0, buildsRemaining - 1); // Uses build charges

@@ -34,7 +34,10 @@ public class CommercialHub : StructureNode
 
         Unit spawned = UnitSpawner.Instance.SpawnUnit(prefab, ParentTile, owner);
         if (spawned != null)
-            Debug.Log($"[CommercialHub] Auto-spawned {spawned.GetType().Name} for {cost}G.");
+        {
+            string friendlyName = spawned.GetType().Name.Replace("Unit", "");
+            ActionLogUI.PostFiltered(owner, $"Auto-spawned {friendlyName}", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
+        }
     }
 
 

@@ -108,6 +108,7 @@ public class MaintenanceCrew : Unit
 
         owner.resources -= repairCost;
         targetTower.Repair(repairEfficiency);
+        ActionLogUI.PostFiltered(owner, "Maintenance Crew repaired a Tower.", ActionLogUI.Colors.Unit);
 
         if (ShouldConsumeCharge())
             maintenanceCharges--;

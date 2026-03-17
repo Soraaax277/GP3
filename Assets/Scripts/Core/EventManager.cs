@@ -87,9 +87,23 @@ public class EventManager : MonoBehaviour
             targetTile = allTiles[Random.Range(0, allTiles.Count)];
         }
 
-        Debug.Log($"[EventManager] NEW EVENT: {activeEvent} targeting tile {targetTile?.cubeCoords} for {eventDurationLeft} turns!");
+        string eventFlavor = GetEventFlavor(activeEvent);
+        ActionLogUI.PostFiltered(null, eventFlavor, ActionLogUI.Colors.World, true);
 
         SpawnEventParticles();
+    }
+
+    private string GetEventFlavor(EventType type)
+    {
+        switch (type)
+        {
+            case EventType.AcidRain: return "Acid Rain is falling from the sky!";
+            case EventType.SolarFlare: return "A Solar Flare is disrupting communications!";
+            case EventType.PowerOutage: return "A major Thunderstorm has started!";
+            case EventType.HyperInflation: return "Hyper-inflation is hitting the local economy!";
+            case EventType.TechBoom: return "A localized Tech-Boom is occurring!";
+            default: return "An unusual environmental event is starting!";
+        }
     }
 
     private void EndCurrentEvent()

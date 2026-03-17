@@ -58,6 +58,7 @@ public class Businessman: Unit
         if (Random.value >= 0.5f) 
         { 
             targetUnit.Recruit(owner);
+            ActionLogUI.PostFiltered(owner, "Businessman recruited a worker!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
             Debug.Log($"[Businessman] Successfully recruited {targetUnit.name}!");
         }
         else

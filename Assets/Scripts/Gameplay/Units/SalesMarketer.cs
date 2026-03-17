@@ -152,6 +152,7 @@ public class SalesMarketer : Unit
         if (Random.value >= 0.5f)
         {
             targetUnit.Recruit(owner);
+            ActionLogUI.PostFiltered(owner, "Marketer recruited a worker!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
             Debug.Log($"[SalesMarketer] Successfully recruited {targetUnit.name}!");
         }
         else
@@ -267,6 +268,9 @@ public class SalesMarketer : Unit
             }
         }
 
+        if (tilesAffected > 0)
+            ActionLogUI.PostFiltered(owner, "Marketing campaign reduced enemy influence.", ActionLogUI.Colors.Unit);
+
         Debug.Log($"[SalesMarketer] Deny action complete. Tiles affected: {tilesAffected}");
 
         if (ShouldConsumeCharge())
@@ -295,7 +299,8 @@ public class SalesMarketer : Unit
         if (Random.value < 0.5f)
         {
             PlayerData oldOwner = currentTile.GetOwner();
-            currentTile.AddInfluence(owner, denyAmount, true); // Specialist bypasses "First Influence" rule
+            currentTile.AddInfluence(owner, denyAmount, true); 
+            ActionLogUI.PostFiltered(owner, "Marketer improved local influence.", ActionLogUI.Colors.Unit);
             Debug.Log($"[SalesMarketer] Improved influence on {currentTile.name} by {denyAmount}");
 
             if (QuestManager.Instance != null && currentTile.GetOwner() != oldOwner && currentTile.GetOwner() == owner)

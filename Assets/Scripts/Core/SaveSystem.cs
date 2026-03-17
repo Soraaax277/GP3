@@ -61,9 +61,15 @@ public static class SaveSystem
 
         SaveUnits(state);
         SaveBuildings(state);
+        SaveStructures(state);
         SaveTowers(state);
         SaveWires(state);
         SaveInfluence(state);
+
+        if (QuestManager.Instance != null)
+        {
+            state.questState = QuestManager.Instance.GetQuestState();
+        }
 
         string json = JsonUtility.ToJson(state);
         PlayerPrefs.SetString(SAVE_KEY, json);
@@ -120,9 +126,15 @@ public static class SaveSystem
 
         LoadUnits(state);
         LoadBuildings(state);
+        LoadStructures(state);
         LoadTowers(state);
         LoadWires(state);
         LoadInfluence(state);
+
+        if (QuestManager.Instance != null && state.questState != null)
+        {
+            QuestManager.Instance.LoadQuestState(state.questState);
+        }
 
         if (TurnManager.Instance != null)
         {
@@ -193,6 +205,31 @@ public static class SaveSystem
                     isPlayerOwned = node.owner == TurnManager.Instance.players[0]
                 };
                 state.buildings.Add(data);
+            }
+        }
+    }
+
+    private static void SaveStructures(GameState state)
+    {
+        if (GridManager.Instance == null) return;
+
+        foreach (var tile in GridManager.Instance.tiles.Values)
+        {
+            if (tile.placedStructure != null)
+            {
+                StructureNode node = tile.placedStructure;
+                StructureData data = new StructureData
+                {
+                    structureType = node.GetType().Name,
+                    featureKey = node.GetRequiredTechFeature(),
+                    tileX = tile.cubeCoords.x,
+                    tileY = tile.cubeCoords.y,
+                    isPlayerOwned = node.owner == TurnManager.Instance.players[0],
+                    isBuilt = node.IsBuilt,
+                    isBroken = node.IsBroken,
+                    currentDurability = node.currentDurability
+                };
+                state.structures.Add(data);
             }
         }
     }
@@ -359,6 +396,59 @@ public static class SaveSystem
         }
     }
 
+    private static void LoadStructures(GameState state)
+    {
+        ClearAllStructures();
+
+        foreach (var structureData in state.structures)
+        {
+            HexTile tile = GridManager.Instance.GetTile(structureData.tileX, structureData.tileY);
+            if (tile == null) continue;
+
+            PlayerData owner = structureData.isPlayerOwned ? 
+                TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+
+            GameObject prefab = GetStructurePrefab(structureData.structureType);
+            if (prefab == null) continue;
+
+            GameObject structureObj = Object.Instantiate(prefab);
+            StructureNode structure = structureObj.GetComponent<StructureNode>();
+            if (structure != null)
+            {
+                structure.Initialize(tile, owner);
+                if (structureData.isBuilt) structure.Build();
+                structure.currentDurability = structureData.currentDurability;
+                // Note: isBroken state could be further restored if StructureNode has set/load logic
+            }
+        }
+    }
+
+    private static GameObject GetStructurePrefab(string structureType)
+    {
+        var spm = StructurePlacementManager.Instance;
+        if (spm == null) spm = Object.FindFirstObjectByType<StructurePlacementManager>();
+        if (spm == null) return null;
+
+        switch (structureType)
+        {
+            case "ServiceCenter": return spm.serviceCenterPrefab;
+            case "AdvancedServiceCenter": return spm.advancedServiceCenterPrefab;
+            case "BPOCenter": return spm.bpoCenterPrefab;
+            case "Tesseract": return spm.tesseractPrefab;
+            case "SignalBooster": return spm.signalBoosterPrefab;
+            case "SignalJammer": return spm.signalJammerPrefab;
+            case "PowerBox": return spm.powerBoxPrefab;
+            case "CommercialHub": return spm.commercialHubPrefab;
+            case "BusinessCenter": return spm.businessCenterPrefab;
+            case "AdvancedBusinessCenter": return spm.advancedBusinessCenterPrefab;
+            case "WorkerFactory": return spm.workerFactoryPrefab;
+            case "DroneFactory": return spm.droneFactoryPrefab;
+            case "Rocketship": return spm.rocketshipPrefab;
+            case "Canteen": return spm.canteenPrefab;
+            default: return null;
+        }
+    }
+
     private static void LoadTowers(GameState state)
     {
         ClearAllTowers();
@@ -442,11 +532,12 @@ public static class SaveSystem
                 Object.Destroy(unit.gameObject);
             }
         }
+        TurnManager.Instance.GetAllUnits().Clear();
     }
 
     private static void ClearAllBuildings()
     {
-        if (GridManager.Instance == null) return;
+        if (GridManager.Instance == null || TurnManager.Instance == null) return;
 
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
@@ -456,11 +547,31 @@ public static class SaveSystem
                 tile.placedNode = null;
             }
         }
+        
+        foreach (var player in TurnManager.Instance.players)
+        {
+            player.ownedNodes.Clear();
+        }
+    }
+
+    private static void ClearAllStructures()
+    {
+        if (GridManager.Instance == null || TurnManager.Instance == null) return;
+
+        foreach (var tile in GridManager.Instance.tiles.Values)
+        {
+            if (tile.placedStructure != null)
+            {
+                Object.Destroy(tile.placedStructure.gameObject);
+                tile.placedStructure = null;
+            }
+        }
+        TurnManager.Instance.GetAllStructures().Clear();
     }
 
     private static void ClearAllTowers()
     {
-        if (GridManager.Instance == null) return;
+        if (GridManager.Instance == null || TurnManager.Instance == null) return;
 
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
@@ -470,11 +581,12 @@ public static class SaveSystem
                 tile.placedTower = null;
             }
         }
+        TurnManager.Instance.GetAllTowers().Clear();
     }
 
     private static void ClearAllWires()
     {
-        if (GridManager.Instance == null) return;
+        if (GridManager.Instance == null || TurnManager.Instance == null) return;
 
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
@@ -484,5 +596,6 @@ public static class SaveSystem
                 tile.placedWire = null;
             }
         }
+        TurnManager.Instance.GetAllWires().Clear();
     }
 }

@@ -35,7 +35,14 @@ public class BPOCenter : StructureNode
         }
 
         if (extraIncome > 0)
+        {
             owner.resources += extraIncome;
+            if (!owner.isAI)
+            {
+                string workerName = (ParentTile.placedUnit is Businessman) ? "Businessman" : "IT Personnel";
+                ActionLogUI.PostFiltered(owner, $"BPO Center generated bonus income from {workerName}!", ActionLogUI.Colors.Neutral);
+            }
+        }
     }
 
 

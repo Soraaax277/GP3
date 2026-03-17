@@ -140,7 +140,11 @@ public class StructurePlacementManager : MonoBehaviour
 
         StructureNode node = realStructure.GetComponent<StructureNode>();
         if (node != null)
+        {
             node.Initialize(hoveredTile, owner);
+            string friendlyName = node.GetType().Name.Replace("Unit", "");
+            ActionLogUI.PostFiltered(owner, $"Placed {friendlyName} blueprint.", ActionLogUI.Colors.Construction);
+        }
 
         CancelPlacement();
     }

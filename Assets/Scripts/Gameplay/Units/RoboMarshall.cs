@@ -122,6 +122,7 @@ public class RoboMarshall : Unit
         if (targetTower != null)
         {
             targetTower.Repair(fullRestore ? 100.0f : repairEfficiency);
+            ActionLogUI.PostFiltered(owner, "Robo-Marshall repaired a Tower.", ActionLogUI.Colors.Unit);
             Debug.Log($"[RoboMarshall] Tower repair complete (efficiency: {repairEfficiency * 100}%, cost: {repairCost}, full restore: {fullRestore}).");
         }
         else if (targetWire != null)
@@ -133,6 +134,7 @@ public class RoboMarshall : Unit
                 float healAmount = targetWire.MaxDurability * repairEfficiency;
                 targetWire.currentDurability = Mathf.Min(targetWire.currentDurability + healAmount, targetWire.MaxDurability);
             }
+            ActionLogUI.PostFiltered(owner, "Robo-Marshall repaired a Wire.", ActionLogUI.Colors.Unit);
             Debug.Log($"[RoboMarshall] Wire repair complete (cost: {repairCost}, full restore: {fullRestore}).");
         }
 

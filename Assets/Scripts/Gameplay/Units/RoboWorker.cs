@@ -98,8 +98,17 @@ public class RoboWorker : Unit
         }
 
         owner.resources -= buildCost;
-        if (targetTower != null) targetTower.Build();
-        else if (targetStructure != null) targetStructure.Build();
+        if (targetTower != null)
+        {
+            targetTower.Build();
+            ActionLogUI.PostFiltered(owner, "Robo-Worker constructed a Tower.", ActionLogUI.Colors.Construction);
+        }
+        else if (targetStructure != null)
+        {
+            targetStructure.Build();
+            string friendlyName = targetStructure.GetType().Name.Replace("Unit", "");
+            ActionLogUI.PostFiltered(owner, $"Robo-Worker constructed {friendlyName}.", ActionLogUI.Colors.Construction);
+        }
 
 
         if (ShouldConsumeCharge())
