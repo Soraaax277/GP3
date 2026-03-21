@@ -347,6 +347,7 @@ public class UIAnimator : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             TechNodeButton_AnimateActive();
             return;
         }
+        InitializeTheme();
         if (activeTheme == null) return;
         if (uiType != UIType.Button) return;
         rectTrans.DOScale(originalScale * activeTheme.hoverScale, activeTheme.hoverDuration).SetEase(activeTheme.hoverEase).SetUpdate(true);
@@ -360,6 +361,7 @@ public class UIAnimator : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             TechNodeButton_AnimateNormal();
             return;
         }
+        InitializeTheme();
         if (activeTheme == null) return;
         if (uiType != UIType.Button) return;
         rectTrans.DOScale(originalScale, activeTheme.hoverDuration).SetEase(activeTheme.hoverEase).SetUpdate(true);
@@ -372,6 +374,7 @@ public class UIAnimator : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             techPointerIsDown = true;
             return;
         }
+        InitializeTheme();
         if (activeTheme == null) return;
         if (uiType != UIType.Button) return;
         rectTrans.DOScale(originalScale * activeTheme.clickScale, activeTheme.clickDuration).SetEase(activeTheme.clickEase).SetUpdate(true);

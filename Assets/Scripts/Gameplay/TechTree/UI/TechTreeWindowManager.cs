@@ -461,6 +461,10 @@ public class TechTreeWindowManager : MonoBehaviour
         RefreshSabotageButton();
         UpdateAllLines();
         RefreshAllEraFog(instant: false);
+
+        // Immediately update the active research panel so newly queued
+        // techs appear without waiting for the next turn tick.
+        ActiveResearchPanel.Instance?.Refresh();
     }
 
     public void RefreshAllTechButtons()

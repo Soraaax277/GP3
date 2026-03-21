@@ -1,5 +1,66 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7826256385360173951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a08d2e0a85776a41b15eeaa0071cd93, type: 3}
+  m_Name: FilmFilterFeature
+  m_EditorClassIdentifier: Assembly-CSharp::FilmFilterFeature
+  m_Active: 1
+  settings:
+    material: {fileID: 2100000, guid: fdf087a4c01a9794b8b10107b668831b, type: 2}
+    colorTint: {r: 1, g: 0.6793479, b: 0.16509432, a: 1}
+    tintStrength: 1
+    saturation: 0.45
+    sepiaStrength: 0.5
+    fadeStrength: 0
+    scanlineIntensity: 0.1
+    scanlineSpacing: 3
+    scanlineSpeed: 0
+    grainIntensity: 0.025
+    grainSize: 1
+    scratchIntensity: 0.12
+    overlayStrength: 0.085
+    creaseIntensity: 0.6
+    dustIntensity: 0.5
+    edgeBurn: 0.7
+    vignetteIntensity: 0.35
+    vignetteSmoothness: 0.5
+    chromaticStrength: 1.2
+    flickerIntensity: 0.35
+    letterboxAmount: 0
+--- !u!114 &-1881060190609008539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b55587b29f2df4445999ed5860c64e4c, type: 3}
+  m_Name: CelShadeFeature
+  m_EditorClassIdentifier: Assembly-CSharp::CelShadeFeature
+  m_Active: 1
+  settings:
+    material: {fileID: 2100000, guid: e4b3569b7ab801b40bf90dcfe050a2be, type: 2}
+    posterizeSteps: 4
+    posterizeStrength: 0.75
+    saturationBoost: 0.25
+    outlineThickness: 0
+    depthThreshold: 0.2
+    depthScale: 8
+    normalThreshold: 0.25
+    outlineColor: {r: 0.12273052, g: 0.12273052, b: 0.13207549, a: 1}
+    outlineOpacity: 0.7
+    outlineMaxDepth: 0
+    outlineMaxDepthDelta: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13,32 +74,32 @@ MonoBehaviour:
   m_Name: PC_Renderer
   m_EditorClassIdentifier: 
   debugShaders:
-    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7,
-      type: 3}
+    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7, type: 3}
     hdrDebugViewPS: {fileID: 4800000, guid: 573620ae32aec764abd4d728906d2587, type: 3}
-    probeVolumeSamplingDebugComputeShader: {fileID: 7200000, guid: 53626a513ea68ce47b59dc1299fe3959,
-      type: 3}
+    probeVolumeSamplingDebugComputeShader: {fileID: 7200000, guid: 53626a513ea68ce47b59dc1299fe3959, type: 3}
   probeVolumeResources:
-    probeVolumeDebugShader: {fileID: 4800000, guid: e5c6678ed2aaa91408dd3df699057aae,
-      type: 3}
-    probeVolumeFragmentationDebugShader: {fileID: 4800000, guid: 03cfc4915c15d504a9ed85ecc404e607,
-      type: 3}
-    probeVolumeOffsetDebugShader: {fileID: 4800000, guid: 53a11f4ebaebf4049b3638ef78dc9664,
-      type: 3}
-    probeVolumeSamplingDebugShader: {fileID: 4800000, guid: 8f96cd657dc40064aa21efcc7e50a2e7,
-      type: 3}
-    probeSamplingDebugMesh: {fileID: -3555484719484374845, guid: 57d7c4c16e2765b47a4d2069b311bffe,
-      type: 3}
-    probeSamplingDebugTexture: {fileID: 2800000, guid: 24ec0e140fb444a44ab96ee80844e18e,
-      type: 3}
-    probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176,
-      type: 3}
+    probeVolumeDebugShader: {fileID: 4800000, guid: e5c6678ed2aaa91408dd3df699057aae, type: 3}
+    probeVolumeFragmentationDebugShader: {fileID: 4800000, guid: 03cfc4915c15d504a9ed85ecc404e607, type: 3}
+    probeVolumeOffsetDebugShader: {fileID: 4800000, guid: 53a11f4ebaebf4049b3638ef78dc9664, type: 3}
+    probeVolumeSamplingDebugShader: {fileID: 4800000, guid: 8f96cd657dc40064aa21efcc7e50a2e7, type: 3}
+    probeSamplingDebugMesh: {fileID: -3555484719484374845, guid: 57d7c4c16e2765b47a4d2069b311bffe, type: 3}
+    probeSamplingDebugTexture: {fileID: 2800000, guid: 24ec0e140fb444a44ab96ee80844e18e, type: 3}
+    probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176, type: 3}
   m_RendererFeatures:
   - {fileID: 7833122117494664109}
-  m_RendererFeatureMap: ad6b866f10d7b46c
+  - {fileID: -7826256385360173951}
+  - {fileID: 8182480168818079142}
+  - {fileID: 7121613067076528112}
+  - {fileID: 6891331491717378404}
+  - {fileID: -1881060190609008539}
+  m_RendererFeatureMap: ad6b866f10d7b46c81647965488d6393a67514645c028e71f067e0425a0dd56264f146d97aeda25f65189f11b921e5e5
   m_UseNativeRenderPass: 1
+  xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
-  m_AssetVersion: 2
+  m_AssetVersion: 3
+  m_PrepassLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   m_OpaqueLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -56,8 +117,69 @@ MonoBehaviour:
   m_RenderingMode: 2
   m_DepthPrimingMode: 0
   m_CopyDepthMode: 0
+  m_DepthAttachmentFormat: 0
+  m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &6891331491717378404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 065a49dab5e807d40a94badefc2a5b09, type: 3}
+  m_Name: CyberpunkFeature
+  m_EditorClassIdentifier: Assembly-CSharp::CyberpunkFeature
+  m_Active: 0
+  settings:
+    material: {fileID: 2100000, guid: f5d4bd0514cdef34786c514f118621a5, type: 2}
+    exposure: 1.55
+    contrast: 1.55
+    blackCrush: 0
+    tealShadows: 0.15
+    tealMidtones: 0.5
+    neonThreshold: 0.52
+    neonBloom: 2
+    neonSaturation: 1.8
+    neonHuePush: 1.2
+    fogDensity: 0.65
+    chromaticStrength: 0.05
+    sharpness: 0.8
+    grainIntensity: 0
+    grainSize: 1
+    vignetteIntensity: 0
+--- !u!114 &7121613067076528112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4511f26aeee549847b5bb2c41ec140b6, type: 3}
+  m_Name: NightGradeFeature
+  m_EditorClassIdentifier: Assembly-CSharp::NightGradeFeature
+  m_Active: 0
+  settings:
+    material: {fileID: 2100000, guid: da1d5dc0d51d63c45b512713acb7a8e9, type: 2}
+    exposure: 1.8
+    contrast: 1.35
+    blackCrush: 0.2
+    saturation: 1.5
+    greenTint: 1
+    greenShadowLift: 1.2
+    redDrain: 0.6
+    blueShift: 0.4
+    highlightBlow: 0.3
+    sharpness: 1.2
+    grainIntensity: 0.055
+    grainSize: 1.2
+    vignetteIntensity: 0.2
+    letterboxAmount: 0.07
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84,12 +206,36 @@ MonoBehaviour:
     BlurQuality: 0
     Falloff: 100
     SampleCount: -1
-  m_BlueNoise256Textures:
-  - {fileID: 2800000, guid: 36f118343fc974119bee3d09e2111500, type: 3}
-  - {fileID: 2800000, guid: 4b7b083e6b6734e8bb2838b0b50a0bc8, type: 3}
-  - {fileID: 2800000, guid: c06cc21c692f94f5fb5206247191eeee, type: 3}
-  - {fileID: 2800000, guid: cb76dd40fa7654f9587f6a344f125c9a, type: 3}
-  - {fileID: 2800000, guid: e32226222ff144b24bf3a5a451de54bc, type: 3}
-  - {fileID: 2800000, guid: 3302065f671a8450b82c9ddf07426f3a, type: 3}
-  - {fileID: 2800000, guid: 56a77a3e8d64f47b6afe9e3c95cb57d5, type: 3}
-  m_Shader: {fileID: 4800000, guid: 0849e84e3d62649e8882e9d6f056a017, type: 3}
+--- !u!114 &8182480168818079142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e2d3db2c8d072843a6dd1f0e2bbc5db, type: 3}
+  m_Name: CRTTVFilterFeature
+  m_EditorClassIdentifier: Assembly-CSharp::CRTTVFilterFeature
+  m_Active: 0
+  settings:
+    material: {fileID: 2100000, guid: 5d075ee6626788a4a86f8709b5e954a7, type: 2}
+    curvatureStrength: 0.15
+    scanlineIntensity: 0.15
+    scanlineThickness: 0.6
+    phosphorIntensity: 0.25
+    colorBleedStrength: 4
+    staticIntensity: 0.03
+    syncWobble: 1
+    signalRollIntensity: 0.05
+    signalRollSpeed: 1
+    chromaticStrength: 3
+    vignetteIntensity: 1
+    brightnessBoost: 1.55
+    flickerIntensity: 0.15
+    saturation: 0.85
+    blackLift: 0.05
+    vibrance: 1
+    phosphorTint: {r: 0.8026178, g: 1.05, b: 0.8902376, a: 1}
+    phosphorTintAmount: 0.25

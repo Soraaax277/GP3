@@ -1,0 +1,22 @@
+# Blender 5.1.0 MTL File: 'Buildings.blend'
+# www.blender.org
+
+newmtl T_B2base_gray
+Ns 18.291460
+Ka 0.385246 0.385246 0.385246
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+
+newmtl T_B2windows
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd C:/2d46e9790534425bb783d45d52d878df_RGB_Building2_White_T_B2windows1_BaseColor.png

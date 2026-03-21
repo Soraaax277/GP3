@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_URP_WorldWater 1
+  m_Shader: {fileID: 4800000, guid: c3b43266e22cb9e4f847c1f6de55ada1, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _FadeEnd: 0.88
+    - _FadeStart: 0.55
+    - _NoiseStrength: 0.6
+    - _ReflectAmount: 0.7
+    - _ReflectBlur: 0.55
+    - _ReflectDistort: 0.8
+    - _RippleScale: 1.35
+    - _RippleSpeed: 0.5
+    - _RippleStrength: 0.85
+    - _ShoreIntensity: 0.75
+    - _SparkleIntensity: 1.6
+    - _SparklePow: 55
+    m_Colors:
+    - _DeepColor: {r: 0.03, g: 0.09999991, b: 0.29999992, a: 0.6745098}
+    - _HorizonColor: {r: 0.54999995, g: 0.78, b: 0.95, a: 0}
+    - _ShallowColor: {r: 0.09999982, g: 0.34999982, b: 0.65, a: 0.54901963}
+    - _ShoreColor: {r: 0.6933962, g: 0.8641016, b: 0.9245283, a: 1}
+    - _SkyHorizon: {r: 0.58, g: 0.86, b: 1, a: 1}
+    - _SkyMid: {r: 0.21999997, g: 0.6, b: 0.96, a: 1}
+    - _SkyZenith: {r: 0.079999976, g: 0.29999998, b: 0.82, a: 1}
+    - _SparkleColor: {r: 1, g: 0.96999997, b: 0.88, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

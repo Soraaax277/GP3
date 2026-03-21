@@ -56,6 +56,12 @@ public class DebugCheatManager : MonoBehaviour
     public int goldAmount = 9_999_999;
     public int rpAmount   = 9_999_999;
 
+    [Header("─── Force Era ───────────────────────────────────")]
+    [Tooltip("Enable this then press End Turn to jump to the chosen era and its starting turn immediately.")]
+    public bool cheatForceEra = false;
+    [Tooltip("Which era to jump to when cheatForceEra is active.")]
+    public TurnManager.GameEra forceEraTarget = TurnManager.GameEra.Industrial;
+
     [Header("─── Auto-Apply ──────────────────────────────────")]
     [Tooltip("Apply all active cheats automatically on Start.")]
     public bool applyOnStart = true;
@@ -87,10 +93,17 @@ public class DebugCheatManager : MonoBehaviour
 
     // Called every time TurnManager fires OnTurnStarted (after fog-of-war runs).
     // Waits one extra frame as a safety margin, then re-applies reveal + enemy visibility.
+    // Also intercepts cheatForceEra here so "tick bool + press End Turn" works at runtime.
     private void OnTurnStarted(PlayerData currentPlayer)
     {
-        if (!cheatsEnabled || !cheatRevealMap) return;
-        StartCoroutine(ReapplyRevealAfterFOV());
+        if (!cheatsEnabled) return;
+
+        // Era force — checked first so the renderer swap happens before anything else
+        if (cheatForceEra)
+            CheatForceEra();
+
+        if (cheatRevealMap)
+            StartCoroutine(ReapplyRevealAfterFOV());
     }
 
     private System.Collections.IEnumerator ReapplyRevealAfterFOV()
@@ -151,6 +164,7 @@ public class DebugCheatManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F5)) { CheatRevealMap(); RevealAllEnemyUnits(); }
         if (Input.GetKeyDown(KeyCode.F6)) CheatUnlockAllFeatures();
         if (Input.GetKeyDown(KeyCode.F7)) ToggleInstantResearch();
+        if (Input.GetKeyDown(KeyCode.F8)) CheatForceEra();
 
         // ── Per-frame clamp ────────────────────────────────────────────────
         if (!clampEveryFrame) return;
@@ -190,6 +204,7 @@ public class DebugCheatManager : MonoBehaviour
             TechManager.Instance.instantResearchMode = cheatInstantResearch;
         }
 
+        if (cheatForceEra) CheatForceEra();
         Debug.Log("[DebugCheatManager] All cheats applied.");
     }
 
@@ -475,6 +490,64 @@ public class DebugCheatManager : MonoBehaviour
 
         Debug.Log($"[DebugCheatManager] Force-unlocked {buildingFeatures.Length} building features " +
                   $"and {unitNames.Length} unit types for {player.playerName}.");
+    }
+
+    // Forces the world era and sets currentTurn to the first turn of that era.
+    // Fires immediately — era UI, renderer features, and announcements all update
+    // on the NEXT turn start (i.e. press End Turn once after enabling the bool).
+    [ContextMenu("Cheat: Force Era")]
+    public void CheatForceEra()
+    {
+        if (TurnManager.Instance == null)
+        {
+            Debug.LogWarning("[DebugCheatManager] CheatForceEra: TurnManager not found.");
+            return;
+        }
+
+        // Map each era to the first turn of that era bracket
+        int targetTurn;
+        switch (forceEraTarget)
+        {
+            case TurnManager.GameEra.Industrial:    targetTurn = 1;  break;
+            case TurnManager.GameEra.EarlyEighties: targetTurn = 26; break;
+            case TurnManager.GameEra.Retro:         targetTurn = 51; break;
+            case TurnManager.GameEra.Futuristic:    targetTurn = 76; break;
+            default:                                targetTurn = 1;  break;
+        }
+
+        TurnManager.Instance.currentTurn = targetTurn;
+
+        // Force UpdateEra() via reflection since it is private —
+        // UpdateEra() reads currentTurn, sets currentEra, and fires the
+        // announcement + EraRendererController via OnTurnStarted.
+        var method = typeof(TurnManager).GetMethod(
+            "UpdateEra",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        if (method != null)
+        {
+            method.Invoke(TurnManager.Instance, null);
+        }
+        else
+        {
+            Debug.LogWarning("[DebugCheatManager] CheatForceEra: Could not reflect UpdateEra(). " +
+                             "Era turn set but era enum not updated yet.");
+        }
+
+        // Sync EraRendererController so the correct renderer feature activates immediately
+        if (EraRendererController.Instance != null)
+            EraRendererController.Instance.ForceSync();
+
+        // Force the announcement sequence — bypasses _isPlaying guard so it
+        // always plays even if a previous announcement hasn't finished yet
+        if (EraAnnouncementController.Instance != null)
+            EraAnnouncementController.Instance.ForceTriggerAnnouncement(forceEraTarget);
+
+        Debug.Log($"[DebugCheatManager] Era forced to {forceEraTarget} " +
+                  $"(turn set to {targetTurn}). Announcement triggered immediately.");
+
+        // Auto-disable so it doesn't keep re-firing every turn
+        cheatForceEra = false;
     }
 
     // Returns the human player (isAI = false) from GameManager.players.

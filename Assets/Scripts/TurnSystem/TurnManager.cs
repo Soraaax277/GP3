@@ -290,17 +290,25 @@ public class TurnManager : MonoBehaviour
 
     void UpdateEra()
     {
-        if (currentTurn > 75) currentEra = GameEra.Futuristic;
-        else if (currentTurn > 50) currentEra = GameEra.Retro;
-        else if (currentTurn > 25) currentEra = GameEra.EarlyEighties;
-        else currentEra = GameEra.Industrial;
-        
+        GameEra newEra;
+        if      (currentTurn > 75) newEra = GameEra.Futuristic;
+        else if (currentTurn > 50) newEra = GameEra.Retro;
+        else if (currentTurn > 25) newEra = GameEra.EarlyEighties;
+        else                       newEra = GameEra.Industrial;
+
+        // Only fire announcement when era actually changes
+        bool eraChanged = newEra != currentEra;
+        currentEra = newEra;
+
         Debug.Log($"Game Era: {currentEra}");
-        
-        // JUICE (Phase 2)
-        if (FeedbackController.Instance != null && currentTurn > 1)
+
+        if (eraChanged)
         {
-            FeedbackController.Instance.PlayEraTransition(currentEra.ToString());
+            if (FeedbackController.Instance != null)
+                FeedbackController.Instance.PlayEraTransition(currentEra.ToString());
+
+            if (EraAnnouncementController.Instance != null)
+                EraAnnouncementController.Instance.TriggerAnnouncement(currentEra);
         }
     }
 
