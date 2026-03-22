@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Active: 0
   settings:
     material: {fileID: 2100000, guid: da1d5dc0d51d63c45b512713acb7a8e9, type: 2}
-    exposure: 1.8
+    exposure: 1.5
     contrast: 1.35
     blackCrush: 0.2
     saturation: 1.5
