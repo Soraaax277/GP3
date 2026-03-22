@@ -27,17 +27,24 @@ public class PowerGridOverlay : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        meshFilter = gameObject.AddComponent<MeshFilter>();
-        meshRenderer = gameObject.AddComponent<MeshRenderer>();
+        
+        // Use a dedicated child object so we don't conflict with GameManager's components
+        GameObject holder = new GameObject("Overlay_Mesh");
+        holder.transform.SetParent(this.transform);
+        holder.transform.localPosition = Vector3.zero;
+        
+        meshFilter = holder.AddComponent<MeshFilter>();
+        meshRenderer = holder.AddComponent<MeshRenderer>();
         mesh = new Mesh();
         meshFilter.mesh = mesh;
-
+        
         // Use a simple material that supports vertex colors and scrolling
         meshRenderer.material = new Material(Shader.Find("Unlit/Transparent"));
         meshRenderer.material.color = Color.white;
         
-        // Hide by default
-        gameObject.SetActive(false);
+        // Hidden by default
+        holder.SetActive(false);
+        this.gameObject.SetActive(true); // Parent stays active for Input checks
     }
 
     private void Update()

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class GridManager : MonoBehaviour
@@ -51,6 +51,16 @@ public class GridManager : MonoBehaviour
              "GridManager will apply it to every land tile automatically.")]
     public Material grassMaterial;
 
+    [Header("Environmental Building Era Prefabs")]
+    [Tooltip("Prefab for the buildings randomly placed on the map during Industrial era.")]
+    public GameObject buildingIndustrialPrefab;
+    [Tooltip("Prefab for the Early 80s era map buildings.")]
+    public GameObject buildingEarly80sPrefab;
+    [Tooltip("Prefab for the Retro era map buildings.")]
+    public GameObject buildingRetroPrefab;
+    [Tooltip("Prefab for the Futuristic era map buildings.")]
+    public GameObject buildingFuturisticPrefab;
+
     // ─────────────────────────────────────────────────────────────────────
     public Dictionary<Vector3Int, HexTile> tiles =
         new Dictionary<Vector3Int, HexTile>();
@@ -68,18 +78,38 @@ public class GridManager : MonoBehaviour
         GenerateGrid();
     }
 
+    [Header("Generation Seeds (Saved)")]
+    public float mapOffsetX;
+    public float mapOffsetY;
+    private bool seedSet = false;
+
     // =====================================================================
     //  GRID GENERATION
     // =====================================================================
+    public void SeedMap(float x, float y)
+    {
+        mapOffsetX = x;
+        mapOffsetY = y;
+        seedSet = true;
+    }
+
     void GenerateGrid()
     {
         tiles.Clear();
 
+        if (!seedSet)
+        {
+            mapOffsetX = Random.Range(-10000f, 10000f);
+            mapOffsetY = Random.Range(-10000f, 10000f);
+            seedSet = true;
+        }
+
+        // Fix: Make all Random.Range calls in environment generation deterministic
+        Random.InitState((int)(mapOffsetX * 10f + mapOffsetY * 100f));
+
+
         Vector3 worldCenter = HexToWorld(width / 2, height / 2);
         float   maxRadius   = (Mathf.Min(width, height) / 2f) * (hexSize * 2f);
-
-        float randomOffsetX = Random.Range(-10000f, 10000f);
-        float randomOffsetY = Random.Range(-10000f, 10000f);
 
         // STEP 1: INITIAL NOISE GENERATION
         for (int q = 0; q < width; q++)
@@ -91,8 +121,8 @@ public class GridManager : MonoBehaviour
                 float distFromCenter  = Vector3.Distance(worldPos, worldCenter);
                 float normalizedDist  = distFromCenter / maxRadius;
                 float noiseValue      = Mathf.PerlinNoise(
-                    (q + randomOffsetX) * noiseScale,
-                    (r + randomOffsetY) * noiseScale);
+                    (q + mapOffsetX) * noiseScale,
+                    (r + mapOffsetY) * noiseScale);
                 float finalLandValue  = noiseValue - (normalizedDist * edgeFalloff);
 
                 if (finalLandValue >= landThreshold)
@@ -373,24 +403,111 @@ public class GridManager : MonoBehaviour
     {
         tile.hasStructure = true;
         int count = Random.Range(3, 6);
+
+        // Pick which era prefab to use for the initial spawn
+        GameObject eraBuilding = buildingIndustrialPrefab;
+
         for (int i = 0; i < count; i++)
         {
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = "Env_Structure";
-            cube.transform.SetParent(tile.transform);
+            GameObject obj;
+            if (eraBuilding != null)
+            {
+                obj = Instantiate(eraBuilding, tile.transform);
+                obj.name = "Env_Structure";
 
-            float rx     = Random.Range(-0.0035f, 0.0035f);
-            float ry     = Random.Range(-0.0035f, 0.0035f);
-            float h      = Random.Range(0.006f, 0.018f);
-            float w      = Random.Range(0.0025f, 0.0045f);
+                float rx = Random.Range(-0.0035f, 0.0035f);
+                float ry = Random.Range(-0.0035f, 0.0035f);
+                obj.transform.localPosition = new Vector3(rx, ry, 0f);
+                obj.transform.localRotation = Quaternion.identity;
+                // Remove colliders so units can walk through
+                foreach (var col in obj.GetComponentsInChildren<Collider>())
+                    Destroy(col);
+            }
+            else
+            {
+                // Fallback: plain cube
+                obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                obj.name = "Env_Structure";
+                obj.transform.SetParent(tile.transform);
 
-            cube.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
-            cube.transform.localScale    = new Vector3(w, w, h);
-            cube.transform.localRotation = Quaternion.identity;
-            cube.GetComponent<Renderer>().sharedMaterial = structureMaterial;
+                float rx = Random.Range(-0.0035f, 0.0035f);
+                float ry = Random.Range(-0.0035f, 0.0035f);
+                float h  = Random.Range(0.006f, 0.018f);
+                float w  = Random.Range(0.0025f, 0.0045f);
 
-            if (cube.TryGetComponent<Collider>(out Collider col))
-                Destroy(col);
+                obj.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
+                obj.transform.localScale    = new Vector3(w, w, h);
+                obj.transform.localRotation = Quaternion.identity;
+                obj.GetComponent<Renderer>().sharedMaterial = grassMaterial;
+
+                if (obj.TryGetComponent<Collider>(out Collider col))
+                    Destroy(col);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Swaps all environmental buildings on every tile to the prefab matching the given era.
+    /// Call this whenever TurnManager's global ear changes.
+    /// </summary>
+    public void RefreshEraBuildings(TurnManager.GameEra era)
+    {
+        GameObject prefab = buildingIndustrialPrefab;
+        if (era == TurnManager.GameEra.EarlyEighties) prefab = buildingEarly80sPrefab;
+        else if (era == TurnManager.GameEra.Retro)    prefab = buildingRetroPrefab;
+        else if (era == TurnManager.GameEra.Futuristic) prefab = buildingFuturisticPrefab;
+
+        foreach (var tile in tiles.Values)
+        {
+            if (!tile.hasStructure) continue;
+
+            // Remove existing Env_Structure children
+            for (int i = tile.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = tile.transform.GetChild(i);
+                if (child.name.Contains("Env_Structure"))
+                    Destroy(child.gameObject);
+            }
+
+            // Re-spawn with new prefab
+            SpawnStructuresEra(tile, prefab);
+        }
+    }
+
+    private void SpawnStructuresEra(HexTile tile, GameObject prefab)
+    {
+        int count = Random.Range(3, 6);
+        for (int i = 0; i < count; i++)
+        {
+            GameObject obj;
+            if (prefab != null)
+            {
+                obj = Instantiate(prefab, tile.transform);
+                obj.name = "Env_Structure";
+                float rx = Random.Range(-0.0035f, 0.0035f);
+                float ry = Random.Range(-0.0035f, 0.0035f);
+                obj.transform.localPosition = new Vector3(rx, ry, 0f);
+                obj.transform.localRotation = Quaternion.identity;
+                foreach (var col in obj.GetComponentsInChildren<Collider>())
+                    Destroy(col);
+            }
+            else
+            {
+                // Fallback: plain cube
+                obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                obj.name = "Env_Structure";
+                obj.transform.SetParent(tile.transform);
+                float rx = Random.Range(-0.0035f, 0.0035f);
+                float ry = Random.Range(-0.0035f, 0.0035f);
+                float h  = Random.Range(0.006f, 0.018f);
+                float w  = Random.Range(0.0025f, 0.0045f);
+                obj.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
+                obj.transform.localScale    = new Vector3(w, w, h);
+                obj.transform.localRotation = Quaternion.identity;
+                obj.GetComponent<Renderer>().sharedMaterial = grassMaterial;
+                if (obj.TryGetComponent<Collider>(out Collider col))
+                    Destroy(col);
+            }
         }
     }
 

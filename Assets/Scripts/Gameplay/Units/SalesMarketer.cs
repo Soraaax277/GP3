@@ -209,7 +209,7 @@ public class SalesMarketer : Unit
     // ─────────────────────────────────────────────────────────────────────────
     //  DEATH: when all charges are consumed the marketer retires
     // ─────────────────────────────────────────────────────────────────────────
-    private void Die()
+    public override void Die()
     {
         Debug.Log($"[SalesMarketer] {owner.playerName}'s Marketer has used all charges and retired.");
 

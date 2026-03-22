@@ -14,7 +14,7 @@ public static class SaveSystem
         {
             state.currentTurn = TurnManager.Instance.currentTurn;
             state.currentPlayerIndex = TurnManager.Instance.currentPlayerIndex;
-            state.currentEra = TurnManager.Instance.GetCurrentEra();
+            state.currentEra = TurnManager.Instance.GetCurrentEra().ToString();
             
             if (TurnManager.Instance.players.Count >= 2)
             {
@@ -59,6 +59,12 @@ public static class SaveSystem
             state.enemyActiveResearchTurns   = p2Research.Values.ToList();
         }
 
+        if (GridManager.Instance != null)
+        {
+            state.mapSeedX = GridManager.Instance.mapOffsetX;
+            state.mapSeedY = GridManager.Instance.mapOffsetY;
+        }
+
         SaveUnits(state);
         SaveBuildings(state);
         SaveStructures(state);
@@ -76,6 +82,24 @@ public static class SaveSystem
         PlayerPrefs.Save();
 
         Debug.Log("Game saved successfully");
+    }
+
+    /// <summary>
+    /// Peek at the save file to extract only the seeds so the map can be seeded before total load.
+    /// </summary>
+    public static bool TryPeekMapSeeds(out float x, out float y)
+    {
+        x = 0; y = 0;
+        if (!PlayerPrefs.HasKey(SAVE_KEY)) return false;
+        try
+        {
+            string json = PlayerPrefs.GetString(SAVE_KEY);
+            GameState state = JsonUtility.FromJson<GameState>(json);
+            x = state.mapSeedX;
+            y = state.mapSeedY;
+            return true;
+        }
+        catch { return false; }
     }
 
     public static bool LoadGame()
@@ -124,16 +148,16 @@ public static class SaveSystem
                 state.enemyActiveResearchTurns);
         }
 
-        LoadUnits(state);
-        LoadBuildings(state);
-        LoadStructures(state);
-        LoadTowers(state);
-        LoadWires(state);
-        LoadInfluence(state);
+        try { LoadUnits(state); } catch (System.Exception e) { Debug.LogError("Error loading units: " + e.Message); }
+        try { LoadBuildings(state); } catch (System.Exception e) { Debug.LogError("Error loading buildings: " + e.Message); }
+        try { LoadStructures(state); } catch (System.Exception e) { Debug.LogError("Error loading structures: " + e.Message); }
+        try { LoadTowers(state); } catch (System.Exception e) { Debug.LogError("Error loading towers: " + e.Message); }
+        try { LoadWires(state); } catch (System.Exception e) { Debug.LogError("Error loading wires: " + e.Message); }
+        try { LoadInfluence(state); } catch (System.Exception e) { Debug.LogError("Error loading influence: " + e.Message); }
 
         if (QuestManager.Instance != null && state.questState != null)
         {
-            QuestManager.Instance.LoadQuestState(state.questState);
+            try { QuestManager.Instance.LoadQuestState(state.questState); } catch (System.Exception e) { Debug.LogError("Error loading quests: " + e.Message); }
         }
 
         if (TurnManager.Instance != null)
@@ -142,7 +166,7 @@ public static class SaveSystem
             TurnManager.Instance.ResumeFromSave(state.currentPlayerIndex);
         }
 
-        Debug.Log("Game loaded successfully");
+        Debug.Log("Game loaded successfully (with safety checks)");
         return true;
     }
 
@@ -177,7 +201,8 @@ public static class SaveSystem
                 tileY = unit.currentTile.cubeCoords.y,
                 canAct = unit.canAct,
                 movementRemaining = unit.movementRemaining,
-                specialCharges = charges
+                specialCharges = charges,
+                level = unit.level
             };
 
             if (unit.owner == TurnManager.Instance.players[0])
@@ -271,6 +296,21 @@ public static class SaveSystem
                 {
                     tileX = tile.cubeCoords.x,
                     tileY = tile.cubeCoords.y,
+                    rotationY = wire.transform.rotation.eulerAngles.y,
+                    
+                    posX = wire.transform.position.x,
+                    posY = wire.transform.position.y,
+                    posZ = wire.transform.position.z,
+                    
+                    rotX = wire.transform.rotation.x,
+                    rotY = wire.transform.rotation.y,
+                    rotZ = wire.transform.rotation.z,
+                    rotW = wire.transform.rotation.w,
+                    
+                    sclX = wire.transform.localScale.x,
+                    sclY = wire.transform.localScale.y,
+                    sclZ = wire.transform.localScale.z,
+                    
                     isPlayerOwned = wire.owner == TurnManager.Instance.players[0],
                     currentDurability = wire.currentDurability
                 };
@@ -295,7 +335,8 @@ public static class SaveSystem
                     tileX = tile.cubeCoords.x,
                     tileY = tile.cubeCoords.y,
                     playerInfluence = playerInfluence,
-                    enemyInfluence = enemyInfluence
+                    enemyInfluence = enemyInfluence,
+                    influenceSuppression = tile.influenceSuppression
                 };
                 state.tileInfluences.Add(data);
             }
@@ -343,9 +384,12 @@ public static class SaveSystem
             unit.Initialize(tile, owner);
             unit.movementRemaining = (int)data.movementRemaining;
             unit.canAct = data.canAct;
+            unit.level = data.level; // Restore veterancy
             
             if (unit is BuilderUnit builder) builder.buildsRemaining = data.specialCharges;
             else if (unit is Technician tech) tech.actionCharges = data.specialCharges;
+            else if (unit is RoboWorker robo) robo.buildsRemaining = data.specialCharges;
+            else if (unit is SalesMarketer marketer) marketer.marketingCharges = data.specialCharges;
         }
     }
 
@@ -415,6 +459,8 @@ public static class SaveSystem
             StructureNode structure = structureObj.GetComponent<StructureNode>();
             if (structure != null)
             {
+                tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded buildings
+                
                 structure.Initialize(tile, owner);
                 if (structureData.isBuilt) structure.Build();
                 structure.currentDurability = structureData.currentDurability;
@@ -467,11 +513,18 @@ public static class SaveSystem
             TowerPlacementManager towerManager = Object.FindFirstObjectByType<TowerPlacementManager>();
             if (towerManager != null)
             {
+                tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded towers
+
                 TowerNode tower = towerManager.PlaceTowerDirect(tile, owner, parentNode);
                 if (tower != null)
                 {
-                    if (towerData.state == "Built") tower.SetBuilt();
+                    // Call Build() to transition it out of Hologram state natively
+                    if (towerData.state == "Powered" || towerData.state == "Constructed") 
+                    {
+                        tower.Build();
+                    }
                     tower.currentDurability = towerData.currentDurability;
+                    // If powered, grid refresh will sync its visuals/status on the first turn 
                 }
             }
         }
@@ -481,6 +534,8 @@ public static class SaveSystem
     {
         ClearAllWires();
 
+        WirePlacementManager wireManager = Object.FindFirstObjectByType<WirePlacementManager>();
+        
         foreach (var wireData in state.wires)
         {
             HexTile tile = GridManager.Instance.GetTile(wireData.tileX, wireData.tileY);
@@ -489,13 +544,30 @@ public static class SaveSystem
             PlayerData owner = wireData.isPlayerOwned ? 
                 TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
 
-            WirePlacementManager wireManager = Object.FindFirstObjectByType<WirePlacementManager>();
             if (wireManager != null)
             {
+                tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded wires
+
                 WireNode wire = wireManager.PlaceWireDirect(tile, owner);
                 if (wire != null)
                 {
+                    // If exact rotation/position isn't 0 (from an old save), restore absolute transforms
+                    bool hasLegacySave = (wireData.sclX == 0f && wireData.sclY == 0f && wireData.sclZ == 0f);
+                    
+                    if (!hasLegacySave)
+                    {
+                        wire.transform.position = new Vector3(wireData.posX, wireData.posY, wireData.posZ);
+                        wire.transform.rotation = new Quaternion(wireData.rotX, wireData.rotY, wireData.rotZ, wireData.rotW);
+                        wire.transform.localScale = new Vector3(wireData.sclX, wireData.sclY, wireData.sclZ);
+                    }
+                    else if (wireData.rotationY != 0f)
+                    {
+                        // Fallback to previous patch rotation logic
+                        wire.transform.rotation = Quaternion.Euler(0f, wireData.rotationY, 90f);
+                    }
+
                     wire.currentDurability = wireData.currentDurability;
+                    wire.gameObject.SetActive(true); // Force visibility in case prefab was disabled
                 }
             }
         }
@@ -517,6 +589,7 @@ public static class SaveSystem
             {
                 tile.SetInfluence(TurnManager.Instance.players[0], influenceData.playerInfluence);
                 tile.SetInfluence(TurnManager.Instance.players[1], influenceData.enemyInfluence);
+                tile.influenceSuppression = influenceData.influenceSuppression;
             }
         }
     }

@@ -10,6 +10,8 @@ public class GameState
     public int currentTurn;
     public int currentPlayerIndex;
     public string currentEra;
+    public float mapSeedX;
+    public float mapSeedY;
     
     // Player Tech/State
     public int playerResearchPoints;
@@ -102,6 +104,7 @@ public class UnitData
     public int actionsRemaining;
     public float movementRemaining;
     public int specialCharges;
+    public int level;
 }
 
 [Serializable]
@@ -131,6 +134,13 @@ public class WireData
 {
     public int tileX;
     public int tileY;
+    public float rotationY; // Legacy compatibility
+    
+    // Explicit Transform Values
+    public float posX, posY, posZ;
+    public float rotX, rotY, rotZ, rotW;
+    public float sclX, sclY, sclZ;
+
     public bool isPlayerOwned;
     public float currentDurability;
 }
@@ -142,4 +152,5 @@ public class TileInfluenceData
     public int tileY;
     public int playerInfluence;
     public int enemyInfluence;
+    public int influenceSuppression;
 }

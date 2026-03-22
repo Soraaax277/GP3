@@ -9,8 +9,13 @@ public class SignalNode : MonoBehaviour
 
     public HexTile ParentTile => tile;
 
-    [Header("Visual")]
-    public GameObject businessBuilding;
+    [Header("Visual Levels")]
+    public GameObject level1Visual;
+    public GameObject level2Visual;
+    public GameObject level3Visual;
+    public GameObject level4Visual;
+    [SerializeField] private int currentLevel = 1;
+    private GameObject currentVisualObj;
 
     //  TOWER CAPACITY
     [Header("Tower Settings")]
@@ -95,8 +100,7 @@ public class SignalNode : MonoBehaviour
         if (!player.ownedNodes.Contains(this))
             player.ownedNodes.Add(this);
 
-        if (businessBuilding == null)
-            businessBuilding = gameObject;
+        RefreshVisuals();
 
         CreateRangeIndicator();
         SetRangeColor(new Color(0f, 1f, 0f, 0.25f)); // Green for HQ
@@ -115,6 +119,31 @@ public class SignalNode : MonoBehaviour
 
         ActionLogUI.PostFiltered(player, "established a NEW CONNECTION!", ActionLogUI.Colors.Construction);
         Debug.Log($"[SignalNode] Initialized and Registered as Power Source for {player.playerName} at {hexTile.name}");
+    }
+
+    public void RefreshVisuals()
+    {
+        // 1. Determine level from tech tree or manual setting
+        int techLevel = 1;
+        if (TechManager.Instance != null && owner != null)
+            techLevel += Mathf.RoundToInt(TechManager.Instance.GetInfraFlatBonus(owner, "HQLevel"));
+            
+        currentLevel = Mathf.Clamp(techLevel, 1, 4);
+
+        // 2. Select prefab
+        GameObject prefab = level1Visual;
+        if (currentLevel == 2) prefab = level2Visual;
+        else if (currentLevel == 3) prefab = level3Visual;
+        else if (currentLevel == 4) prefab = level4Visual;
+
+        if (prefab == null) return;
+
+        // 3. Swap
+        if (currentVisualObj != null && currentVisualObj != gameObject)
+            Destroy(currentVisualObj);
+
+        currentVisualObj = Instantiate(prefab, transform.position, transform.rotation, transform);
+        currentVisualObj.name = $"Visual_Level{currentLevel}";
     }
 
     //  BASE SIGNAL

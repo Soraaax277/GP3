@@ -69,7 +69,8 @@ public class EconomyManager : MonoBehaviour
         Debug.Log($" > Net Gold    : {player.resources}");
     }
 
-    //  UPKEEP  (System 3)
+    private float lastLogTime = -100f;
+
     private int CalculateTotalUpkeep(PlayerData player)
     {
         if (TurnManager.Instance == null) return 0;
@@ -98,14 +99,20 @@ public class EconomyManager : MonoBehaviour
 
         int total = Mathf.RoundToInt(raw * upkeepMultiplier);
 
-        if (upkeepMultiplier > 1f)
+        // Periodically log the upkeep for the player (human player only to avoid spam)
+        if (Time.time - lastLogTime >= 15f && player.isAI == false)
         {
-            Debug.Log($"[Economy] {player.playerName} Labor Mismatch! Upkeep x{upkeepMultiplier} " +
-                      $"(Hardware: {player.hardwareEra}, Workforce: {player.workforceEra})");
-        }
+            lastLogTime = Time.time;
+            
+            if (upkeepMultiplier > 1f)
+            {
+                Debug.Log($"[Economy] {player.playerName} Labor Mismatch! Upkeep x{upkeepMultiplier} " +
+                        $"(Hardware: {player.hardwareEra}, Workforce: {player.workforceEra})");
+            }
 
-        Debug.Log($"[Economy] {player.playerName} Total Upkeep: {total} " +
-                  $"(Raw: {raw} x Multiplier: {upkeepMultiplier})");
+            Debug.Log($"[Economy] {player.playerName} Total Upkeep: {total} " +
+                    $"(Raw: {raw} x Multiplier: {upkeepMultiplier})");
+        }
 
         return total;
     }

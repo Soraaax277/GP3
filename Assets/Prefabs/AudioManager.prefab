@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7857212119103772439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6660729408392709276}
+  - component: {fileID: 7128239317857308417}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6660729408392709276
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7857212119103772439}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 115.52011, y: -0, z: 77.17215}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7128239317857308417
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7857212119103772439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a90f684be413bc43b0a93f2f363b340, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  audioMixer: {fileID: 24100000, guid: bda5b4188a718dc42a39efe65a7a9d92, type: 2}
+  bgmMenu: {fileID: 8300000, guid: a39b1a410c9a14449aa9213800d1488f, type: 3}
+  bgmIndustrial: {fileID: 8300000, guid: e865702ffef63fd4a911fbf380c139cd, type: 3}
+  bgmEarly80s: {fileID: 8300000, guid: b423b19081ec6cb4f9c7d1a5b4c992e1, type: 3}
+  bgmRetro: {fileID: 8300000, guid: 6767b4fb48e94cc42be5c396d8bf2957, type: 3}
+  bgmFuturistic: {fileID: 8300000, guid: 423eed364ec91f643bccd7bb15b679e8, type: 3}
+  placeTowerSFX: {fileID: 0}
+  placeWireSFX: {fileID: 0}
+  placeBuildingSFX: {fileID: 0}
+  constructSFX: {fileID: 0}
+  repairSFX: {fileID: 0}
+  sabotageSFX: {fileID: 0}
+  layWireSFX: {fileID: 0}
+  powerSFX: {fileID: 0}
+  denySFX: {fileID: 0}
+  recruitSFX: {fileID: 0}
+  convertSFX: {fileID: 0}
+  refillSFX: {fileID: 0}
+  researchSFX: {fileID: 0}
+  maintainSFX: {fileID: 0}
+  selectSFX: {fileID: 0}
+  moveSFX: {fileID: 0}
+  acidRainSFX: {fileID: 0}
+  solarFlareSFX: {fileID: 0}
+  powerOutageSFX: {fileID: 0}
+  hyperInflationSFX: {fileID: 0}
+  techBoomSFX: {fileID: 0}
+  saboteurSFX: {fileID: 0}
+  geyserSFX: {fileID: 0}
+  musicSource: {fileID: 0}
+  sfxSource: {fileID: 0}
+  hazardSource: {fileID: 0}

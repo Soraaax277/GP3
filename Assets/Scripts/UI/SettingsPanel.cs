@@ -6,6 +6,7 @@ public class SettingsPanel : MonoBehaviour
     public Slider masterSlider;
     public Slider musicSlider;
     public Slider sfxSlider;
+    public Toggle hazardToggle;
 
     private void OnEnable()
     {
@@ -19,6 +20,8 @@ public class SettingsPanel : MonoBehaviour
             masterSlider.value = AudioManager.Instance.GetMasterVolume();
             musicSlider.value = AudioManager.Instance.GetMusicVolume();
             sfxSlider.value = AudioManager.Instance.GetSFXVolume();
+            if (hazardToggle != null) 
+                hazardToggle.isOn = AudioManager.Instance.IsHazardEnabled();
         }
     }
 
@@ -46,8 +49,17 @@ public class SettingsPanel : MonoBehaviour
         }
     }
 
+    public void OnHazardToggleChanged(bool value)
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.SetHazardEnabled(value);
+        }
+    }
+
     public void OnClose()
     {
         gameObject.SetActive(false);
     }
 }
+

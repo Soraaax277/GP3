@@ -62,6 +62,8 @@ public class PauseMenuUI : MonoBehaviour
 
     public void GoToMainMenu()
     {
+        SaveSystem.SaveGame();
+        DG.Tweening.DOTween.KillAll(); // Prevent "Target destroyed" DOTween warnings
         Time.timeScale = 1f;
         GameIsPaused = false;
         SceneManager.LoadScene("MainMenuScene");

@@ -70,7 +70,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 3ed637c238d099c4ab061992de10109e, type: 2}
     - target: {fileID: 919132149155446097, guid: 27942f7f372c6bd4c8ff169ec832c194, type: 3}
       propertyPath: m_Name
-      value: Retro
+      value: TOWER_Retro
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

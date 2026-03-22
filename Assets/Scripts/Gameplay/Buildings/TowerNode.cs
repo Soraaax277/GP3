@@ -64,6 +64,46 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     }
     
     public float currentDurability;
+
+    [Header("Era Visuals")]
+    public GameObject industrialVisual;
+    public GameObject early80sVisual;
+    public GameObject retroVisual;
+    public GameObject futuristicVisual;
+    private GameObject currentVisualObj;
+    public void UpdateEraVisuals()
+    {
+        if (TurnManager.Instance == null) return;
+        TurnManager.GameEra era = TurnManager.Instance.GetCurrentEra();
+
+        // 1. Turn OFF all visuals
+        if (industrialVisual != null) industrialVisual.SetActive(false);
+        if (early80sVisual != null) early80sVisual.SetActive(false);
+        if (retroVisual != null) retroVisual.SetActive(false);
+        if (futuristicVisual != null) futuristicVisual.SetActive(false);
+
+        // 2. Turn ON the matching era visual
+        GameObject activeVisual = industrialVisual;
+        if (era == TurnManager.GameEra.EarlyEighties && early80sVisual != null) activeVisual = early80sVisual;
+        else if (era == TurnManager.GameEra.Retro && retroVisual != null) activeVisual = retroVisual;
+        else if (era == TurnManager.GameEra.Futuristic && futuristicVisual != null) activeVisual = futuristicVisual;
+
+        if (activeVisual != null) 
+        {
+            activeVisual.SetActive(true);
+            foreach (var col in activeVisual.GetComponentsInChildren<Collider>())
+                Destroy(col);
+        }
+
+        // 3. Apply hologram/solid state to everything currently active
+        if (state == TowerState.Hologram)
+
+            HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
+        else
+            HologramUtil.MakeSolid(gameObject);
+    }
+
+    private TowerState _stateCache;
     public TowerState state { get; private set; }
     private GameObject rangeIndicator;
     private Renderer[] _cachedRenderers;
@@ -85,7 +125,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         _isBuilderFinished = false;
         state = TowerState.Hologram;
 
-        HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
+        UpdateEraVisuals();
         CreateRangeIndicator();
         SetRangeColor(new Color(0f, 0.5f, 1f, 0.25f));
         ShowRange(false);
@@ -286,6 +326,10 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     //  RANGE INDICATOR HELPERS
     public void CreatePreview()
     {
+        // Set state first so UpdateEraVisuals knows to tint as hologram
+        state = TowerState.Hologram;
+        // Spawn the correct era visual and tint it as a hologram
+        UpdateEraVisuals();
         CreateRangeIndicator();
         ShowRange(true);
     }

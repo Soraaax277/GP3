@@ -66,7 +66,16 @@ public class StructurePlacementManager : MonoBehaviour
         currentFeature = requiredFeature;
 
         hologram = Instantiate(prefab);
-        HologramUtil.MakeHologram(hologram, new Color(0f, 1f, 0f, 0.35f));
+
+        // If it's a Canteen, spawn the correct era visual before turning it into a hologram
+        if (hologram.TryGetComponent(out Canteen canteen))
+        {
+            canteen.UpdateEraVisuals();
+        }
+        else
+        {
+            HologramUtil.MakeHologram(hologram, new Color(0f, 1f, 0f, 0.35f));
+        }
     }
 
     void FollowMouse()

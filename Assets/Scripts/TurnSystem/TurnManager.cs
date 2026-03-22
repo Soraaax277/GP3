@@ -26,6 +26,7 @@ public class TurnManager : MonoBehaviour
     private List<StructureNode> allStructures = new List<StructureNode>();
 
     public event System.Action OnGameStatusChanged;
+    public event System.Action<GameEra> OnEraChanged;
 
     // Fired at the start of every player's turn, AFTER fog-of-war has been
     // updated. DebugCheatManager subscribes to this so it can re-apply the map
@@ -288,7 +289,20 @@ public class TurnManager : MonoBehaviour
         StartTurn();
     }
 
-    void UpdateEra()
+    private void OnApplicationQuit()
+    {
+        SaveSystem.SaveGame();
+    }
+
+    public void ResumeFromSave(int playerIndex)
+    {
+        currentPlayerIndex = playerIndex;
+        UpdateEra(true); // Force era update to trigger sounds/UI on load
+        StartTurn();
+        NotifyStatusChanged();
+    }
+
+    public void UpdateEra(bool force = false)
     {
         GameEra newEra;
         if      (currentTurn > 75) newEra = GameEra.Futuristic;
@@ -297,18 +311,26 @@ public class TurnManager : MonoBehaviour
         else                       newEra = GameEra.Industrial;
 
         // Only fire announcement when era actually changes
-        bool eraChanged = newEra != currentEra;
+        bool eraChanged = (newEra != currentEra) || force;
         currentEra = newEra;
 
         Debug.Log($"Game Era: {currentEra}");
 
         if (eraChanged)
         {
+            // Update visuals to match the new global era
+            foreach (var tower in GetAllTowers()) tower?.UpdateEraVisuals();
+            foreach (var structNode in GetAllStructures())
+                if (structNode is Canteen canteen) canteen.UpdateEraVisuals();
+            if (GridManager.Instance != null) GridManager.Instance.RefreshEraBuildings(currentEra);
+
             if (FeedbackController.Instance != null)
                 FeedbackController.Instance.PlayEraTransition(currentEra.ToString());
 
             if (EraAnnouncementController.Instance != null)
                 EraAnnouncementController.Instance.TriggerAnnouncement(currentEra);
+
+            OnEraChanged?.Invoke(currentEra);
         }
     }
 
@@ -361,17 +383,9 @@ public class TurnManager : MonoBehaviour
         allStructures.Remove(structure);
     }
 
-    public void ResumeFromSave(int playerIndex)
+    public GameEra GetCurrentEra()
     {
-        currentPlayerIndex = playerIndex;
-        UpdateEra();
-        StartTurn();
-        NotifyStatusChanged();
-    }
-
-    public string GetCurrentEra()
-    {
-        return currentEra.ToString();
+        return currentEra;
     }
 
     //  ERA COMPARISON HELPERS  (System 1)

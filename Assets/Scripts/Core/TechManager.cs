@@ -260,7 +260,10 @@ public class TechManager : MonoBehaviour
                             if (effect.targetUnits != null)
                             {
                                 foreach (var u in effect.targetUnits) 
-                                    GetOrCreateSet(_playerUnlockedUnitNames, player).Add(u.name);
+                                {
+                                    // Safety check to prevent MissingReferenceException during scene loads
+                                    if (u != null) GetOrCreateSet(_playerUnlockedUnitNames, player).Add(u.name);
+                                }
                             }
                             break;
                     }
@@ -509,12 +512,17 @@ public class TechManager : MonoBehaviour
                 TechTreeWindowManager.Instance.RefreshSabotageButton();
         }
 
-        // Refresh Build UI.
         if (BuildingUIManager.Instance != null && BuildingUIManager.Instance.panel.activeSelf)
         {
             SignalNode current = BuildingUIManager.Instance.GetCurrentBusiness();
             if (current != null)
                 BuildingUIManager.Instance.Open(current);
+        }
+
+        // 3. Refresh HQ Visuals (especially for HQLevel techs)
+        foreach (var node in player.ownedNodes)
+        {
+            if (node != null) node.RefreshVisuals();
         }
 
         // Refresh Tech Tree UI (handles both instant and delayed completions).

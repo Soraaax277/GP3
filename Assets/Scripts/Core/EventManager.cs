@@ -91,6 +91,27 @@ public class EventManager : MonoBehaviour
         ActionLogUI.PostFiltered(null, eventFlavor, ActionLogUI.Colors.World, true);
 
         SpawnEventParticles();
+        PlayEventSound(activeEvent);
+    }
+
+    private void PlayEventSound(EventType type)
+    {
+        if (AudioManager.Instance == null) return;
+
+        AudioClip clip = null;
+        switch (type)
+        {
+            case EventType.AcidRain: clip = AudioManager.Instance.acidRainSFX; break;
+            case EventType.SolarFlare: clip = AudioManager.Instance.solarFlareSFX; break;
+            case EventType.PowerOutage: clip = AudioManager.Instance.powerOutageSFX; break;
+            case EventType.HyperInflation: clip = AudioManager.Instance.hyperInflationSFX; break;
+            case EventType.TechBoom: clip = AudioManager.Instance.techBoomSFX; break;
+        }
+
+        if (clip != null)
+        {
+            AudioManager.Instance.PlayHazardSFX(clip);
+        }
     }
 
     private string GetEventFlavor(EventType type)

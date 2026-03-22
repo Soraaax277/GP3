@@ -135,6 +135,9 @@ public class HazardManager : MonoBehaviour
                 );
             }
 
+            if (AudioManager.Instance != null && AudioManager.Instance.geyserSFX != null)
+                AudioManager.Instance.PlayHazardSFX(AudioManager.Instance.geyserSFX);
+                
             Debug.Log("[HazardManager] Spawned Resource Geyser at " + spawnTile.cubeCoords);
         }
     }
@@ -222,6 +225,9 @@ public class HazardManager : MonoBehaviour
                     dynamicScale / obj.transform.localScale.z
                 );
             }
+
+            if (AudioManager.Instance != null && AudioManager.Instance.saboteurSFX != null)
+                AudioManager.Instance.PlayHazardSFX(AudioManager.Instance.saboteurSFX);
 
             Debug.Log("[HazardManager] Spawned Nomadic Saboteur at " + spawnTile.cubeCoords);
         }

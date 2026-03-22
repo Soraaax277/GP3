@@ -228,7 +228,15 @@ public class PlayerInput : MonoBehaviour
             }
             else if (i <= range)
             {
-                tile.HighlightWalkable(); 
+                // UI Fix: Must not highlight a tile as valid target if we literally can't stop on it (e.g. occupied by unit)
+                if (i == path.Count - 1 && tile.placedUnit != null && tile.placedUnit != selectedUnit)
+                {
+                    tile.HighlightBlocked();
+                }
+                else
+                {
+                    tile.HighlightWalkable(); 
+                }
             }
             else
             {

@@ -16,13 +16,13 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     [Header("Expansion Settings")]
     public int expansionRadius     = 2; // claimed hexes when built
     public int baseInfluenceAmount = 5; 
-    public int baseGoldCost        = 100;
+    public int baseGoldCost = 100;
 
     [Header("Hidden Stats")]
-    public float hiddenDurability = 50f;
-    public float currentHiddenDurability;
+    public float  hiddenDurability = 50f;
+    public float  currentHiddenDurability;
     public bool IsBroken { get; protected set; }
-
+ 
     protected GameObject rangeIndicator;
 
     public virtual void Initialize(HexTile tile, PlayerData player)
@@ -34,7 +34,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         IsBroken = false;
         IsBuilt = false; // Starts as unbuilt/hologram
         
-        HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
+        HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f)); 
         
         tile.hasStructure = true; 
         tile.placedStructure = this;
@@ -62,6 +62,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     {
         RemoveInfluence();
         IsBuilt = true;
+        // Force the solid state again, just in case any timing issues interfered during initialization
         HologramUtil.MakeSolid(gameObject);
         Debug.Log($"[Structure] {name} has been constructed!");
         
@@ -135,9 +136,8 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         }
         currentDurability = Mathf.Min(currentDurability + amount, baseDurability);
         
-        // Reset color if subclass doesn't handle visuals
-        Renderer rend = GetComponentInChildren<Renderer>();
-        if (rend != null) rend.material.color = Color.white; 
+        // Use utility to restore 100% original visuals/textures from prefab
+        HologramUtil.MakeSolid(gameObject); 
     }
 
     protected virtual void DestroyStructure()

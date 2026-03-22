@@ -23,14 +23,24 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
 
         // --- PHASE 1 COMPONENTS ---
+        // --- CORE COMPONENTS ON GAME OBJECT ---
+        if (GetComponent<PowerGridOverlay>() == null) gameObject.AddComponent<PowerGridOverlay>();
         if (GetComponent<EventManager>() == null) gameObject.AddComponent<EventManager>();
         if (GetComponent<HazardManager>() == null) gameObject.AddComponent<HazardManager>();
         if (GetComponent<FieldOfViewManager>() == null) gameObject.AddComponent<FieldOfViewManager>();
 
         // --- PHASE 2 COMPONENTS ---
         if (GetComponent<InfluenceBorderRenderer>() == null) gameObject.AddComponent<InfluenceBorderRenderer>();
-        if (GetComponent<PowerGridOverlay>() == null) gameObject.AddComponent<PowerGridOverlay>();
         if (GetComponent<FeedbackController>() == null) gameObject.AddComponent<FeedbackController>();
+
+        // --- SEED RECOVERY ---
+        // If we have a save, we must give the seeds to GridManager BEFORE it starts its Start() logic (if possible)
+        float sx, sy;
+        if (SaveSystem.TryPeekMapSeeds(out sx, out sy))
+        {
+             if (GridManager.Instance != null)
+                 GridManager.Instance.SeedMap(sx, sy);
+        }
     }
 
     private void Start()

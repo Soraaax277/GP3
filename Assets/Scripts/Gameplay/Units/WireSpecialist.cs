@@ -299,7 +299,7 @@ public class WireSpecialist : Unit
         return baseCost;
     }
 
-    void Die()
+    public override void Die()
     {
         if (currentTile != null) currentTile.placedUnit = null;
         Destroy(gameObject);

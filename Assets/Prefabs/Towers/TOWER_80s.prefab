@@ -90,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: a873f98cf088f0846a93b44441265a27, type: 2}
     - target: {fileID: 919132149155446097, guid: a4c1ca0f79d03ff4cafdf03335822ff4, type: 3}
       propertyPath: m_Name
-      value: 80s
+      value: TOWER_80s
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

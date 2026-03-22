@@ -66,6 +66,7 @@ public class EraBlurFeature : ScriptableRendererFeature
 
         public EraBlurPass(Settings settings) { _settings = settings; }
 
+        [System.Obsolete]
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             var desc = renderingData.cameraData.cameraTargetDescriptor;
@@ -73,6 +74,7 @@ public class EraBlurFeature : ScriptableRendererFeature
             RenderingUtils.ReAllocateIfNeeded(ref _tempRT, desc, FilterMode.Bilinear, name: "_EraBlurTemp");
         }
 
+        [System.Obsolete]
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             if (_settings.blurMaterial == null) return;

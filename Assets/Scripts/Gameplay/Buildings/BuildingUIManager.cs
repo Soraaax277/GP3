@@ -139,8 +139,6 @@ public class BuildingUIManager : MonoBehaviour
 
     private GameObject GetBuildingGameObject()
     {
-        if (currentBuilding is SignalNode sn && sn.businessBuilding != null)
-            return sn.businessBuilding;
         return currentBuilding != null ? currentBuilding.gameObject : null;
     }
 
@@ -181,7 +179,7 @@ public class BuildingUIManager : MonoBehaviour
         if (CameraController.Instance != null)
             CameraController.Instance.SetBuildModeLock(true, followTarget.position);
 
-        if      (building is SignalNode               hq)      { followTarget = hq.businessBuilding != null ? hq.businessBuilding.transform : hq.transform; ShowHQRoot(hq); }
+        if      (building is SignalNode               hq)      { followTarget = hq.transform; ShowHQRoot(hq); }
         else if (building is BPOCenter                bpo)     ShowBPO(bpo);
         else if (building is CommercialHub            hub)     ShowCommercialHub(hub);
         // IMPORTANT: AdvancedServiceCenter inherits from ServiceCenter — it MUST be

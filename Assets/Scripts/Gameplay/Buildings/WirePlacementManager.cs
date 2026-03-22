@@ -209,17 +209,30 @@ public class WirePlacementManager : MonoBehaviour
 
     public WireNode PlaceWireDirect(HexTile tile, PlayerData owner)
     {
-        if (tile == null || wirePrefab == null) return null;
+        if (tile == null) return null;
 
-        GameObject wireObj = Instantiate(
-            wirePrefab,
-            tile.transform.position + Vector3.up * 0.84f,
-            Quaternion.Euler(0, 0, 90)
-        );
+        GameObject wireObj;
+        if (wirePrefab != null)
+        {
+            wireObj = Instantiate(wirePrefab, tile.transform.position + Vector3.up * 0.84f, Quaternion.Euler(0, 0, 90));
+        }
+        else
+        {
+            // Aggressive fallback to prevent wires from magically vanishing on load
+            // if the prefab link was lost from the manager between scenes.
+            wireObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            wireObj.transform.position = tile.transform.position + Vector3.up * 0.84f;
+            wireObj.transform.rotation = Quaternion.Euler(0, 0, 90);
+            wireObj.transform.localScale = new Vector3(0.2f, 0.05f, 0.2f);
+            Destroy(wireObj.GetComponent<Collider>());
+            wireObj.name = "WireFallback_" + tile.name;
+        }
 
         HologramUtil.MakeSolid(wireObj);
 
         WireNode wire = wireObj.GetComponent<WireNode>();
+        if (wire == null) wire = wireObj.AddComponent<WireNode>();
+        
         wire.Initialize(tile, owner);
 
         // NOTE: TurnManager.RegisterWire() is now called inside WireNode.Initialize(),

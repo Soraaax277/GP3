@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &7138439343365301010
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 172.60411
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00001
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 857.0743
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      propertyPath: m_Name
+      value: Industrial Canteen
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 671973183446711186}
+  m_SourcePrefab: {fileID: 100100000, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+--- !u!1 &8057429098113998403 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 49b6b88477d35a3458cd2e6ad2a88116, type: 3}
+  m_PrefabInstance: {fileID: 7138439343365301010}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &671973183446711186
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8057429098113998403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ee35dae46f55cb4e8dc710c7cfca837, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Canteen
+  baseDurability: 100
+  currentDurability: 0
+  goldUpkeep: 10
+  expansionRadius: 2
+  baseInfluenceAmount: 5
+  baseGoldCost: 100
+  hiddenDurability: 50
+  currentHiddenDurability: 0
+  industrialVisual: {fileID: 0}
+  early80sVisual: {fileID: 919132149155446097, guid: 00ae6ad4a513a824290090689e449dee, type: 3}
+  retroVisual: {fileID: 919132149155446097, guid: cf1b6748f644fec4ab3a98448a0b4e1d, type: 3}
+  futuristicVisual: {fileID: 919132149155446097, guid: ab4cd0f67d894834a8c31fb8fd6116b0, type: 3}
