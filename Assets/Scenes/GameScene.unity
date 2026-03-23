@@ -73611,7 +73611,7 @@ MonoBehaviour:
   roboWorkerPrefab: {fileID: 1212159640613329235, guid: bcfac6c8d0ff39e408078cd18f3301a5, type: 3}
   roboMarshallPrefab: {fileID: 1212159640613329235, guid: 0c9a51b01f3f3ff4ea3b2ce7a6f65c2c, type: 3}
   serviceCenterPrefab: {fileID: 1299103369380968764, guid: 241fc5137a9f35f48aba7dc64611161f, type: 3}
-  bpoCenterPrefab: {fileID: 1105714717946617516, guid: 532ec5d8b84ecdb469ea0b6d3e6ed1d6, type: 3}
+  bpoCenterPrefab: {fileID: 5374928708083932570, guid: 532ec5d8b84ecdb469ea0b6d3e6ed1d6, type: 3}
   commercialHubPrefab: {fileID: 6394798834482981869, guid: 91576fdcad13fb94b8d4c5cfa22c53ee, type: 3}
   businessCenterPrefab: {fileID: 6925926071195437682, guid: f1a9249548155224bba4ab247c22c6e0, type: 3}
   signalBoosterPrefab: {fileID: 2830794656883086493, guid: d1c1cc2c7532e0043b2a7db111669c04, type: 3}

@@ -446,25 +446,32 @@ public static class SaveSystem
 
         foreach (var structureData in state.structures)
         {
-            HexTile tile = GridManager.Instance.GetTile(structureData.tileX, structureData.tileY);
-            if (tile == null) continue;
-
-            PlayerData owner = structureData.isPlayerOwned ? 
-                TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
-
-            GameObject prefab = GetStructurePrefab(structureData.structureType);
-            if (prefab == null) continue;
-
-            GameObject structureObj = Object.Instantiate(prefab);
-            StructureNode structure = structureObj.GetComponent<StructureNode>();
-            if (structure != null)
+            try
             {
-                tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded buildings
-                
-                structure.Initialize(tile, owner);
-                if (structureData.isBuilt) structure.Build();
-                structure.currentDurability = structureData.currentDurability;
-                // Note: isBroken state could be further restored if StructureNode has set/load logic
+                HexTile tile = GridManager.Instance.GetTile(structureData.tileX, structureData.tileY);
+                if (tile == null) continue;
+
+                PlayerData owner = structureData.isPlayerOwned ? 
+                    TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+
+                GameObject prefab = GetStructurePrefab(structureData.structureType);
+                if (prefab == null) continue;
+
+                GameObject structureObj = Object.Instantiate(prefab);
+                StructureNode structure = structureObj.GetComponent<StructureNode>();
+                if (structure != null)
+                {
+                    tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded buildings
+                    
+                    structure.Initialize(tile, owner);
+                    if (structureData.isBuilt) structure.Build();
+                    structure.currentDurability = structureData.currentDurability;
+                    // Note: isBroken state could be further restored if StructureNode has set/load logic
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error loading structure at {structureData.tileX},{structureData.tileY}: {e.Message}");
             }
         }
     }
@@ -501,31 +508,38 @@ public static class SaveSystem
 
         foreach (var towerData in state.towers)
         {
-            HexTile tile = GridManager.Instance.GetTile(towerData.tileX, towerData.tileY);
-            if (tile == null) continue;
-
-            PlayerData owner = towerData.isPlayerOwned ? 
-                TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
-
-            HexTile parentTile = GridManager.Instance.GetTile(towerData.parentNodeX, towerData.parentNodeY);
-            SignalNode parentNode = parentTile?.placedNode;
-
-            TowerPlacementManager towerManager = Object.FindFirstObjectByType<TowerPlacementManager>();
-            if (towerManager != null)
+            try
             {
-                tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded towers
+                HexTile tile = GridManager.Instance.GetTile(towerData.tileX, towerData.tileY);
+                if (tile == null) continue;
 
-                TowerNode tower = towerManager.PlaceTowerDirect(tile, owner, parentNode);
-                if (tower != null)
+                PlayerData owner = towerData.isPlayerOwned ? 
+                    TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+
+                HexTile parentTile = GridManager.Instance.GetTile(towerData.parentNodeX, towerData.parentNodeY);
+                SignalNode parentNode = parentTile?.placedNode;
+
+                TowerPlacementManager towerManager = Object.FindFirstObjectByType<TowerPlacementManager>();
+                if (towerManager != null)
                 {
-                    // Call Build() to transition it out of Hologram state natively
-                    if (towerData.state == "Powered" || towerData.state == "Constructed") 
+                    tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded towers
+
+                    TowerNode tower = towerManager.PlaceTowerDirect(tile, owner, parentNode);
+                    if (tower != null)
                     {
-                        tower.Build();
+                        // Call Build() to transition it out of Hologram state natively
+                        if (towerData.state == "Powered" || towerData.state == "Constructed") 
+                        {
+                            tower.Build();
+                        }
+                        tower.currentDurability = towerData.currentDurability;
+                        // If powered, grid refresh will sync its visuals/status on the first turn 
                     }
-                    tower.currentDurability = towerData.currentDurability;
-                    // If powered, grid refresh will sync its visuals/status on the first turn 
                 }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error loading tower at {towerData.tileX},{towerData.tileY}: {e.Message}");
             }
         }
     }

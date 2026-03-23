@@ -398,9 +398,48 @@ public class TurnManager : MonoBehaviour
     public void ResumeFromSave(int playerIndex)
     {
         currentPlayerIndex = playerIndex;
+        currentPlayer = players[currentPlayerIndex];
+        
         UpdateEra(true); // Force era update to trigger sounds/UI on load
-        StartTurn();
+        
+        // Re-establish game visuals / structural calculations without advancing the state logic
+        if (BuildingUIManager.Instance != null) 
+            BuildingUIManager.Instance.Close();
+
+        foreach (PlayerData p in players)
+        {
+            foreach (SignalNode node in p.ownedNodes)
+            {
+                if (node != null)
+                    node.PropagateSignal();
+            }
+        }
+
+        if (InfluenceManager.Instance != null)
+        {
+            InfluenceManager.Instance.RecalculateGlobalInfluence(players);
+        }
+
         NotifyStatusChanged();
+
+        if (FieldOfViewManager.Instance != null)
+        {
+            FieldOfViewManager.Instance.UpdateFogOfWar(players[0]);
+        }
+
+        OnTurnStarted?.Invoke(currentPlayer);
+
+        if (InfluenceBorderRenderer.Instance != null)
+        {
+            InfluenceBorderRenderer.Instance.UpdateBorders();
+        }
+
+        HandleCameraFocus(currentPlayer);
+
+        if (currentPlayer.isAI && EnemyAI.Instance != null)
+        {
+            EnemyAI.Instance.ExecuteTurn(currentPlayer);
+        }
     }
 
     public void UpdateEra(bool force = false)
@@ -422,7 +461,7 @@ public class TurnManager : MonoBehaviour
             // Update visuals to match the new global era
             foreach (var tower in GetAllTowers()) tower?.UpdateEraVisuals();
             foreach (var structNode in GetAllStructures())
-                if (structNode is Canteen canteen) canteen.UpdateEraVisuals();
+                structNode?.UpdateEraVisuals();
             if (GridManager.Instance != null) GridManager.Instance.RefreshEraBuildings(currentEra);
 
             if (FeedbackController.Instance != null)

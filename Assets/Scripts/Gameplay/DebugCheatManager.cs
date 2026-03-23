@@ -149,6 +149,14 @@ public class DebugCheatManager : MonoBehaviour
             TechManager.Instance.instantResearchMode = cheatInstantResearch;
         }
 
+        // Do not force UI/Era resets or cheating logic over a legitimately loaded save
+        // GameManager's SetupGame() finishes before this frame fires. If we successfully 
+        // loaded an older save, the currentTurn will already be properly > 1 here.
+        if (TurnManager.Instance.currentTurn > 1) 
+        {
+            cheatForceEra = false;
+        }
+
         ApplyAllCheats();
     }
 

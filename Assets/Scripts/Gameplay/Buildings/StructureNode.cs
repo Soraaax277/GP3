@@ -241,5 +241,6 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     public void SetRangeColor(Color color) { if (rangeIndicator != null) rangeIndicator.GetComponent<Renderer>().material.color = color; }
     public void ShowRange(bool show) { if (rangeIndicator != null) { if (show) UpdateRangeVisuals(); rangeIndicator.SetActive(show); } }
 
+    public virtual void UpdateEraVisuals() { }
     public abstract string GetRequiredTechFeature();
 }

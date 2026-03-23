@@ -170,7 +170,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 829f21c679336b542a2ef3a78167127c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SignalNode
-  businessBuilding: {fileID: 4850126143380126056}
+  level1Visual: {fileID: 919132149155446097, guid: c05e2c508af6c494aac7d826b9bf608d, type: 3}
+  level2Visual: {fileID: 919132149155446097, guid: 8382341034821db41a51936ceac4b6db, type: 3}
+  level3Visual: {fileID: 919132149155446097, guid: f4f54aeb6b2ab4f4ba1a5c332ef46f4d, type: 3}
+  level4Visual: {fileID: 0}
+  currentLevel: 1
   maxTowers: 2
   towersPlacedCount: 0
   baseInfluenceRadius: 3

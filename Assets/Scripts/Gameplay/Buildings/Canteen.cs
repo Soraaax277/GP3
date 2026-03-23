@@ -17,7 +17,7 @@ public class Canteen : StructureNode
         UpdateEraVisuals();
     }
 
-    public void UpdateEraVisuals()
+    public override void UpdateEraVisuals()
     {
         if (TurnManager.Instance == null) return;
         TurnManager.GameEra era = TurnManager.Instance.GetCurrentEra();
