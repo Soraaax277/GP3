@@ -1,6 +1,108 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+// A single building prefab entry with its own inspector-adjustable scale.
+[System.Serializable]
+public class EraBuilding
+{
+    [Tooltip("The building prefab to spawn. Its materials will never be overwritten.")]
+    public GameObject prefab;
+    [Tooltip("Scale applied to this specific building. Adjust per-model to match your art.")]
+    public Vector3 scale = Vector3.one;
+}
+
+// One era's full set of buildings. A random entry is picked each time a building is spawned.
+[System.Serializable]
+public class EraBuildingSet
+{
+    public TurnManager.GameEra era;
+    [Tooltip("All building variants for this era. One is chosen at random per spawn.")]
+    public EraBuilding[] buildings;
+}
+
+// One entry in the nature prefab palette.
+[System.Serializable]
+public class NatureProp
+{
+    [Tooltip("The nature prefab to spawn (tree, rock, bush, etc.).")]
+    public GameObject prefab;
+
+    [Tooltip("When enabled this prop will gently sway using DOTween. " +
+             "Intended for trees and tall foliage — disable for rocks, ruins, etc.")]
+    public bool isSway = false;
+
+    [Tooltip("Maximum lean angle (degrees) during the sway. 2–5 is subtle; 10+ is dramatic.")]
+    [Range(0f, 20f)]
+    public float swayAngle = 3f;
+
+    [Tooltip("How many seconds one full sway cycle takes.")]
+    [Range(0.5f, 10f)]
+    public float swayDuration = 2.5f;
+}
+
+// Added at runtime to every sway-enabled nature prop.
+// Uses DOTween to rock the transform gently on X and Z.
+// A slight random phase offset per prop prevents all trees swaying in lockstep.
+public class TreeSwayBehaviour : MonoBehaviour
+{
+    public float swayAngle           = 3f;
+    public float swayDuration        = 2.5f;
+    public float lodFarDistance      = 40f;
+    public float subtleSwayMultiplier = 0.08f;
+
+    private float      _timeOffset;
+    private Quaternion _baseRot;
+    private Vector3    _baseScale;
+
+    // Cache camera and throttle the expensive distance check to every 0.5 s
+    private static Camera _cachedCam;
+    private float  _intensity        = 1f;
+    private float  _nextDistanceCheck = 0f;
+    private const float DistCheckInterval = 0.5f;
+
+    private void Start()
+    {
+        _baseRot    = transform.localRotation;
+        _baseScale  = transform.localScale;
+        _timeOffset = Random.Range(0f, 100f);
+
+        if (_cachedCam == null) _cachedCam = Camera.main;
+        // Stagger first check so all trees don't evaluate on the same frame
+        _nextDistanceCheck = Time.time + Random.Range(0f, DistCheckInterval);
+    }
+
+    private void Update()
+    {
+        // Re-evaluate distance only every DistCheckInterval seconds
+        if (Time.time >= _nextDistanceCheck)
+        {
+            _nextDistanceCheck = Time.time + DistCheckInterval;
+            if (_cachedCam == null) _cachedCam = Camera.main;
+
+            if (_cachedCam != null)
+            {
+                float dist = Vector3.Distance(_cachedCam.transform.position, transform.position);
+                _intensity = dist > lodFarDistance
+                    ? subtleSwayMultiplier
+                    : Mathf.Lerp(1f, subtleSwayMultiplier, dist / lodFarDistance);
+            }
+        }
+
+        // Skip transform writes entirely when intensity is negligible — saves CPU
+        if (_intensity < 0.01f) return;
+
+        float t    = (Time.time + _timeOffset) / swayDuration;
+        float lean = Mathf.Sin(t * Mathf.PI * 2f)           * swayAngle * _intensity;
+        float side = Mathf.Sin(t * Mathf.PI * 2f * 0.7f + 1f) * swayAngle * 0.5f * _intensity;
+
+        transform.localRotation = _baseRot * Quaternion.Euler(lean, 0f, side);
+
+        float scalePulse = 1f + Mathf.Sin(t * Mathf.PI) * 0.02f * _intensity;
+        transform.localScale = _baseScale * scalePulse;
+    }
+}
+
+
 public class GridManager : MonoBehaviour
 {
     private static readonly Vector3Int[] CubeDirections =
@@ -51,15 +153,85 @@ public class GridManager : MonoBehaviour
              "GridManager will apply it to every land tile automatically.")]
     public Material grassMaterial;
 
-    [Header("Environmental Building Era Prefabs")]
-    [Tooltip("Prefab for the buildings randomly placed on the map during Industrial era.")]
-    public GameObject buildingIndustrialPrefab;
-    [Tooltip("Prefab for the Early 80s era map buildings.")]
-    public GameObject buildingEarly80sPrefab;
-    [Tooltip("Prefab for the Retro era map buildings.")]
-    public GameObject buildingRetroPrefab;
-    [Tooltip("Prefab for the Futuristic era map buildings.")]
-    public GameObject buildingFuturisticPrefab;
+    [Header("Environmental Building Era Sets")]
+    [Tooltip("One entry per era. Each entry holds an array of building variants "
+             + "to randomly pick from when spawning on land tiles.")]
+    public EraBuildingSet[] eraBuildingSets;
+
+    [Header("Building LOD Settings")]
+    [Tooltip("Screen-relative size (0..1) at which the building transitions from the " +
+             "close-up LOD to the distant LOD. 0.03 = switches when the building fills " +
+             "3% of screen height. Only used on prefabs with no LODGroup of their own.")]
+    [Range(0.001f, 0.5f)]
+    public float lod0ScreenSize = 0.03f;
+    [Tooltip("Screen-relative size at which shadows are turned off (mid LOD).")]
+    [Range(0.0001f, 0.1f)]
+    public float lod1ScreenSize = 0.008f;
+    [Tooltip("Screen-relative size below which the object is culled entirely. " +
+             "Keeping this small (0.001) means it only vanishes when it's a single pixel. " +
+             "This is the biggest performance lever — raise it to cull more aggressively.")]
+    [Range(0.0001f, 0.05f)]
+    public float lodCullScreenSize = 0.001f;
+
+    [Header("Building Scatter Settings")]
+    [Tooltip("How much each building's scale can deviate from its configured entry.scale. " +
+             "0.02 = ±2 %, 0.20 = ±20 %. Applied uniformly on all three axes.")]
+    [Range(0f, 0.5f)]
+    public float buildingScaleVariation = 0.02f;
+
+    [Tooltip("How far from the tile centre a building may be placed, expressed as a " +
+             "fraction of hexSize. 0 = always centred, 0.4 = up to 40 % of hex radius away.")]
+    [Range(0f, 0.5f)]
+    public float buildingPositionSpread = 0.35f;
+
+    [Tooltip("When enabled each building gets a random 0–360° rotation around the Y axis " +
+             "so clusters never look copy-pasted.")]
+    public bool randomizeRotation = true;
+
+    [Header("Building Population")]
+    [Tooltip("Fraction of land tiles that start with buildings at the Industrial era. " +
+             "0.35 = 35 %. Halved from the original 70 % to keep the map sparse early on.")]
+    [Range(0.05f, 1f)]
+    public float initialBuildingCoverage = 0.35f;
+
+    [Tooltip("Extra fraction of land tiles that gain buildings each time the world era " +
+             "advances. 0.10 = +10 % per era, so by Futuristic the map is at ~65 %.")]
+    [Range(0f, 0.3f)]
+    public float buildingCoveragePerEra = 0.10f;
+
+    [Header("Nature Decoration")]
+    [Tooltip("Drop any natural prop prefabs here — trees, rocks, bushes, etc. " +
+             "Enable 'isSway' on tree entries for a gentle DOTween wind animation. " +
+             "These ignore eras and are simply reshuffled when the era changes.")]
+    public NatureProp[] naturePrefabs;
+
+    [Tooltip("Fraction of land tiles that receive nature decorations. " +
+             "Can overlap with building tiles — nature spawns independently.")]
+    [Range(0f, 1f)]
+    public float natureCoverage = 0.60f;
+
+    [Tooltip("How many nature props are placed per decorated tile (min / max).")]
+    public int natureCountMin = 1;
+    public int natureCountMax = 5;
+
+    [Tooltip("Base scale applied to all nature props. " +
+             "Acts as the centre of the random scale range.")]
+    public Vector3 natureBaseScale = Vector3.one;
+
+    [Tooltip("How wildly nature props can vary in scale. " +
+             "0.40 = ±40 % — much more unrestrained than buildings.")]
+    [Range(0f, 1f)]
+    public float natureScaleVariation = 0.40f;
+
+    [Tooltip("How far a nature prop can stray from the tile centre, as a fraction of hexSize. " +
+             "Higher than buildings — nature can spill toward tile edges.")]
+    [Range(0f, 0.8f)]
+    public float naturePositionSpread = 0.55f;
+
+    [Tooltip("Allow nature props to tilt randomly on X and Z (±this many degrees). " +
+             "Gives trees and rocks a natural leaning look.")]
+    [Range(0f, 30f)]
+    public float natureTiltRange = 8f;
 
     // ─────────────────────────────────────────────────────────────────────
     public Dictionary<Vector3Int, HexTile> tiles =
@@ -67,6 +239,43 @@ public class GridManager : MonoBehaviour
 
     // Shared sand material — created once, reused for all sand beds
     private Material _sandMaterial;
+
+    // Tiles that must never receive env buildings or nature — HQ tile + its ring-1 neighbours.
+    // Populated by RegisterHQTile(), persists for the lifetime of the map.
+    private readonly HashSet<HexTile> _hqExclusionZone = new HashSet<HexTile>();
+
+    // Call this immediately after placing each player HQ.
+    // Marks the HQ tile and all six neighbours as permanently off-limits for
+    // both environmental buildings and nature decorations, and destroys any
+    // that were already spawned there.
+    public void RegisterHQTile(HexTile hqTile)
+    {
+        if (hqTile == null) return;
+
+        _hqExclusionZone.Add(hqTile);
+        foreach (HexTile n in GetNeighbors(hqTile))
+            _hqExclusionZone.Add(n);
+
+        // Strip any env objects that may have landed there before the HQ was placed
+        foreach (HexTile t in _hqExclusionZone)
+            ClearEnvFromTile(t);
+    }
+
+    // Destroys all Env_Structure and Env_Nature children on a tile.
+    private void ClearEnvFromTile(HexTile tile)
+    {
+        if (tile == null) return;
+        for (int i = tile.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = tile.transform.GetChild(i);
+            if (child.name.Contains("Env_Structure") || child.name.Contains("Env_Nature"))
+                Destroy(child.gameObject);
+        }
+        tile.hasStructure = false;
+    }
+
+    // Returns true when a tile is inside the HQ exclusion zone.
+    private bool IsHQZone(HexTile tile) => _hqExclusionZone.Contains(tile);
 
     private void Awake()
     {
@@ -76,6 +285,16 @@ public class GridManager : MonoBehaviour
     private void Start()
     {
         GenerateGrid();
+        // Nature must spawn AFTER all other Start() methods have run so that
+        // HQs placed by BusinessSpawner/GameManager are already registered on
+        // their tiles (placedNode != null). WaitForEndOfFrame guarantees that.
+        StartCoroutine(SpawnNatureAfterFrame());
+    }
+
+    private System.Collections.IEnumerator SpawnNatureAfterFrame()
+    {
+        yield return new WaitForEndOfFrame();
+        SpawnNatureDecorations();
     }
 
     [Header("Generation Seeds (Saved)")]
@@ -212,7 +431,13 @@ public class GridManager : MonoBehaviour
             structureMaterial.color = new Color(0.8f, 0.8f, 0.85f);
         }
 
-        int landTilesWithStructures = Mathf.RoundToInt(allTiles.Count * 0.70f);
+        int landTilesWithStructures = Mathf.RoundToInt(allTiles.Count * initialBuildingCoverage);
+        // Hard filter — allTiles was built before water conversion ran, so some
+        // entries may now be water. Strip them out before picking spawn targets.
+        allTiles.RemoveAll(t => t.type == HexTile.TileType.Water);
+        allTiles.RemoveAll(t => IsHQZone(t));
+        landTilesWithStructures = Mathf.RoundToInt(allTiles.Count * initialBuildingCoverage);
+
         for (int i = 0; i < landTilesWithStructures; i++)
         {
             if (allTiles.Count == 0) break;
@@ -220,6 +445,185 @@ public class GridManager : MonoBehaviour
             SpawnStructures(allTiles[index]);
             allTiles.RemoveAt(index);
         }
+
+        // NOTE: Nature decorations are NOT spawned here.
+        // SpawnNatureDecorations() must be called AFTER all HQs/bases have been
+        // placed so that IsBuildingBlocked() correctly skips those tiles.
+    }
+
+    // =====================================================================
+    //  NATURE DECORATIONS
+    // =====================================================================
+
+    // Populates a random subset of land tiles with nature props (trees, rocks, etc.).
+    // IMPORTANT: Call this AFTER all player HQs have been placed so that
+    // IsBuildingBlocked() correctly excludes base tiles (placedNode is set by then).
+    // Water tiles and tiles occupied by a player building/HQ are always skipped.
+    public void SpawnNatureDecorations()
+    {
+        if (naturePrefabs == null || naturePrefabs.Length == 0) return;
+
+        List<HexTile> landTiles = GetEligibleNatureTiles();
+        int toDecorate = Mathf.RoundToInt(landTiles.Count * natureCoverage);
+
+        for (int i = 0; i < toDecorate; i++)
+        {
+            if (landTiles.Count == 0) break;
+            int     idx  = Random.Range(0, landTiles.Count);
+            HexTile tile = landTiles[idx];
+            landTiles.RemoveAt(idx);
+            SpawnNatureOnTile(tile);
+        }
+    }
+
+    // Returns all tiles that are safe for nature spawning:
+    // must be land (not water) and must not be blocked by a player building or HQ.
+    private List<HexTile> GetEligibleNatureTiles()
+    {
+        List<HexTile> result = new List<HexTile>();
+        foreach (var tile in tiles.Values)
+        {
+            if (tile.type == HexTile.TileType.Water) continue;
+            if (tile.IsBuildingBlocked())            continue;
+            if (IsHQZone(tile))                      continue;
+            result.Add(tile);
+        }
+        return result;
+    }
+
+    // Removes all Env_Nature children from every tile and re-places them at new
+    // random positions. Called by RefreshEraBuildings so the world feels stirred
+    // on an era transition without changing which prefabs are used.
+    // Tiles that have become water or been claimed by a player since last spawn are skipped.
+    public void ReshuffleNatureDecorations()
+    {
+        if (naturePrefabs == null || naturePrefabs.Length == 0) return;
+
+        // Collect which tiles already had nature, destroy their props
+        List<HexTile> decoratedTiles = new List<HexTile>();
+        foreach (var tile in tiles.Values)
+        {
+            bool hadNature = false;
+            for (int i = tile.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = tile.transform.GetChild(i);
+                if (child.name.Contains("Env_Nature"))
+                {
+                    Destroy(child.gameObject);
+                    hadNature = true;
+                }
+            }
+            if (hadNature) decoratedTiles.Add(tile);
+        }
+
+        // Re-spawn — skip any tile that is now water, blocked, or inside an HQ zone
+        foreach (HexTile tile in decoratedTiles)
+        {
+            if (tile.type == HexTile.TileType.Water) continue;
+            if (tile.IsBuildingBlocked())            continue;
+            if (IsHQZone(tile))                      continue;
+            SpawnNatureOnTile(tile);
+        }
+    }
+
+    // Spawns nature props on a single tile. Count is random within natureCountMin/Max.
+    // Props are scattered freely across the tile surface with organic tilt and scale variation.
+    private void SpawnNatureOnTile(HexTile tile)
+    {
+        int count = Random.Range(
+            Mathf.Max(1, natureCountMin),
+            Mathf.Max(2, natureCountMax + 1));
+
+        float spread       = hexSize * naturePositionSpread;
+        float tileSurfaceY = tile.transform.position.y;
+        Renderer tileRenderer = tile.GetComponent<Renderer>();
+        if (tileRenderer != null) tileSurfaceY = tileRenderer.bounds.max.y;
+
+        for (int i = 0; i < count; i++)
+        {
+            NatureProp entry = naturePrefabs[Random.Range(0, naturePrefabs.Length)];
+            if (entry == null || entry.prefab == null) continue;
+            SpawnSingleNatureProp(tile, entry, spread, tileSurfaceY);
+        }
+    }
+
+    // Instantiates one nature prop, applies wild scale + full Y rotation + optional tilt,
+    // grounds it flush with the tile surface, then parents it to the tile.
+    // If the NatureProp entry has isSway enabled, a TreeSwayBehaviour is added.
+    private void SpawnSingleNatureProp(HexTile tile, NatureProp entry,
+                                        float spread, float tileSurfaceY)
+    {
+        float rx = Random.Range(-spread, spread);
+        float ry = Random.Range(-spread, spread);
+
+        GameObject obj = Instantiate(entry.prefab);
+        obj.name = "Env_Nature";
+
+        // ── Scale first — bounds depend on it ────────────────────────────────
+        float sx = natureBaseScale.x * Random.Range(1f - natureScaleVariation, 1f + natureScaleVariation);
+        float sy = natureBaseScale.y * Random.Range(1f - natureScaleVariation, 1f + natureScaleVariation);
+        float sz = natureBaseScale.z * Random.Range(1f - natureScaleVariation, 1f + natureScaleVariation);
+        obj.transform.localScale = new Vector3(sx, sy, sz);
+
+        // ── Store intended tilt but DON'T apply it yet ────────────────────────
+        // X/Z tilt shifts the bounding box min-Y, which inflates yOffset and makes
+        // the prop float. We measure bounds upright (Y rotation only), then tilt.
+        float yRot  = Random.Range(0f, 360f);
+        float xTilt = Random.Range(-natureTiltRange, natureTiltRange);
+        float zTilt = Random.Range(-natureTiltRange, natureTiltRange);
+
+        // Only Y rotation for the bounds pass — no lean
+        obj.transform.localRotation = Quaternion.Euler(0f, yRot, 0f);
+        obj.transform.position      = tile.transform.position;
+
+        // ── Ground flush: measure bounds while upright ────────────────────────
+        float yOffset = 0f;
+        MeshRenderer[] meshRenderers = obj.GetComponentsInChildren<MeshRenderer>(false);
+        if (meshRenderers.Length > 0)
+        {
+            float minY = float.MaxValue;
+            foreach (var mr in meshRenderers)
+                if (mr.enabled && mr.bounds.min.y < minY) minY = mr.bounds.min.y;
+            if (minY < float.MaxValue)
+                yOffset = tileSurfaceY - minY;
+        }
+
+        // ── Set final XZ scatter position with correct Y ──────────────────────
+        obj.transform.position = new Vector3(
+            tile.transform.position.x + rx,
+            tile.transform.position.y + yOffset,
+            tile.transform.position.z + ry);
+
+        // ── NOW apply the X/Z tilt — purely cosmetic at this point ───────────
+        obj.transform.localRotation = Quaternion.Euler(xTilt, yRot, zTilt);
+
+        // ── Snapshot materials ────────────────────────────────────────────────
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+        Material[][] savedMats = new Material[renderers.Length][];
+        for (int r = 0; r < renderers.Length; r++)
+            savedMats[r] = renderers[r].sharedMaterials;
+
+        // ── Parent after final transform is set ──────────────────────────────
+        obj.transform.SetParent(tile.transform, true);
+
+        // ── Restore materials ─────────────────────────────────────────────────
+        for (int r = 0; r < renderers.Length; r++)
+            renderers[r].sharedMaterials = savedMats[r];
+
+        // ── Disable colliders ─────────────────────────────────────────────────
+        foreach (var col in obj.GetComponentsInChildren<Collider>(true))
+            col.enabled = false;
+
+        // ── Sway animation (trees / foliage only) ────────────────────────────
+        if (entry.isSway)
+        {
+            TreeSwayBehaviour sway = obj.AddComponent<TreeSwayBehaviour>();
+            sway.swayAngle    = entry.swayAngle;
+            sway.swayDuration = entry.swayDuration;
+        }
+
+        // ── LOD ───────────────────────────────────────────────────────────────
+        SetupLOD(obj);
     }
 
     // =====================================================================
@@ -353,11 +757,9 @@ public class GridManager : MonoBehaviour
         _sandMaterial.color = SandColor(Vector3Int.zero, 0f);
     }
 
-    /// <summary>
-    /// Returns a new material instance with a unique sand color tinted per-tile
-    /// using a deterministic hash of the tile's cube coordinates.
-    /// Range: warm tan → slightly greenish damp sand.
-    /// </summary>
+    // Returns a new material instance with a unique sand color tinted per-tile
+    // using a deterministic hash of the tile's cube coordinates.
+    // Range: warm tan → slightly greenish damp sand.
     private Material BuildSandVariant(Vector3Int coords)
     {
         Shader sandShader = Shader.Find("Universal Render Pipeline/Lit")
@@ -397,71 +799,107 @@ public class GridManager : MonoBehaviour
     }
 
     // =====================================================================
-    //  STRUCTURE SPAWNING (unchanged)
+    //  STRUCTURE SPAWNING
     // =====================================================================
-    private void SpawnStructures(HexTile tile)
+
+    // Returns the EraBuildingSet for the given era, or null if not configured.
+    private EraBuildingSet GetEraBuildingSet(TurnManager.GameEra era)
     {
-        tile.hasStructure = true;
-        int count = Random.Range(3, 6);
-
-        // Pick which era prefab to use for the initial spawn
-        GameObject eraBuilding = buildingIndustrialPrefab;
-
-        for (int i = 0; i < count; i++)
-        {
-            GameObject obj;
-            if (eraBuilding != null)
-            {
-                obj = Instantiate(eraBuilding, tile.transform);
-                obj.name = "Env_Structure";
-
-                float rx = Random.Range(-0.0035f, 0.0035f);
-                float ry = Random.Range(-0.0035f, 0.0035f);
-                obj.transform.localPosition = new Vector3(rx, ry, 0f);
-                obj.transform.localRotation = Quaternion.identity;
-                // Remove colliders so units can walk through
-                foreach (var col in obj.GetComponentsInChildren<Collider>())
-                    Destroy(col);
-            }
-            else
-            {
-                // Fallback: plain cube
-                obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                obj.name = "Env_Structure";
-                obj.transform.SetParent(tile.transform);
-
-                float rx = Random.Range(-0.0035f, 0.0035f);
-                float ry = Random.Range(-0.0035f, 0.0035f);
-                float h  = Random.Range(0.006f, 0.018f);
-                float w  = Random.Range(0.0025f, 0.0045f);
-
-                obj.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
-                obj.transform.localScale    = new Vector3(w, w, h);
-                obj.transform.localRotation = Quaternion.identity;
-                obj.GetComponent<Renderer>().sharedMaterial = grassMaterial;
-
-                if (obj.TryGetComponent<Collider>(out Collider col))
-                    Destroy(col);
-            }
-        }
+        if (eraBuildingSets == null) return null;
+        foreach (var set in eraBuildingSets)
+            if (set != null && set.era == era) return set;
+        return null;
     }
 
-    /// <summary>
-    /// Swaps all environmental buildings on every tile to the prefab matching the given era.
-    /// Call this whenever TurnManager's global ear changes.
-    /// </summary>
+    // Picks a random EraBuilding from a set, or null if the set is empty.
+    private EraBuilding PickRandomBuilding(EraBuildingSet set)
+    {
+        if (set == null || set.buildings == null || set.buildings.Length == 0) return null;
+        return set.buildings[Random.Range(0, set.buildings.Length)];
+    }
+
+    // =====================================================================
+    //  BUILDING COUNT HELPERS
+    // =====================================================================
+
+    // Picks 1, 2, or 3 with a weighted distribution so the map feels varied:
+    // ~30 % get 1 building, ~40 % get 2, ~30 % get 3.
+    private int PickBuildingCount()
+    {
+        float r = Random.value;
+        if (r < 0.30f) return 1;
+        if (r < 0.70f) return 2;
+        return 3;
+    }
+
+    // Returns <paramref name="count"/> XZ slot offsets evenly distributed around
+    // the tile centre at <paramref name="radius"/>, each nudged by a small random
+    // jitter so the pattern is organic rather than perfectly geometric.
+    private Vector2[] BuildSlotOffsets(int count, float radius)
+    {
+        Vector2[] slots  = new Vector2[count];
+        float     jitter = radius * 0.18f; // +-18 % keeps slots well separated
+
+        if (count == 1)
+        {
+            // Single building: place near the centre with a small random nudge
+            slots[0] = new Vector2(
+                Random.Range(-jitter, jitter),
+                Random.Range(-jitter, jitter));
+        }
+        else
+        {
+            // Evenly space N buildings around a circle; randomise the start angle
+            float startAngle = Random.Range(0f, 360f);
+            float step       = 360f / count;
+
+            for (int i = 0; i < count; i++)
+            {
+                float angleDeg = startAngle + step * i;
+                float angleRad = angleDeg * Mathf.Deg2Rad;
+
+                slots[i] = new Vector2(
+                    Mathf.Cos(angleRad) * radius + Random.Range(-jitter, jitter),
+                    Mathf.Sin(angleRad) * radius + Random.Range(-jitter, jitter));
+            }
+        }
+        return slots;
+    }
+
+    // =====================================================================
+    //  STRUCTURE SPAWNING
+    // =====================================================================
+
+    // Initial structure spawn — always uses the Industrial era set.
+    private void SpawnStructures(HexTile tile)
+    {
+        if (tile.type == HexTile.TileType.Water) return;
+        if (IsHQZone(tile)) return;
+        tile.hasStructure = true;
+        EraBuildingSet set    = GetEraBuildingSet(TurnManager.GameEra.Industrial);
+        int            count  = PickBuildingCount();
+        float          radius = hexSize * buildingPositionSpread;
+        Vector2[]      slots  = BuildSlotOffsets(count, radius);
+
+        for (int i = 0; i < count; i++)
+            SpawnSingleBuilding(tile, PickRandomBuilding(set), slots[i].x, slots[i].y);
+    }
+
+    // Swaps all environmental buildings on every tile to the prefab matching the given era.
+    // Also expands building coverage by buildingCoveragePerEra for each era beyond Industrial,
+    // so the world feels progressively more built-up as it advances.
+    // Called by TurnManager whenever the world era advances.
     public void RefreshEraBuildings(TurnManager.GameEra era)
     {
-        GameObject prefab = buildingIndustrialPrefab;
-        if (era == TurnManager.GameEra.EarlyEighties) prefab = buildingEarly80sPrefab;
-        else if (era == TurnManager.GameEra.Retro)    prefab = buildingRetroPrefab;
-        else if (era == TurnManager.GameEra.Futuristic) prefab = buildingFuturisticPrefab;
+        EraBuildingSet set = GetEraBuildingSet(era);
 
+        // ── Step 1: Refresh buildings on tiles that already have structures ──
         foreach (var tile in tiles.Values)
         {
+            if (tile.type == HexTile.TileType.Water) continue;
+            if (IsHQZone(tile)) continue;
             if (!tile.hasStructure) continue;
 
-            // Remove existing Env_Structure children
             for (int i = tile.transform.childCount - 1; i >= 0; i--)
             {
                 Transform child = tile.transform.GetChild(i);
@@ -469,50 +907,209 @@ public class GridManager : MonoBehaviour
                     Destroy(child.gameObject);
             }
 
-            // Re-spawn with new prefab
-            SpawnStructuresEra(tile, prefab);
+            int       count  = PickBuildingCount();
+            float     radius = hexSize * buildingPositionSpread;
+            Vector2[] slots  = BuildSlotOffsets(count, radius);
+
+            for (int i = 0; i < count; i++)
+                SpawnSingleBuilding(tile, PickRandomBuilding(set), slots[i].x, slots[i].y);
+        }
+
+        // ── Step 2: Populate additional tiles proportional to how far the era has advanced ──
+        // Industrial = index 0 (no bonus), EarlyEighties = 1 (+10%), Retro = 2 (+20%), Futuristic = 3 (+30%)
+        int eraIndex = (int)era;
+        if (eraIndex <= 0) return;
+
+        // Collect all LAND tiles that don't yet have structures
+        List<HexTile> emptyLandTiles = new List<HexTile>();
+        foreach (var tile in tiles.Values)
+            if (tile.type != HexTile.TileType.Water && !tile.hasStructure && !IsHQZone(tile))
+                emptyLandTiles.Add(tile);
+
+        if (emptyLandTiles.Count == 0) return;
+
+        // Target total coverage = initial + (eraIndex * perEra), relative to ALL land tiles
+        int totalLandTiles = tiles.Count; // only land tiles are in this dict
+        float targetCoverage = Mathf.Clamp01(initialBuildingCoverage + eraIndex * buildingCoveragePerEra);
+        int targetCount      = Mathf.RoundToInt(totalLandTiles * targetCoverage);
+
+        // How many tiles already have structures?
+        int existingCount = totalLandTiles - emptyLandTiles.Count;
+        int toAdd         = Mathf.Max(0, targetCount - existingCount);
+
+        for (int i = 0; i < toAdd; i++)
+        {
+            if (emptyLandTiles.Count == 0) break;
+
+            int     idx  = Random.Range(0, emptyLandTiles.Count);
+            HexTile tile = emptyLandTiles[idx];
+            emptyLandTiles.RemoveAt(idx);
+
+            tile.hasStructure = true;
+
+            int       count  = PickBuildingCount();
+            float     radius = hexSize * buildingPositionSpread;
+            Vector2[] slots  = BuildSlotOffsets(count, radius);
+
+            for (int j = 0; j < count; j++)
+                SpawnSingleBuilding(tile, PickRandomBuilding(set), slots[j].x, slots[j].y);
+        }
+
+        Debug.Log($"[GridManager] Era {era}: coverage target {targetCoverage * 100f:F0}% — added {toAdd} new structure tiles.");
+
+        // ── Step 3: Reshuffle nature props to a fresh random layout ──────────
+        ReshuffleNatureDecorations();
+    }
+
+    // Instantiates one building at the given XZ slot offset relative to the tile centre.
+    // Reads renderer bounds for accurate ground-flush placement, preserves all materials.
+    // entry.scale acts as a MULTIPLIER on top of the prefab's own baked scale.
+    private void SpawnSingleBuilding(HexTile tile, EraBuilding entry, float rx, float ry)
+    {
+        if (entry != null && entry.prefab != null)
+        {
+            // Instantiate WITHOUT a parent so localScale == worldScale.
+            // If we parented first, the tile's own world scale would compound
+            // into localScale and produce a wildly different size.
+            GameObject obj = Instantiate(entry.prefab);
+            obj.name = "Env_Structure";
+            // ── Apply scale variation (±buildingScaleVariation %) ─────────────
+            float scaleMult = Random.Range(1f - buildingScaleVariation,
+                                           1f + buildingScaleVariation);
+            obj.transform.localScale    = entry.scale * scaleMult;
+
+            // ── Apply random Y-axis rotation ──────────────────────────────────
+            float yRot = randomizeRotation ? Random.Range(0f, 360f) : 0f;
+            obj.transform.localRotation = Quaternion.Euler(0f, yRot, 0f);
+            obj.transform.position      = tile.transform.position;
+
+            // ── Snapshot materials so nothing upstream can overwrite them ──────
+            Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+            Material[][] savedMats = new Material[renderers.Length][];
+            for (int r = 0; r < renderers.Length; r++)
+                savedMats[r] = renderers[r].sharedMaterials;
+
+            // ── Get tile surface Y from its renderer top ─────────────────────
+            // tile.transform.position.y is just the pivot — the actual visible
+            // surface is at bounds.max.y of the tile's own renderer.
+            float tileSurfaceY = tile.transform.position.y;
+            Renderer tileRenderer = tile.GetComponent<Renderer>();
+            if (tileRenderer != null) tileSurfaceY = tileRenderer.bounds.max.y;
+
+            // ── Read building bounds for accurate Y placement ─────────────────
+            // Only active MeshRenderers have valid bounds — inactive LOD children
+            // report bounds at world origin and would corrupt the minY calculation.
+            float yOffset = 0f;
+            MeshRenderer[] meshRenderers = obj.GetComponentsInChildren<MeshRenderer>(false);
+            if (meshRenderers.Length > 0)
+            {
+                float minY = float.MaxValue;
+                foreach (var mr in meshRenderers)
+                    if (mr.enabled && mr.bounds.min.y < minY) minY = mr.bounds.min.y;
+
+                if (minY < float.MaxValue)
+                    yOffset = tileSurfaceY - minY;
+            }
+
+            Collider[] cols = obj.GetComponentsInChildren<Collider>(true);
+
+            // yOffset = tileSurfaceY - minY  (minY measured with obj at tile pivot).
+            // Adding yOffset to tile pivot shifts the building bottom exactly
+            // to tileSurfaceY — using tileSurfaceY here instead would double-count
+            // the tile height and make every building float above the surface.
+            obj.transform.position = new Vector3(
+                tile.transform.position.x + rx,
+                tile.transform.position.y + yOffset,
+                tile.transform.position.z + ry);
+
+            // Re-parent AFTER position and scale are final.
+            // worldPositionStays=true so the transform doesn't change on re-parent.
+            obj.transform.SetParent(tile.transform, true);
+
+            // ── Disable colliders — keep component so bounds stay readable ────
+            foreach (var col in cols)
+                col.enabled = false;
+
+            // ── Restore materials ─────────────────────────────────────────────
+            for (int r = 0; r < renderers.Length; r++)
+                renderers[r].sharedMaterials = savedMats[r];
+
+            // ── LOD setup ─────────────────────────────────────────────────────
+            SetupLOD(obj);
+        }
+        else
+        {
+            // Fallback: plain cube when no prefab is configured
+            GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            obj.name = "Env_Structure";
+            obj.transform.SetParent(tile.transform);
+
+            float h = Random.Range(0.006f, 0.018f);
+            float w = Random.Range(0.0025f, 0.0045f);
+            obj.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
+            obj.transform.localScale    = new Vector3(w, w, h);
+            float yRotFallback = randomizeRotation ? Random.Range(0f, 360f) : 0f;
+            obj.transform.localRotation = Quaternion.Euler(0f, 0f, yRotFallback);
+
+            if (obj.TryGetComponent<Collider>(out Collider col))
+                col.enabled = false;
+
+            SetupLOD(obj);
         }
     }
 
-    private void SpawnStructuresEra(HexTile tile, GameObject prefab)
+    // Adds a three-level LODGroup to objects that don't have one already.
+    //   LOD 0 — full mesh, shadows on             (close up, above lod0ScreenSize)
+    //   LOD 1 — full mesh, shadows OFF            (mid distance, above lod1ScreenSize)
+    //   LOD 2 — full mesh, shadows off, no receive (far, above lodCullScreenSize)
+    //   Culled below lodCullScreenSize
+    // Turning shadows off at distance is the single biggest GPU saving on a dense map.
+    private void SetupLOD(GameObject obj)
     {
-        int count = Random.Range(3, 6);
-        for (int i = 0; i < count; i++)
+        if (obj.GetComponentInChildren<LODGroup>(true) != null) return;
+
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0) return;
+
+        // LOD 0: close — full shadows
+        foreach (var r in renderers)
         {
-            GameObject obj;
-            if (prefab != null)
-            {
-                obj = Instantiate(prefab, tile.transform);
-                obj.name = "Env_Structure";
-                float rx = Random.Range(-0.0035f, 0.0035f);
-                float ry = Random.Range(-0.0035f, 0.0035f);
-                obj.transform.localPosition = new Vector3(rx, ry, 0f);
-                obj.transform.localRotation = Quaternion.identity;
-                foreach (var col in obj.GetComponentsInChildren<Collider>())
-                    Destroy(col);
-            }
-            else
-            {
-                // Fallback: plain cube
-                obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                obj.name = "Env_Structure";
-                obj.transform.SetParent(tile.transform);
-                float rx = Random.Range(-0.0035f, 0.0035f);
-                float ry = Random.Range(-0.0035f, 0.0035f);
-                float h  = Random.Range(0.006f, 0.018f);
-                float w  = Random.Range(0.0025f, 0.0045f);
-                obj.transform.localPosition = new Vector3(rx, ry, -h / 2f - 0.001f);
-                obj.transform.localScale    = new Vector3(w, w, h);
-                obj.transform.localRotation = Quaternion.identity;
-                obj.GetComponent<Renderer>().sharedMaterial = grassMaterial;
-                if (obj.TryGetComponent<Collider>(out Collider col))
-                    Destroy(col);
-            }
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            r.receiveShadows    = true;
         }
+        LOD lod0 = new LOD(lod0ScreenSize, renderers);
+
+        // LOD 1: mid — shadows off (stops shadow map writes for every distant object)
+        foreach (var r in renderers)
+        {
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows    = false;
+        }
+        LOD lod1 = new LOD(lod1ScreenSize, renderers);
+
+        // LOD 2: far — same no-shadow mesh, very low screen coverage
+        LOD lod2 = new LOD(lodCullScreenSize, renderers);
+
+        // Cull: empty renderer array below lodCullScreenSize
+        LOD lodCull = new LOD(0f, new Renderer[0]);
+
+        // Restore shadows to On for LOD 0 behaviour next time this runs on another object
+        // (renderers are shared refs — resetting keeps LOD 0 correct for the next SetupLOD call)
+        foreach (var r in renderers)
+        {
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            r.receiveShadows    = true;
+        }
+
+        LODGroup lodGroup = obj.AddComponent<LODGroup>();
+        lodGroup.SetLODs(new LOD[] { lod0, lod1, lod2, lodCull });
+        lodGroup.RecalculateBounds();
+        lodGroup.fadeMode           = LODFadeMode.None; // CrossFade costs extra shader passes
+        lodGroup.animateCrossFading = false;
     }
 
     // =====================================================================
-    //  ISLAND REMOVAL (unchanged)
+    //  ISLAND REMOVAL 
     // =====================================================================
     private void RemoveDisconnectedIslands()
     {
@@ -556,7 +1153,7 @@ public class GridManager : MonoBehaviour
     }
 
     // =====================================================================
-    //  PUBLIC ACCESSORS (unchanged)
+    //  PUBLIC ACCESSORS 
     // =====================================================================
     public IEnumerable<HexTile> GetAllTiles() => tiles.Values;
 

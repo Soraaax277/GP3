@@ -239,7 +239,7 @@ public class BuildingUIManager : MonoBehaviour
 
         SpawnButton(new ActionConfig
         {
-            label        = "Construct Infrastructure",
+            label        = "Construct",
             cost         = 0,
             interactable = true,
             onClick      = () => ShowHQConstruct(hq)

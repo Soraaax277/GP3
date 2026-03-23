@@ -98,13 +98,30 @@ public class HexTile : MonoBehaviour
 
     public void UpdateStructureVisibility()
     {
-        // Toggle environmental structures based on current visibility
         for (int i = 0; i < transform.childCount; i++)
         {
             Transform child = transform.GetChild(i);
+
+            // Environmental buildings — fully hide in fog
             if (child.name.Contains("Env_Structure"))
             {
                 child.gameObject.SetActive(isVisible);
+            }
+
+            // Nature props (trees, rocks, etc.) — always visible but dimmed in fog
+            // so they still read as environment even through the shroud
+            if (child.name.Contains("Env_Nature"))
+            {
+                child.gameObject.SetActive(true);
+                float dimAmount = isExplored ? (isVisible ? 1f : 0.55f) : 0.25f;
+                foreach (var r in child.GetComponentsInChildren<Renderer>(true))
+                {
+                    // Tint every material on the prop toward dark to simulate fog
+                    // without destroying the saved material — we work on the
+                    // instance material Unity creates per-renderer automatically.
+                    Color c = r.material.color;
+                    r.material.color = new Color(c.r * dimAmount, c.g * dimAmount, c.b * dimAmount, c.a);
+                }
             }
         }
     }

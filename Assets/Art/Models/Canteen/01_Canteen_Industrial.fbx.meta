@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: dc0e455e90c3b9447aa3195aaa8044d1
+guid: 208ebe7b6390e9849b1d4e20e08f66aa
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -35,7 +35,7 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    addColliders: 0
+    addColliders: 1
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
     importPhysicalCameras: 1
@@ -56,9 +56,9 @@ ModelImporter:
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
     optimizeBones: 1
-    generateMeshLods: 0
+    generateMeshLods: 1
     meshLodGenerationFlags: 0
-    maximumMeshLod: -1
+    maximumMeshLod: 32
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8

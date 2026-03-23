@@ -1,5 +1,35 @@
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
 using System.Collections.Generic;
+
+// One era → one color mapping, shown as a dropdown + color picker in the Inspector.
+[System.Serializable]
+public class EraColorEntry
+{
+    public TurnManager.GameEra era;
+    public Color color = Color.white;
+}
+
+// An Image that should recolor whenever the world era matches one of its entries.
+[System.Serializable]
+public class EraIconTint
+{
+    public Image icon;
+    [Tooltip("Add one entry per era you want to recolor this icon. " +
+             "Eras not listed leave the icon color unchanged.")]
+    public EraColorEntry[] eraColors;
+}
+
+[System.Serializable]
+public class EraSpriteSwap
+{
+    public TurnManager.GameEra triggerEra;
+    public List<ImageSpriteSwap> swaps;
+    public TextMeshProUGUI[] textTargets;
+    public Color textColor;
+}
 
 public class TurnManager : MonoBehaviour
 {
@@ -33,6 +63,43 @@ public class TurnManager : MonoBehaviour
     // reveal + enemy unit visibility after FieldOfViewManager runs each turn.
     public event System.Action<PlayerData> OnTurnStarted;
 
+    [Header("Era Sprite Swaps")]
+    [Tooltip("Each entry binds a GameEra to Image + replacement Sprite pairs. " +
+             "Swaps fire at the same moment OnEraChanged fires.")]
+    [SerializeField] private EraSpriteSwap[] eraSpriteSwaps;
+
+    [Header("Era Icon Tints")]
+    [Tooltip("Assign any Image icon here, then define what color it should be in each era. " +
+             "The color updates instantly whenever the world era changes.")]
+    [SerializeField] private EraIconTint[] eraIconTints;
+
+    [Header("Futuristic Era – Rotating Image")]
+    [Tooltip("GameObject with an Image component. Rotates on Z and pulses scale when the world era is Futuristic.")]
+    [SerializeField] private GameObject futuristicRotatingObject;
+    [Tooltip("Degrees per second for the Z rotation.")]
+    [SerializeField] private float futuristicRotationSpeed = 30f;
+    [Tooltip("Minimum scale during the pulse (base).")]
+    [SerializeField] private float futuristicScaleMin = 1f;
+    [Tooltip("Maximum scale during the pulse.")]
+    [SerializeField] private float futuristicScaleMax = 1.05f;
+    [Tooltip("How many full pulse cycles per second.")]
+    [SerializeField] private float futuristicPulseSpeed = 1f;
+
+    [Header("Turn Indicator – Hover Button")]
+    [Tooltip("Button whose image tints green on hover when it is the player's turn, red during an AI turn.")]
+    [SerializeField] private Button turnIndicatorButton;
+    [Tooltip("Tint applied on hover during the human player's turn.")]
+    [SerializeField] private Color hoverPlayerColor = new Color(0.2f, 0.9f, 0.2f, 1f);
+    [Tooltip("Tint applied on hover during an AI turn.")]
+    [SerializeField] private Color hoverEnemyColor  = new Color(0.9f, 0.2f, 0.2f, 1f);
+    [Tooltip("How quickly the tint fades in and out (seconds).")]
+    [SerializeField] private float hoverFadeDuration = 0.15f;
+
+    // Runtime state for the hover button
+    private Image  _turnButtonImage;
+    private Color  _turnButtonBaseColor;
+    private Coroutine _hoverFadeCoroutine;
+
     public void NotifyStatusChanged()
     {
         OnGameStatusChanged?.Invoke();
@@ -47,6 +114,40 @@ public class TurnManager : MonoBehaviour
     private void Start()
     {
         // GameManager handled LoadGame logic in its SetupGame coroutine
+
+        // ---- Turn Indicator Button hover setup ----
+        if (turnIndicatorButton != null)
+        {
+            _turnButtonImage     = turnIndicatorButton.GetComponent<Image>();
+            _turnButtonBaseColor = _turnButtonImage != null ? _turnButtonImage.color : Color.white;
+
+            var trigger = turnIndicatorButton.GetComponent<EventTrigger>()
+                       ?? turnIndicatorButton.gameObject.AddComponent<EventTrigger>();
+
+            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enterEntry.callback.AddListener(_ => OnTurnButtonHoverEnter());
+            trigger.triggers.Add(enterEntry);
+
+            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exitEntry.callback.AddListener(_ => OnTurnButtonHoverExit());
+            trigger.triggers.Add(exitEntry);
+        }
+    }
+
+    private void Update()
+    {
+        // ---- Futuristic rotating image ----
+        if (futuristicRotatingObject != null && currentEra == GameEra.Futuristic)
+        {
+            // Z rotation
+            futuristicRotatingObject.transform.Rotate(
+                0f, 0f, futuristicRotationSpeed * Time.deltaTime);
+
+            // Scale pulse — Mathf.Sin oscillates -1..1, remap to min..max
+            float t      = (Mathf.Sin(Time.time * futuristicPulseSpeed * Mathf.PI * 2f) + 1f) * 0.5f;
+            float scale  = Mathf.Lerp(futuristicScaleMin, futuristicScaleMax, t);
+            futuristicRotatingObject.transform.localScale = Vector3.one * scale;
+        }
     }
 
     public void StartGame(List<PlayerData> playerList)
@@ -331,6 +432,83 @@ public class TurnManager : MonoBehaviour
                 EraAnnouncementController.Instance.TriggerAnnouncement(currentEra);
 
             OnEraChanged?.Invoke(currentEra);
+            ApplyEraSpriteSwaps(currentEra);
+            ApplyEraIconTints(currentEra);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // TURN INDICATOR BUTTON HOVER
+    // -------------------------------------------------------------------------
+    private void OnTurnButtonHoverEnter()
+    {
+        if (_turnButtonImage == null) return;
+        Color target = (currentPlayer != null && !currentPlayer.isAI)
+            ? hoverPlayerColor
+            : hoverEnemyColor;
+
+        if (_hoverFadeCoroutine != null) StopCoroutine(_hoverFadeCoroutine);
+        _hoverFadeCoroutine = StartCoroutine(FadeButtonColor(_turnButtonImage, _turnButtonImage.color, target, hoverFadeDuration));
+    }
+
+    private void OnTurnButtonHoverExit()
+    {
+        if (_turnButtonImage == null) return;
+
+        if (_hoverFadeCoroutine != null) StopCoroutine(_hoverFadeCoroutine);
+        _hoverFadeCoroutine = StartCoroutine(FadeButtonColor(_turnButtonImage, _turnButtonImage.color, _turnButtonBaseColor, hoverFadeDuration));
+    }
+
+    private System.Collections.IEnumerator FadeButtonColor(Image img, Color from, Color to, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            img.color = Color.Lerp(from, to, elapsed / duration);
+            yield return null;
+        }
+        img.color = to;
+    }
+
+    // -------------------------------------------------------------------------
+    private void ApplyEraSpriteSwaps(GameEra era)
+    {
+        if (eraSpriteSwaps == null) return;
+        foreach (var entry in eraSpriteSwaps)
+        {
+            if (entry == null || entry.triggerEra != era) continue;
+            if (entry.swaps != null)
+            {
+                foreach (var swap in entry.swaps)
+                {
+                    if (swap == null) continue;
+                    if (swap.targetImage != null && swap.newSprite != null)
+                        swap.targetImage.sprite = swap.newSprite;
+                }
+            }
+            if (entry.textTargets != null)
+            {
+                foreach (var tmp in entry.textTargets)
+                    if (tmp != null) tmp.color = entry.textColor;
+            }
+        }
+    }
+
+    private void ApplyEraIconTints(GameEra era)
+    {
+        if (eraIconTints == null) return;
+        foreach (var entry in eraIconTints)
+        {
+            if (entry == null || entry.icon == null || entry.eraColors == null) continue;
+            foreach (var eraColor in entry.eraColors)
+            {
+                if (eraColor.era == era)
+                {
+                    entry.icon.color = eraColor.color;
+                    break;
+                }
+            }
         }
     }
 

@@ -92,7 +92,8 @@ MonoBehaviour:
   - {fileID: 7121613067076528112}
   - {fileID: 6891331491717378404}
   - {fileID: -1881060190609008539}
-  m_RendererFeatureMap: ad6b866f10d7b46c81647965488d6393a67514645c028e71f067e0425a0dd56264f146d97aeda25f65189f11b921e5e5
+  - {fileID: 6969647720867809218}
+  m_RendererFeatureMap: ad6b866f10d7b46c81647965488d6393a67514645c028e71f067e0425a0dd56264f146d97aeda25f65189f11b921e5e5c2c7efe3ac29b960
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -136,10 +137,10 @@ MonoBehaviour:
   m_Active: 0
   settings:
     material: {fileID: 2100000, guid: f5d4bd0514cdef34786c514f118621a5, type: 2}
-    exposure: 1.55
+    exposure: 1.445
     contrast: 1.55
     blackCrush: 0
-    tealShadows: 0.15
+    tealShadows: 0.05
     tealMidtones: 0.5
     neonThreshold: 0.52
     neonBloom: 2
@@ -151,6 +152,28 @@ MonoBehaviour:
     grainIntensity: 0
     grainSize: 1
     vignetteIntensity: 0
+    outlineIntensity: 0.25
+    outlineThickness: 2.5
+    outlineColor: {r: 0, g: 0.6603774, b: 0.6085831, a: 1}
+    hexOpacity: 0.3
+    hexPanelWidth: 0.1
+    hexGridScale: 25
+    hexColor: {r: 0, g: 0.82, b: 1, a: 1}
+--- !u!114 &6969647720867809218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 795c7a2dc72b3284fa1785d03d891703, type: 3}
+  m_Name: SignalGlitchFeature
+  m_EditorClassIdentifier: Assembly-CSharp::SignalGlitchFeature
+  m_Active: 0
+  settings:
+    material: {fileID: 2100000, guid: a9b6b7439a62a074e85fb948ca69efe9, type: 2}
 --- !u!114 &7121613067076528112
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -168,12 +191,12 @@ MonoBehaviour:
     material: {fileID: 2100000, guid: da1d5dc0d51d63c45b512713acb7a8e9, type: 2}
     exposure: 1.5
     contrast: 1.35
-    blackCrush: 0.2
-    saturation: 1.5
-    greenTint: 1
-    greenShadowLift: 1.2
+    blackCrush: 1
+    saturation: 1.25
+    greenTint: 1.25
+    greenShadowLift: 0.85
     redDrain: 0.6
-    blueShift: 0.4
+    blueShift: 1
     highlightBlow: 0.3
     sharpness: 1.2
     grainIntensity: 0.055

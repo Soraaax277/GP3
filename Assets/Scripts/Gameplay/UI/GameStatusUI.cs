@@ -76,7 +76,7 @@ public class GameStatusUI : MonoBehaviour
             if (humanPlayer.resources != _cachedGold)
             {
                 string netSign = net >= 0 ? "+" : "";
-                string goldString = $"Gold: {humanPlayer.resources} ({netSign}{net}/t)";
+                string goldString = $"{humanPlayer.resources} ({netSign}{net}/t)";
                 
                 // Update Main HUD
                 if (goldText != null) goldText.text = goldString;
@@ -90,7 +90,7 @@ public class GameStatusUI : MonoBehaviour
             // 2. Check Research Points
             if (humanPlayer.researchPoints != _cachedRP)
             {
-                string rpString = $"RP: {humanPlayer.researchPoints} (+{rpIncome}/t)";
+                string rpString = $"{humanPlayer.researchPoints} (+{rpIncome}/t)";
 
                 // Update Main HUD
                 if (researchText != null) researchText.text = rpString;
@@ -105,7 +105,7 @@ public class GameStatusUI : MonoBehaviour
             int currentInfluence = humanPlayer.GetTotalInfluence();
             if (currentInfluence != _cachedInfluence)
             {
-                if (influenceText != null) influenceText.text = $"Influence: {currentInfluence}";
+                if (influenceText != null) influenceText.text = $"{currentInfluence}";
                 _cachedInfluence = currentInfluence;
             }
         }
