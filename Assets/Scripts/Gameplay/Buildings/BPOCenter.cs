@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class BPOCenter : StructureNode
 {
@@ -6,11 +7,13 @@ public class BPOCenter : StructureNode
     public int incomePerBusinessperson = 50;
     public int incomePerITPersonnel    = 30;
 
-    public override void Initialize(HexTile tile, PlayerData player)
+    private void Awake() { tilesOccupied = 2; }
+
+    public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
-        expansionRadius = 3; // Corporate hubs claim more area
+        expansionRadius = 3; 
         baseGoldCost = 300;
-        base.Initialize(tile, player);
+        base.Initialize(tiles, player);
     }
 
     public override void OnTurnStart()
@@ -36,6 +39,12 @@ public class BPOCenter : StructureNode
 
         if (extraIncome > 0)
         {
+            // CORPORATE MERGERS: +10% bonus if a Business Center is manned by a Businessman
+            if (BusinessCenter.IsCorporateManagementActive(owner))
+            {
+                extraIncome = Mathf.RoundToInt(extraIncome * 1.1f);
+            }
+
             owner.resources += extraIncome;
             if (!owner.isAI)
             {

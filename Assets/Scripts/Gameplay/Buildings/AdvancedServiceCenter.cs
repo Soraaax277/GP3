@@ -1,12 +1,15 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class AdvancedServiceCenter : ServiceCenter
 {
-    public override void Initialize(HexTile tile, PlayerData player)
+    private void Awake() { tilesOccupied = 2; }
+
+    public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
-        expansionRadius = 3; // Improved service hub
+        expansionRadius = 3; 
         baseGoldCost = 350;
-        base.Initialize(tile, player);
+        base.Initialize(tiles, player);
     }
 
     // Potentially add more unit types or improved stats

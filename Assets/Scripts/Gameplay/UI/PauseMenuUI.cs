@@ -7,6 +7,8 @@ public class PauseMenuUI : MonoBehaviour
     [Header("UI Reference")]
     public GameObject pauseMenuUI; 
     public Button pauseButton;
+    public Button settingsButton;
+    public SettingsPanel settingsPanel;
 
     public static bool GameIsPaused = false;
 
@@ -16,6 +18,16 @@ public class PauseMenuUI : MonoBehaviour
         if (pauseButton != null)
         {
             pauseButton.onClick.AddListener(TogglePause);
+        }
+
+        if (settingsButton != null)
+        {
+            settingsButton.onClick.AddListener(OnSettings);
+        }
+
+        if (settingsPanel != null)
+        {
+            settingsPanel.gameObject.SetActive(false);
         }
     }
 
@@ -30,9 +42,14 @@ public class PauseMenuUI : MonoBehaviour
         }
     }
 
-    // New shared function for both Button and Escape Key
+    private static int _lastToggleFrame = -1;
+
     public void TogglePause()
     {
+        // Prevent multiple toggles in the same frame (e.g., if triggered twice by inspector/code)
+        if (Time.frameCount == _lastToggleFrame) return;
+        _lastToggleFrame = Time.frameCount;
+
         // Extra check: prevent pausing if tech tree is open (for the button click)
         if (TechTreeWindowManager.IsTechTreeOpen) return;
 
@@ -62,10 +79,22 @@ public class PauseMenuUI : MonoBehaviour
 
     public void GoToMainMenu()
     {
+        // Explicitly close settings panel first so it doesn't appear open in the Main Menu
+        if (settingsPanel != null)
+            settingsPanel.gameObject.SetActive(false);
+
         SaveSystem.SaveGame();
-        DG.Tweening.DOTween.KillAll(); // Prevent "Target destroyed" DOTween warnings
+        DG.Tweening.DOTween.KillAll();
         Time.timeScale = 1f;
         GameIsPaused = false;
         SceneManager.LoadScene("MainMenuScene");
+    }
+
+    public void OnSettings()
+    {
+        if (settingsPanel != null)
+        {
+            settingsPanel.OpenSettings(pauseMenuUI);
+        }
     }
 }

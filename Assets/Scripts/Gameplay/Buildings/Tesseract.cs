@@ -1,10 +1,14 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class Tesseract : StructureNode
 {
-    public override void Initialize(HexTile tile, PlayerData player)
+    private void Awake() { tilesOccupied = 7; }
+
+    public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
-        base.Initialize(tile, player);
+        baseGoldCost = 1000;
+        base.Initialize(tiles, player);
         ApplyTesseractEffect(true);
 
         if (QuestManager.Instance != null && player != null)
@@ -38,4 +42,25 @@ public class Tesseract : StructureNode
     }
 
     public override string GetRequiredTechFeature() => "Tesseract";
+
+    public override void OnTurnStart()
+    {
+        if (!IsPowered || !IsMannedBy<ITPersonnel>()) return;
+
+        // DATA HARVESTING: Extraction from Neutral/Enemy tiles in massive range
+        List<HexTile> inRange = GetTilesInRange();
+        int harvestCount = 0;
+        foreach (var t in inRange)
+        {
+            if (t != null && t.GetOwner() != owner) harvestCount++;
+        }
+
+        int income = harvestCount * 15;
+        owner.resources += income;
+
+        if (income > 0)
+        {
+            ActionLogUI.PostFiltered(owner, $"Data Harvesting: Extracted {income}G from {harvestCount} hexes.", ActionLogUI.Colors.Neutral);
+        }
+    }
 }

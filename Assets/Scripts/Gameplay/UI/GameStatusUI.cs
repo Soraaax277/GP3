@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class GameStatusUI : MonoBehaviour
@@ -16,11 +17,15 @@ public class GameStatusUI : MonoBehaviour
     public TextMeshProUGUI turnStaterText; 
 
     [Header("Tech Tree Panel UI")]
-    // These update in the background even if the panel is closed/hidden
     public TextMeshProUGUI techPanelGoldText;
     public TextMeshProUGUI techPanelResearchText;
 
+    [Header("Company Name UI")]
+    public TextMeshProUGUI companyNameText;
+    public TMP_InputField companyRenameInput;
+
     // Internal cache to track changes so we don't rebuild strings every frame
+    private string _cachedCompanyName = "";
     private int _cachedGold = -1;
     private int _cachedRP = -1;
     private int _cachedInfluence = -1;
@@ -35,17 +40,27 @@ public class GameStatusUI : MonoBehaviour
             return;
         }
         Instance = this;
+
+        if (companyRenameInput != null)
+        {
+            companyRenameInput.onEndEdit.AddListener(SubmitRename);
+            companyRenameInput.gameObject.SetActive(false);
+
+            // KEY FIX: Tell the layout system to completely ignore this input field
+            // so it never pushes or shifts any other element when active.
+            var le = companyRenameInput.GetComponent<LayoutElement>();
+            if (le == null) le = companyRenameInput.gameObject.AddComponent<LayoutElement>();
+            le.ignoreLayout = true;
+        }
     }
 
     private void Start()
     {
-        // Initial force update to populate zeros
         UpdateUI(true);
     }
 
     private void Update()
     {
-        // This runs every frame to catch "Spending" immediately
         CheckForResourceChanges();
     }
 
@@ -53,55 +68,45 @@ public class GameStatusUI : MonoBehaviour
     {
         if (TurnManager.Instance == null) return;
 
-        // 1. Handle Turn/Era Changes
         if (TurnManager.Instance.currentTurn != _cachedTurn)
         {
             UpdateTurnInfo();
             _cachedTurn = TurnManager.Instance.currentTurn;
         }
 
-        // 2. Handle Resource Changes (Real-time spending/income)
         PlayerData humanPlayer = GetHumanPlayer();
         
         if (humanPlayer != null)
         {
-            // Calculate projections
+            // Update Company Name if it changed elsewhere (e.g. Load Game)
+            if (humanPlayer.playerName != _cachedCompanyName)
+            {
+                if (companyNameText != null) companyNameText.text = humanPlayer.playerName;
+                _cachedCompanyName = humanPlayer.playerName;
+            }
+
             int income = EconomyManager.Instance != null ? EconomyManager.Instance.GetProjectedGoldIncome(humanPlayer) : 0;
             int upkeep = EconomyManager.Instance != null ? EconomyManager.Instance.GetProjectedUpkeep(humanPlayer) : 0;
             int net = income - upkeep;
-            
             int rpIncome = EconomyManager.Instance != null ? EconomyManager.Instance.GetProjectedRPIncome(humanPlayer) : 0;
 
-            // 1. Check Gold
             if (humanPlayer.resources != _cachedGold)
             {
                 string netSign = net >= 0 ? "+" : "";
                 string goldString = $"{humanPlayer.resources} ({netSign}{net}/t)";
-                
-                // Update Main HUD
                 if (goldText != null) goldText.text = goldString;
-                
-                // Update Tech Tree Panel (works even if panel is hidden)
                 if (techPanelGoldText != null) techPanelGoldText.text = goldString;
-                
                 _cachedGold = humanPlayer.resources;
             }
 
-            // 2. Check Research Points
             if (humanPlayer.researchPoints != _cachedRP)
             {
                 string rpString = $"{humanPlayer.researchPoints} (+{rpIncome}/t)";
-
-                // Update Main HUD
                 if (researchText != null) researchText.text = rpString;
-
-                // Update Tech Tree Panel (works even if panel is hidden)
                 if (techPanelResearchText != null) techPanelResearchText.text = rpString;
-
                 _cachedRP = humanPlayer.researchPoints;
             }
 
-            // 3. Check Influence
             int currentInfluence = humanPlayer.GetTotalInfluence();
             if (currentInfluence != _cachedInfluence)
             {
@@ -110,11 +115,67 @@ public class GameStatusUI : MonoBehaviour
             }
         }
 
-        // 4. Handle Current Turn Player (Who is acting now)
         if (TurnManager.Instance.currentPlayer != _cachedPlayer)
         {
             UpdateTurnStater();
             _cachedPlayer = TurnManager.Instance.currentPlayer;
+        }
+    }
+
+    // --- COMPANY RENAMING ---
+
+    public void OpenRenameInput()
+    {
+        PlayerData p = GetHumanPlayer();
+        if (p == null || companyRenameInput == null || companyNameText == null) return;
+
+        companyRenameInput.text = p.playerName;
+
+        // Make the real text INVISIBLE (not disabled!) so its layout slot stays
+        // and nothing shifts. The input field (which ignores layout) floats over it.
+        Color c = companyNameText.color;
+        companyNameText.color = new Color(c.r, c.g, c.b, 0f);
+
+        // Snap the input field to exactly cover the text
+        RectTransform textRect  = companyNameText.GetComponent<RectTransform>();
+        RectTransform inputRect = companyRenameInput.GetComponent<RectTransform>();
+        if (textRect != null && inputRect != null)
+        {
+            inputRect.pivot           = textRect.pivot;
+            inputRect.anchorMin       = textRect.anchorMin;
+            inputRect.anchorMax       = textRect.anchorMax;
+            inputRect.anchoredPosition = textRect.anchoredPosition;
+            inputRect.sizeDelta       = textRect.sizeDelta;
+        }
+
+        companyRenameInput.gameObject.SetActive(true);
+        CameraController.IsTyping = true; // Block WASD camera movement while typing
+        companyRenameInput.ActivateInputField();
+    }
+
+    public void SubmitRename(string newName)
+    {
+        PlayerData p = GetHumanPlayer();
+        if (p != null && !string.IsNullOrWhiteSpace(newName))
+        {
+            string cappedName = newName.Trim();
+            if (cappedName.Length > 20) cappedName = cappedName.Substring(0, 20);
+
+            p.playerName = cappedName;
+            if (companyNameText != null) companyNameText.text = cappedName;
+            _cachedCompanyName = cappedName;
+        }
+
+        // Restore text visibility and hide input
+        if (companyNameText != null)
+        {
+            Color c = companyNameText.color;
+            companyNameText.color = new Color(c.r, c.g, c.b, 1f);
+        }
+        if (companyRenameInput != null)
+        {
+            companyRenameInput.gameObject.SetActive(false);
+            CameraController.IsTyping = false; // Re-enable WASD camera movement
         }
     }
 

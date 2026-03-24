@@ -98,6 +98,13 @@ public class RoboWorker : Unit
         }
 
         owner.resources -= buildCost;
+
+        // OVERTIME BONUS: +10G kickback if a Foreman is at a Canteen
+        if (Canteen.IsAnyMannedByForeman(owner))
+        {
+            owner.resources += 10;
+        }
+
         if (targetTower != null)
         {
             targetTower.Build();

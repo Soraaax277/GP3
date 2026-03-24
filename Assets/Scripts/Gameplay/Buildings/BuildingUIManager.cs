@@ -192,6 +192,7 @@ public class BuildingUIManager : MonoBehaviour
         else if (building is AdvancedBusinessCenter   abc)     ShowAdvancedBusinessCenter(abc);
         else if (building is Canteen                  canteen) ShowCanteen(canteen);
         else if (building is WireNode                 wire)    ShowWirePanel(wire);
+        else if (building is Rocketship               rs)      ShowRocketship(rs);
         else
         {
             ClearButtons();
@@ -330,11 +331,14 @@ public class BuildingUIManager : MonoBehaviour
     {
         if (prefab == null || !IsUnlockedFor(owner, featureKey)) return;
 
+        StructureNode node = prefab.GetComponent<StructureNode>();
+        int cost = node != null ? node.baseGoldCost : 100;
+
         SpawnButton(new ActionConfig
         {
             label        = label,
-            cost         = 0,
-            interactable = true,
+            cost         = cost,
+            interactable = owner != null && owner.resources >= cost,
             onClick      = () => { StructurePlacementManager.Instance.StartPlacement(prefab, featureKey); Close(); }
         });
     }
@@ -442,7 +446,6 @@ public class BuildingUIManager : MonoBehaviour
 
         TryAddUnitButton("Recruit Maintenance Crew", us.maintenanceCrewPrefab, gold, tile, sc.owner, "MaintenanceCrew");
         TryAddUnitButton("Recruit Foremen",          us.foremenPrefab,         gold, tile, sc.owner, "Foreman");
-        // FIX (Bug 3): Was "ITPersonel" (typo — single 'n'). IT Personnel never appeared even when unlocked.
         TryAddUnitButton("Recruit IT Personnel",     us.itPersonnelPrefab,     gold, tile, sc.owner, "ITPersonel");
 
         // No units unlocked yet
@@ -546,12 +549,9 @@ public class BuildingUIManager : MonoBehaviour
         HexTile tile = canteen.ParentTile;
 
         TryAddUnitButton("Recruit Builder",    us.builderPrefab,    gold, tile, canteen.owner, "Builder");
-        // Foreman has no tech gate — available as soon as the Canteen is built
         TryAddUnitButton("Recruit Foremen",    us.foremenPrefab,    gold, tile, canteen.owner, null);
         TryAddUnitButton("Recruit Technician", us.technicianPrefab, gold, tile, canteen.owner, "Technician");
 
-        // FIX (Bug 4 & 5): Added "No units available" guard (was missing entirely for Canteen),
-        //                   and added the missing RefreshScrollRect() call.
         if (spawnedButtons.Count == 0)
         {
             if (subHeaderText != null) { subHeaderText.text = "No units available for deployment."; subHeaderText.gameObject.SetActive(true); }
@@ -559,6 +559,30 @@ public class BuildingUIManager : MonoBehaviour
         else
         {
             if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+        }
+
+        RefreshScrollRect();
+    }
+
+    private void ShowRocketship(Rocketship rs)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "ROCKETSHIP";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        bool canL = rs.CanLaunch();
+
+        SpawnButton(new ActionConfig
+        {
+            label        = "Launch Payload",
+            cost         = 0,
+            interactable = canL,
+            onClick      = () => { rs.Launch(); Close(); }
+        });
+
+        if (!canL)
+        {
+            SpawnDisplayRow("Requires: 1 Technician & 1 Businessman stationed on Rocketship hexes.");
         }
 
         RefreshScrollRect();
@@ -656,7 +680,7 @@ public class BuildingUIManager : MonoBehaviour
         if (techUnlockName != null && !IsUnitUnlockedFor(owner, techUnlockName))
             return;
 
-        int cost = UnitSpawner.Instance.GetRecruitmentCost(prefab);
+        int cost = UnitSpawner.Instance.GetRecruitmentCost(prefab, owner, spawnTile);
         SpawnButton(new ActionConfig
         {
             label        = label,

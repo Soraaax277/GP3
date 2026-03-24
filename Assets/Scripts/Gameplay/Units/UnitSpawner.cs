@@ -84,7 +84,7 @@ public class UnitSpawner : MonoBehaviour
         return unit;
     }
 
-    public int GetRecruitmentCost(GameObject unitPrefab, PlayerData player = null)
+    public int GetRecruitmentCost(GameObject unitPrefab, PlayerData player = null, HexTile sourceTile = null)
     {
         // Base costs per unit type
         int baseCost = 50; // Default
@@ -112,7 +112,7 @@ public class UnitSpawner : MonoBehaviour
                 case "SalesMarketer":
                     baseCost = 70;
                     break;
-                case "Businessman":
+                case "Businessmen":
                     baseCost = 90;
                     break;
                 case "Saboteurs":
@@ -139,14 +139,20 @@ public class UnitSpawner : MonoBehaviour
             }
         }
         
+        // TAX HAVEN: 50% discount if recruiting via a manned Commercial Hub
+        if (sourceTile != null && sourceTile.placedStructure is CommercialHub hub && hub.IsMannedBy<SalesMarketer>())
+        {
+            baseCost = Mathf.RoundToInt(baseCost * 0.5f);
+        }
+
         // Apply tech modifier
         if (TechManager.Instance != null)
         {
             float multiplier = TechManager.Instance.GetInfraMultiplier(player, "RecruitmentCost");
-            return Mathf.Max(0, Mathf.RoundToInt(baseCost * multiplier));
+            baseCost = Mathf.RoundToInt(baseCost * multiplier);
         }
         
-        return baseCost;
+        return Mathf.Max(0, baseCost);
     }
 
     HexTile GetAdjacentFreeTile(HexTile centerTile)

@@ -7,11 +7,16 @@ using UnityEngine.Rendering.Universal;
 
 public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
+    public static MainMenuManager Instance;
+
     public Button     newGameButton;
     public Button     loadGameButton;
     public Button     settingsButton;
     public Button     exitButton;
-    public GameObject settingsPanel;
+
+    [Header("UI Panels")]
+    public GameObject mainContent;
+    public SettingsPanel settingsPanel;
 
     // ── Panel Sway ───────────────────────────────────────────────────────────
     [Header("Panel Sway")]
@@ -102,13 +107,29 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private ScriptableRendererFeature[] _filters;
 
     // ── Unity callbacks ──────────────────────────────────────────────────────
+    private void Awake()
+    {
+        Instance = this;
+    }
+
     private void Start()
     {
+        // Hook up buttons in code
+        if (newGameButton != null) newGameButton.onClick.AddListener(OnNewGame);
+        if (loadGameButton != null) loadGameButton.onClick.AddListener(OnLoadGame);
+        if (settingsButton != null) settingsButton.onClick.AddListener(OnSettings);
+        if (exitButton != null) exitButton.onClick.AddListener(OnExit);
+
         if (loadGameButton != null)
             loadGameButton.interactable = SaveSystem.HasSaveData();
 
         if (settingsPanel != null)
-            settingsPanel.SetActive(false);
+        {
+            settingsPanel.gameObject.SetActive(false); // Always start hidden — safety net for scene transitions
+        }
+
+        if (mainContent != null)
+            mainContent.SetActive(true);
 
         if (swayPanel != null)
         {
@@ -366,7 +387,15 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public void OnSettings()
     {
         if (settingsPanel != null)
-            settingsPanel.SetActive(true);
+        {
+            settingsPanel.OpenSettings(mainContent);
+        }
+    }
+
+    public void ShowMainContent(bool show)
+    {
+        if (mainContent != null)
+            mainContent.SetActive(show);
     }
 
     public void OnExit()

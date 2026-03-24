@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class Canteen : StructureNode
 {
@@ -9,11 +10,12 @@ public class Canteen : StructureNode
     public GameObject futuristicVisual;
     private GameObject currentVisualObj;
 
-    public override void Initialize(HexTile tile, PlayerData player)
+    public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
+        tilesOccupied = 2; // Spans two hexes
         expansionRadius = 3; 
         baseGoldCost = 150;
-        base.Initialize(tile, player);
+        base.Initialize(tiles, player);
         UpdateEraVisuals();
     }
 
@@ -54,7 +56,39 @@ public class Canteen : StructureNode
             foreach (Renderer r in activeVisual.GetComponentsInChildren<Renderer>())
                 r.material.color = Color.Lerp(r.material.color, Color.black, 0.5f);
         }
+        // 5. Final pass Scaling (Canteen has dynamic visuals, so we re-scale after they appear)
+        if (autoScaleToFit) AutoScaleToFitTiles();
+    }
+
+    public override void OnTurnStart()
+    {
+        if (!IsPowered || owner == null) return;
+
+        // CANTEEN REST: 50% chance for seated workers to regain a charge
+        foreach (var t in occupiedTiles)
+        {
+            if (t != null && t.placedUnit is Unit u && u.owner == owner)
+            {
+                if (u is BuilderUnit || u is RoboWorker)
+                {
+                    if (u.CurrentCharges < u.MaxCharges && Random.value <= 0.50f)
+                    {
+                        u.CurrentCharges++;
+                        ActionLogUI.PostFiltered(owner, $"{u.name} rested at Canteen and regained 1 Charge!", ActionLogUI.Colors.Neutral);
+                    }
+                }
+            }
+        }
     }
 
     public override string GetRequiredTechFeature() => "Canteens";
+
+    public static bool IsAnyMannedByForeman(PlayerData p)
+    {
+        foreach (var c in FindObjectsOfType<Canteen>())
+            if (c.owner == p && c.IsMannedBy<Foremen>()) return true;
+        return false;
+    }
+    
+    // In actual implementation, we'll check this static method in Worker's construct logic.
 }

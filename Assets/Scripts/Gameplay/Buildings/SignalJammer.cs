@@ -1,14 +1,15 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class SignalJammer : StructureNode
 {
     private const int SUPPRESSION_AMOUNT = 50;
 
-    public override void Initialize(HexTile tile, PlayerData player)
+    public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
         expansionRadius = 2; // Specialized defense
         baseGoldCost = 300;
-        base.Initialize(tile, player);
+        base.Initialize(tiles, player);
     }
 
     public override void Build()
@@ -45,23 +46,21 @@ public class SignalJammer : StructureNode
 
         foreach (HexTile t in tiles)
         {
-            // 1. ADD SUPPRESSION (Blocks all players' effective influence)
-            t.influenceSuppression += SUPPRESSION_AMOUNT;
-
-            // 2. STRIP ENEMIES (Deny active influence)
+            // 1. STRIP ENEMIES (Deny active influence from anyone except the Jammer's owner)
             bool strippedSomething = false;
             foreach (PlayerData p in TurnManager.Instance.players)
             {
-                // ONLY remove influence from players who are NOT the owner of the jammer
                 if (p != owner)
                 {
                     if (t.GetInfluence(p) > 0) strippedSomething = true;
-                    t.RemoveInfluence(p, baseInfluenceAmount * 2);
+                    // Significantly reduce enemy influence per turn (or flat clear if you prefer, 
+                    // but here we use a multiple of the base amount)
+                    t.RemoveInfluence(p, baseInfluenceAmount * 10);
                 }
             }
             if (strippedSomething) hexesStripped++;
 
-            // 3. FORCE OWN (Bypass the dominance rule to establish a footprint)
+            // 2. ASSERT OWN (Maintain the owner's border)
             t.AddInfluence(owner, baseInfluenceAmount, true);
         }
 
@@ -82,9 +81,7 @@ public class SignalJammer : StructureNode
         var tiles = GridManager.Instance.GetTilesInRange(ParentTile, expansionRadius);
         foreach (HexTile t in tiles)
         {
-            // Remove the suppression when jammer is gone
-            t.influenceSuppression = Mathf.Max(0, t.influenceSuppression - SUPPRESSION_AMOUNT);
-            // We don't restore enemy influence — it was deleted.
+            // Simply remove the owner's jammer footprint
             t.RemoveInfluence(owner, baseInfluenceAmount);
         }
 

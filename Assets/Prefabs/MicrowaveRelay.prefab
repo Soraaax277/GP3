@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7324659632455320542}
   - component: {fileID: 19209030140876061}
-  - component: {fileID: 878019506888512062}
   - component: {fileID: 5504965738234321792}
   m_Layer: 0
   m_Name: MicrowaveRelay
@@ -31,7 +30,8 @@ Transform:
   m_LocalPosition: {x: 426.20712, y: 0, z: 142.24147}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 701257509720069656}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &19209030140876061
@@ -42,55 +42,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6026591426518143972}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &878019506888512062
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6026591426518143972}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &5504965738234321792
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -110,5 +61,71 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 19.483337, y: 27.24062, z: 25.939377}
+  m_Center: {x: -0.025146484, y: 13.12031, z: 1.0258408}
+--- !u!1001 &4806485083306910251
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7324659632455320542}
+    m_Modifications:
+    - target: {fileID: 4630999929772846729, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_Name
+      value: Microwave Relay
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.17227173
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.09585
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6525130941504182453, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 1bbf852157600184cb06235dee4ea3d3, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+--- !u!4 &701257509720069656 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5408626661783008307, guid: c2b77e8da7de5aa43a2fed916964f96f, type: 3}
+  m_PrefabInstance: {fileID: 4806485083306910251}
+  m_PrefabAsset: {fileID: 0}

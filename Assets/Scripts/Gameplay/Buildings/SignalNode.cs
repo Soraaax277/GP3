@@ -96,6 +96,7 @@ public class SignalNode : MonoBehaviour
 
         tile.placedNode       = this;
         tile.placedSignalNode = this;
+        tile.hasStructure    = true; // Block other buildings from overlapping the HQ
 
         if (!player.ownedNodes.Contains(this))
             player.ownedNodes.Add(this);

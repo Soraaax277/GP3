@@ -8,6 +8,26 @@ public class SettingsPanel : MonoBehaviour
     public Slider sfxSlider;
     public Toggle hazardToggle;
 
+    [Header("Back Button")]
+    public Button backButton;
+
+    private void Start()
+    {
+        if (backButton != null)
+            backButton.onClick.AddListener(OnClose);
+    }
+
+    private GameObject _previousPanel;
+
+    public void OpenSettings(GameObject panelToHide)
+    {
+        _previousPanel = panelToHide;
+        if (_previousPanel != null)
+            _previousPanel.SetActive(false);
+        
+        gameObject.SetActive(true);
+    }
+
     private void OnEnable()
     {
         LoadCurrentVolumes();
@@ -60,6 +80,18 @@ public class SettingsPanel : MonoBehaviour
     public void OnClose()
     {
         gameObject.SetActive(false);
+
+        // Restore the previous panel if we have one
+        if (_previousPanel != null)
+        {
+            _previousPanel.SetActive(true);
+            _previousPanel = null;
+        }
+        // Fallback for Main Menu if opened via other means
+        else if (MainMenuManager.Instance != null)
+        {
+            MainMenuManager.Instance.ShowMainContent(true);
+        }
     }
 }
 

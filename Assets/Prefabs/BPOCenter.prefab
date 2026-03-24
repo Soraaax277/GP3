@@ -138,6 +138,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Retro BPO
       objectReference: {fileID: 0}
+    - target: {fileID: 3920224991886431244, guid: 88f6bcfbfd17cbd45be6c219859101ea, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 06d233c4417b8174fbcfb58ef48b6f8a, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

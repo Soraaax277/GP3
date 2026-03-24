@@ -39,6 +39,9 @@ public class CameraController : MonoBehaviour
     private bool isTransitioning = false;
     private Coroutine activeRoutine;
 
+    /// <summary>Set to true whenever any text input field is active so WASD does not move the camera.</summary>
+    public static bool IsTyping = false;
+
     private void Awake()
     {
         Instance = this;
@@ -118,10 +121,14 @@ public class CameraController : MonoBehaviour
         Vector3 pos = transform.position;
 
         // WASD — never blocked by hover panels; only affects pan, not scroll.
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
-        pos += transform.right * h * panSpeed * Time.deltaTime;
-        pos += transform.forward * v * panSpeed * Time.deltaTime;
+        // Skip entirely while a text field (e.g. company rename) has keyboard focus.
+        if (!IsTyping)
+        {
+            float h = Input.GetAxis("Horizontal");
+            float v = Input.GetAxis("Vertical");
+            pos += transform.right   * h * panSpeed * Time.deltaTime;
+            pos += transform.forward * v * panSpeed * Time.deltaTime;
+        }
 
         bool hoverBlocked = IsMouseOverHoverPanel();
 

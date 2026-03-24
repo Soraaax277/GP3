@@ -1,12 +1,14 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class AdvancedBusinessCenter : StructureNode
 {
-    public override void Initialize(HexTile tile, PlayerData player)
+    public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
-        expansionRadius = 3; // Large corporate headquarters
+        tilesOccupied = 2; // High-tier regional corporate hub
+        expansionRadius = 3; 
         baseGoldCost = 400;
-        base.Initialize(tile, player);
+        base.Initialize(tiles, player);
     }
 
     public override string GetRequiredTechFeature() => "AdvancedBusinessCenters";

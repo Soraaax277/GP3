@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.UI;
 using System.Collections;
 
 public class AudioManager : MonoBehaviour
@@ -7,6 +8,11 @@ public class AudioManager : MonoBehaviour
     public static AudioManager Instance;
 
     public AudioMixer audioMixer;
+
+    [Header("UI Sliders (Manual Hookup)")]
+    public Slider masterSlider;
+    public Slider musicSlider;
+    public Slider sfxSlider;
 
     [Header("BGM clips")]
     public AudioClip bgmMenu;
@@ -111,6 +117,9 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
+        // Hook up sliders if assigned
+        InitializeSliders();
+
         // Start the BGM check
         StartCoroutine(AutoInitializeBGM());
         
@@ -237,6 +246,12 @@ public class AudioManager : MonoBehaviour
         if (audioMixer != null) audioMixer.SetFloat("MasterVolume", dbValue);
         PlayerPrefs.SetFloat(MASTER_VOLUME_KEY, volume);
         PlayerPrefs.Save();
+        
+        // Update slider if assigned and value differs (avoiding recursion)
+        if (masterSlider != null && !Mathf.Approximately(masterSlider.value, volume))
+        {
+            masterSlider.value = volume;
+        }
     }
 
     public void SetMusicVolume(float volume)
@@ -245,6 +260,11 @@ public class AudioManager : MonoBehaviour
         if (audioMixer != null) audioMixer.SetFloat("MusicVolume", dbValue);
         PlayerPrefs.SetFloat(MUSIC_VOLUME_KEY, volume);
         PlayerPrefs.Save();
+
+        if (musicSlider != null && !Mathf.Approximately(musicSlider.value, volume))
+        {
+            musicSlider.value = volume;
+        }
     }
 
     public void SetSFXVolume(float volume)
@@ -253,6 +273,11 @@ public class AudioManager : MonoBehaviour
         if (audioMixer != null) audioMixer.SetFloat("SFXVolume", dbValue);
         PlayerPrefs.SetFloat(SFX_VOLUME_KEY, volume);
         PlayerPrefs.Save();
+
+        if (sfxSlider != null && !Mathf.Approximately(sfxSlider.value, volume))
+        {
+            sfxSlider.value = volume;
+        }
     }
 
     public void SetHazardVolume(float volume)
@@ -384,6 +409,27 @@ public class AudioManager : MonoBehaviour
         if (volume <= 0.0001f)
             return -80f;
         return Mathf.Log10(volume) * 20f;
+    }
+
+    private void InitializeSliders()
+    {
+        if (masterSlider != null)
+        {
+            masterSlider.value = GetMasterVolume();
+            masterSlider.onValueChanged.AddListener(SetMasterVolume);
+        }
+
+        if (musicSlider != null)
+        {
+            musicSlider.value = GetMusicVolume();
+            musicSlider.onValueChanged.AddListener(SetMusicVolume);
+        }
+
+        if (sfxSlider != null)
+        {
+            sfxSlider.value = GetSFXVolume();
+            sfxSlider.onValueChanged.AddListener(SetSFXVolume);
+        }
     }
 }
 

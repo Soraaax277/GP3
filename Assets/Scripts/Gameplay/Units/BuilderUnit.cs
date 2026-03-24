@@ -142,24 +142,26 @@ public class BuilderUnit : Unit
 
         TowerNode targetTower = null;
         StructureNode targetStructure = null;
-        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+
+        // 1. Check a slightly wider area (up to 2 hexes) for large structural footprints
+        var nearbyTiles = GridManager.Instance.GetTilesInRange(currentTile, 2);
+        foreach (HexTile t in nearbyTiles)
         {
-            if (neighbor.placedTower != null && neighbor.placedTower.state == TowerNode.TowerState.Hologram)
+            if (t.placedTower != null && t.placedTower.owner == owner && t.placedTower.IsBuilt() == false)
             {
-                targetTower = neighbor.placedTower;
+                targetTower = t.placedTower;
                 break;
             }
-            if (neighbor.placedStructure != null && !neighbor.placedStructure.IsBuilt)
+            if (t.placedStructure != null && t.placedStructure.owner == owner && t.placedStructure.IsBuilt == false)
             {
-                targetStructure = neighbor.placedStructure;
+                targetStructure = t.placedStructure;
                 break;
             }
         }
 
-
         if (targetTower == null && targetStructure == null)
         {
-            Debug.Log("[Builder] No hologram infrastructure (TowerState.Hologram or !IsBuilt) adjacent to construct!");
+            Debug.Log("[Builder] No owned hologram structure within range 2!");
             return;
         }
 
@@ -173,6 +175,14 @@ public class BuilderUnit : Unit
         }
 
         owner.resources -= buildCost;
+        
+        // OVERTIME BONUS: +10G kickback if a Foreman is at a Canteen
+        if (Canteen.IsAnyMannedByForeman(owner))
+        {
+            owner.resources += 10;
+            Debug.Log($"[Builder] Managed by Canteen Foreman: +10G Kickback received.");
+        }
+
         bool isCanteen = (targetStructure is Canteen);
         
         if (targetTower != null)
@@ -249,17 +259,28 @@ public class BuilderUnit : Unit
 
         TowerNode targetTower = null;
         StructureNode targetStructure = null;
-        foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
+
+        // 1. Check current tile
+        if (currentTile.placedTower != null && currentTile.placedTower.IsDestroyed())
+            targetTower = currentTile.placedTower;
+        else if (currentTile.placedStructure != null && currentTile.placedStructure.IsBroken)
+            targetStructure = currentTile.placedStructure;
+
+        // 2. Check neighbors
+        if (targetTower == null && targetStructure == null)
         {
-            if (neighbor.placedTower != null && neighbor.placedTower.IsDestroyed())
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(currentTile))
             {
-                targetTower = neighbor.placedTower;
-                break;
-            }
-            if (neighbor.placedStructure != null && neighbor.placedStructure.IsBroken)
-            {
-                targetStructure = neighbor.placedStructure;
-                break;
+                if (neighbor.placedTower != null && neighbor.placedTower.IsDestroyed())
+                {
+                    targetTower = neighbor.placedTower;
+                    break;
+                }
+                if (neighbor.placedStructure != null && neighbor.placedStructure.IsBroken)
+                {
+                    targetStructure = neighbor.placedStructure;
+                    break;
+                }
             }
         }
 
