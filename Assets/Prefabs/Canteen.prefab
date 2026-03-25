@@ -79,9 +79,12 @@ MonoBehaviour:
   baseDurability: 100
   currentDurability: 0
   goldUpkeep: 10
+  tilesOccupied: 1
+  autoScaleToFit: 1
   expansionRadius: 2
   baseInfluenceAmount: 5
   baseGoldCost: 100
+  visionRange: 4
   hiddenDurability: 50
   currentHiddenDurability: 0
   industrialVisual: {fileID: 3703634218200631569, guid: 8f0eac027946c0e4c933a19ecee011b9, type: 3}

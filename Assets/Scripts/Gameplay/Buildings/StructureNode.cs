@@ -23,6 +23,9 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     public int baseInfluenceAmount = 5; 
     public int baseGoldCost = 100;
 
+    [Header("Vision Settings")]
+    public int visionRange = 3; // Allows specific prefabs (like Tesseract/BPOCenter) to have larger vision
+
     [Header("Hidden Stats")]
     public float  hiddenDurability = 50f;
     public float  currentHiddenDurability;

@@ -1128,6 +1128,10 @@ public class EnemyAI : MonoBehaviour
         if (TurnManager.Instance.GetAllTowers().Any(t => t.owner == aiPlayer && !t.IsDestroyed() && GridManager.Instance.CubeDistance(t.tile.cubeCoords, targetTile.cubeCoords) <= FieldOfViewManager.Instance.towerVisionRange)) 
             return true;
 
+        // Check Structures
+        if (TurnManager.Instance.GetAllStructures().Any(s => s.owner == aiPlayer && s.IsBuilt && !s.IsBroken && GridManager.Instance.CubeDistance(s.ParentTile.cubeCoords, targetTile.cubeCoords) <= s.visionRange)) 
+            return true;
+
         // Check Units
         if (TurnManager.Instance.GetAllUnits().Any(u => u.owner == aiPlayer && u.currentTile != null && GridManager.Instance.CubeDistance(u.currentTile.cubeCoords, targetTile.cubeCoords) <= ((u is ScoutUnit) ? FieldOfViewManager.Instance.unitVisionRange + 2 : FieldOfViewManager.Instance.unitVisionRange))) 
             return true;

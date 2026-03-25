@@ -84,6 +84,7 @@ MonoBehaviour:
   expansionRadius: 2
   baseInfluenceAmount: 5
   baseGoldCost: 100
+  visionRange: 2
   hiddenDurability: 50
   currentHiddenDurability: 0
 --- !u!1001 &6957425498949536307

@@ -41,6 +41,17 @@ public class FieldOfViewManager : MonoBehaviour
             }
         }
 
+        // 3.5. Grant vision from Structures
+        foreach (var structure in TurnManager.Instance.GetAllStructures())
+        {
+            // We check IsBroken. A structure grants vision immediately upon placement
+            // (even as a blueprint/hologram), just like towers do.
+            if (structure.owner == localPlayer && !structure.IsBroken)
+            {
+                newlyExploredTotal += RevealTiles(structure.ParentTile, structure.visionRange);
+            }
+        }
+
         // 4. Grant vision from Units
         foreach (var unit in TurnManager.Instance.GetAllUnits())
         {

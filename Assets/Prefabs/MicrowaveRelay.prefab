@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7324659632455320542}
   - component: {fileID: 19209030140876061}
   - component: {fileID: 5504965738234321792}
+  - component: {fileID: -7650945028723220470}
   m_Layer: 0
   m_Name: MicrowaveRelay
   m_TagString: Untagged
@@ -63,6 +64,29 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 19.483337, y: 27.24062, z: 25.939377}
   m_Center: {x: -0.025146484, y: 13.12031, z: 1.0258408}
+--- !u!114 &-7650945028723220470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6026591426518143972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 265917771b1ae2b4b8685ddf827b8c98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MicrowaveRelay
+  baseDurability: 100
+  currentDurability: 0
+  goldUpkeep: 10
+  tilesOccupied: 1
+  autoScaleToFit: 1
+  expansionRadius: 2
+  baseInfluenceAmount: 5
+  baseGoldCost: 100
+  visionRange: 3
+  hiddenDurability: 50
+  currentHiddenDurability: 0
 --- !u!1001 &4806485083306910251
 PrefabInstance:
   m_ObjectHideFlags: 0

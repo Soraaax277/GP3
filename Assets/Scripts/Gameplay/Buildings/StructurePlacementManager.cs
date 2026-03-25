@@ -216,6 +216,12 @@ public class StructurePlacementManager : MonoBehaviour
         if (node != null)
         {
             node.Initialize(targets, owner);
+            
+            // Instantly update FOW so the new structure grants its vision immediately
+            if (FieldOfViewManager.Instance != null && owner != null)
+            {
+                FieldOfViewManager.Instance.UpdateFogOfWar(owner);
+            }
         }
 
         CancelPlacement();

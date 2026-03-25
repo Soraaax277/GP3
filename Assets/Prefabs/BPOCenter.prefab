@@ -79,9 +79,12 @@ MonoBehaviour:
   baseDurability: 100
   currentDurability: 0
   goldUpkeep: 10
+  tilesOccupied: 1
+  autoScaleToFit: 1
   expansionRadius: 2
   baseInfluenceAmount: 5
   baseGoldCost: 100
+  visionRange: 6
   hiddenDurability: 50
   currentHiddenDurability: 0
   incomePerBusinessperson: 50
