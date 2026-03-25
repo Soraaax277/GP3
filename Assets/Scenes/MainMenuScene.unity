@@ -4019,6 +4019,14 @@ PrefabInstance:
       propertyPath: masterSlider
       value: 
       objectReference: {fileID: 830386372}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: buttonClickSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 234f3f243e2b86a4d9f28bec7d91058d, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: buttonHoverSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 687435d5492a817448adf8dfedaf62ff, type: 3}
     - target: {fileID: 7857212119103772439, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
       propertyPath: m_Name
       value: AudioManager

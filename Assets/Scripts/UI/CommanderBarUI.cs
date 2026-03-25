@@ -22,9 +22,24 @@ public class CommanderBarUI : MonoBehaviour
 
     private void Start()
     {
-        if (signalBoostBtn) signalBoostBtn.onClick.AddListener(OnSignalBoost);
-        if (neutronBombToggle) neutronBombToggle.onClick.AddListener(OnNeutronToggle);
-        if (overclockBtn) overclockBtn.onClick.AddListener(OnOverclock);
+        if (signalBoostBtn) 
+        {
+            if (signalBoostBtn.gameObject.GetComponent<UIButtonSounds>() == null)
+                signalBoostBtn.gameObject.AddComponent<UIButtonSounds>();
+            signalBoostBtn.onClick.AddListener(OnSignalBoost);
+        }
+        if (neutronBombToggle) 
+        {
+            if (neutronBombToggle.gameObject.GetComponent<UIButtonSounds>() == null)
+                neutronBombToggle.gameObject.AddComponent<UIButtonSounds>();
+            neutronBombToggle.onClick.AddListener(OnNeutronToggle);
+        }
+        if (overclockBtn) 
+        {
+            if (overclockBtn.gameObject.GetComponent<UIButtonSounds>() == null)
+                overclockBtn.gameObject.AddComponent<UIButtonSounds>();
+            overclockBtn.onClick.AddListener(OnOverclock);
+        }
     }
 
     public void OnSignalBoost()

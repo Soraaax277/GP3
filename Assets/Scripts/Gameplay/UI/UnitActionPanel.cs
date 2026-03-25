@@ -370,6 +370,12 @@ public class UnitActionPanel : MonoBehaviour
         Button btn = go.GetComponent<Button>();
         if (btn != null)
         {
+            // Add automatic hover/click SFX
+            if (go.GetComponent<UIButtonSounds>() == null)
+            {
+                go.AddComponent<UIButtonSounds>();
+            }
+
             btn.interactable = config.interactable && !config.isDisplay;
             if (config.onClick != null)
             {

@@ -209,6 +209,9 @@ public class TowerPlacementManager : MonoBehaviour
 
         Destroy(hologram);
 
+        if (AudioManager.Instance != null && AudioManager.Instance.placeTowerSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.placeTowerSFX);
+
         GameObject realTower = Instantiate(
             towerPrefab,
             new Vector3(hoveredTile.transform.position.x, GetTowerPlacementY(hoveredTile, towerPrefab), hoveredTile.transform.position.z),

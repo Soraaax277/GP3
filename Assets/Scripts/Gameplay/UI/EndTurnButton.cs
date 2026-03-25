@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class EndTurnButton : MonoBehaviour
 {
+    private void Awake()
+    {
+        if (gameObject.GetComponent<UIButtonSounds>() == null)
+            gameObject.AddComponent<UIButtonSounds>();
+    }
+
     public void OnClickEndTurn()
     {
         if (TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null)

@@ -17,11 +17,15 @@ public class PauseMenuUI : MonoBehaviour
         // Automatically listen for the button click
         if (pauseButton != null)
         {
+            if (pauseButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                pauseButton.gameObject.AddComponent<UIButtonSounds>();
             pauseButton.onClick.AddListener(TogglePause);
         }
 
         if (settingsButton != null)
         {
+            if (settingsButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                settingsButton.gameObject.AddComponent<UIButtonSounds>();
             settingsButton.onClick.AddListener(OnSettings);
         }
 

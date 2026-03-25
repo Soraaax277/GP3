@@ -106415,6 +106415,30 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: denySFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 20f5c80d4e18acb4d845cfa496ab8251, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: moveSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: c00068db96720a747906a07f20073e92, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: powerSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: e8f881aac901f0547bbe98208100a649, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: refillSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 2ace5ad6699ad024ab1c8cd64fc1082c, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: repairSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 6db725c96e5f3d640ad04efa76af829b, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: selectSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: ff11e6ac13a05f24b99d9c406863955b, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
       propertyPath: sfxSlider
       value: 
       objectReference: {fileID: 215941138}
@@ -106422,6 +106446,14 @@ PrefabInstance:
       propertyPath: sfxSource
       value: 
       objectReference: {fileID: 858466268}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: layWireSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: f13dbd482e1879a4aa2acd27d93524b5, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: acidRainSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 7a524504b2d94db4685da6fee6acb35b, type: 3}
     - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
       propertyPath: musicSlider
       value: 
@@ -106431,6 +106463,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2029814142}
     - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: techBoomSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: a04b36fd9846f8e438a40101aa471491, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: constructSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: a278ac9de07a1a14fb239779f74862f9, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
       propertyPath: hazardSource
       value: 
       objectReference: {fileID: 858466268}
@@ -106438,6 +106478,38 @@ PrefabInstance:
       propertyPath: masterSlider
       value: 
       objectReference: {fileID: 1993674101}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: placeWireSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: f13dbd482e1879a4aa2acd27d93524b5, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: placeTowerSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 4f80e40e4d85dba49a7994c20dbd2e3d, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: solarFlareSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 4086f9ad8570f4842bf67c036e116294, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: buttonClickSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 234f3f243e2b86a4d9f28bec7d91058d, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: buttonHoverSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 687435d5492a817448adf8dfedaf62ff, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: powerOutageSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 6f7ea16a488d10544849629526e35347, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: placeBuildingSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: fcb72c88646855b46a8b6ec8da20a99b, type: 3}
+    - target: {fileID: 7128239317857308417, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
+      propertyPath: hyperInflationSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 0a6195d2b3c32dc4daa9011e1b983c8f, type: 3}
     - target: {fileID: 7857212119103772439, guid: ebe510ebc2126a54894d9b4dc39ad65f, type: 3}
       propertyPath: m_Name
       value: AudioManager
@@ -136140,7 +136212,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6eced287b3b099f42b3e73dc2ccc8f5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EventManager
-  eventSpawnChance: 1
+  eventSpawnChance: 0.2
   activeEvent: 0
   eventDurationLeft: 0
   rainParticlePrefab: {fileID: 2023043343}

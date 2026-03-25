@@ -115,6 +115,9 @@ public class TechTreeWindowManager : MonoBehaviour
         if (confirmButtonText != null) confirmButtonText.text = "PURCHASE";
         if (confirmUpgradeButton != null)
         {
+            if (confirmUpgradeButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                confirmUpgradeButton.gameObject.AddComponent<UIButtonSounds>();
+
             confirmUpgradeButton.interactable = false;
             // Ensure a CanvasGroup exists for fading
             if (confirmUpgradeButton.GetComponent<CanvasGroup>() == null)
@@ -124,12 +127,42 @@ public class TechTreeWindowManager : MonoBehaviour
 
         RefreshSabotageButton();
 
-        if (btnHardware) btnHardware.onClick.AddListener(() => RequestCategorySwitch(panelHardware, "Hardware"));
-        if (btnWorkforce) btnWorkforce.onClick.AddListener(() => RequestCategorySwitch(panelWorkforce, "Workforce"));
-        if (btnServices) btnServices.onClick.AddListener(() => RequestCategorySwitch(panelServices, "Services"));
-        if (btnSabotage) btnSabotage.onClick.AddListener(() => RequestCategorySwitch(panelSabotage, "Sabotage"));
-        if (openButton) openButton.onClick.AddListener(OpenTechTree);
-        if (closeButton) closeButton.onClick.AddListener(CloseTechTree);
+        if (btnHardware) 
+        {
+            if (btnHardware.gameObject.GetComponent<UIButtonSounds>() == null)
+                btnHardware.gameObject.AddComponent<UIButtonSounds>();
+            btnHardware.onClick.AddListener(() => RequestCategorySwitch(panelHardware, "Hardware"));
+        }
+        if (btnWorkforce) 
+        {
+            if (btnWorkforce.gameObject.GetComponent<UIButtonSounds>() == null)
+                btnWorkforce.gameObject.AddComponent<UIButtonSounds>();
+            btnWorkforce.onClick.AddListener(() => RequestCategorySwitch(panelWorkforce, "Workforce"));
+        }
+        if (btnServices) 
+        {
+            if (btnServices.gameObject.GetComponent<UIButtonSounds>() == null)
+                btnServices.gameObject.AddComponent<UIButtonSounds>();
+            btnServices.onClick.AddListener(() => RequestCategorySwitch(panelServices, "Services"));
+        }
+        if (btnSabotage) 
+        {
+            if (btnSabotage.gameObject.GetComponent<UIButtonSounds>() == null)
+                btnSabotage.gameObject.AddComponent<UIButtonSounds>();
+            btnSabotage.onClick.AddListener(() => RequestCategorySwitch(panelSabotage, "Sabotage"));
+        }
+        if (openButton) 
+        {
+            if (openButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                openButton.gameObject.AddComponent<UIButtonSounds>();
+            openButton.onClick.AddListener(OpenTechTree);
+        }
+        if (closeButton) 
+        {
+            if (closeButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                closeButton.gameObject.AddComponent<UIButtonSounds>();
+            closeButton.onClick.AddListener(CloseTechTree);
+        }
         if (confirmUpgradeButton) confirmUpgradeButton.onClick.AddListener(ConfirmPurchase);
 
         if (panelHardware) panelHardware.SetActive(false);

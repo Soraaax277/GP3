@@ -57,12 +57,18 @@ public class Businessman: Unit
         // 50% chance to recruit unit
         if (Random.value >= 0.5f) 
         { 
+            if (AudioManager.Instance != null && AudioManager.Instance.recruitSFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.recruitSFX);
+
             targetUnit.Recruit(owner);
             ActionLogUI.PostFiltered(owner, "Businessman recruited a worker!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
             Debug.Log($"[Businessman] Successfully recruited {targetUnit.name}!");
         }
         else
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.denySFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.denySFX);
+
             Debug.Log("[Businessman] Recruitment failed.");
         }
 

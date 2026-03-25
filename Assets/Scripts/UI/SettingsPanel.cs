@@ -14,7 +14,11 @@ public class SettingsPanel : MonoBehaviour
     private void Start()
     {
         if (backButton != null)
+        {
+            if (backButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                backButton.gameObject.AddComponent<UIButtonSounds>();
             backButton.onClick.AddListener(OnClose);
+        }
     }
 
     private GameObject _previousPanel;

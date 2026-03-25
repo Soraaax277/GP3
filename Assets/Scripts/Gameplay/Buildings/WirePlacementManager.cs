@@ -196,6 +196,9 @@ public class WirePlacementManager : MonoBehaviour
         Debug.Log($"[WirePlacement] Wire placed for {cost} gold. " +
                   $"Remaining: {currentSpecialist.owner.resources}");
 
+        if (AudioManager.Instance != null && AudioManager.Instance.placeWireSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.placeWireSFX);
+
         currentSpecialist.BuildWire(hoveredTile, currentYRotation);
         CancelPlacement();
     }

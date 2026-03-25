@@ -10,6 +10,8 @@ public class BlueprintButton : MonoBehaviour
     private void Awake()
     {
         button = GetComponent<Button>();
+        if (gameObject.GetComponent<UIButtonSounds>() == null)
+            gameObject.AddComponent<UIButtonSounds>();
     }
 
     private void OnEnable()

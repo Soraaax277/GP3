@@ -107,6 +107,10 @@ public class MaintenanceCrew : Unit
         }
 
         owner.resources -= repairCost;
+
+        if (AudioManager.Instance != null && AudioManager.Instance.maintainSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.maintainSFX);
+
         targetTower.Repair(repairEfficiency);
         ActionLogUI.PostFiltered(owner, "Maintenance Crew repaired a Tower.", ActionLogUI.Colors.Unit);
 

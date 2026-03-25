@@ -35,6 +35,9 @@ public abstract class Unit : MonoBehaviour
         CurrentCharges = MaxCharges;
         refillsHappened++;
         
+        if (AudioManager.Instance != null && AudioManager.Instance.refillSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.refillSFX);
+
         if (refillsHappened >= 3)
         {
             LevelUp();
@@ -151,6 +154,9 @@ public abstract class Unit : MonoBehaviour
                     // Accessing .material creates an instance clone.
                     // We only do this when selecting to apply the tint.
                     renderers[i].material.color = Color.green; 
+                    
+                    if (AudioManager.Instance != null && AudioManager.Instance.selectSFX != null)
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.selectSFX);
                 }
                 else
                 {
@@ -219,6 +225,9 @@ public abstract class Unit : MonoBehaviour
 
         // Remove start tile from path
         path.RemoveAt(0);
+
+        if (AudioManager.Instance != null && AudioManager.Instance.moveSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.moveSFX);
 
         currentTile.placedUnit = null;
 

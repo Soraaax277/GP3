@@ -12,6 +12,11 @@ public class Technician : Unit
     public bool canRepairWires = false;
     public bool isResearching = false;
 
+    public override void Initialize(HexTile spawnTile, PlayerData player)
+    {
+        base.Initialize(spawnTile, player);
+    }
+
     public override void OnTurnStart(PlayerData activePlayer)
     {
         base.OnTurnStart(activePlayer);
@@ -91,6 +96,10 @@ public class Technician : Unit
         }
 
         targetWire.IsTechnicianActivated = true;
+        
+        if (AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
+
         ActionLogUI.PostFiltered(owner, "Technician powered up the grid!", ActionLogUI.Colors.Unit);
 
         if (FeedbackController.Instance != null)
@@ -156,6 +165,9 @@ public class Technician : Unit
         owner.resources -= repairCost;
         if (targetTower != null)
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.repairSFX);
+
             targetTower.Repair(repairEfficiency);
             ActionLogUI.PostFiltered(owner, "Technician repaired Tower", ActionLogUI.Colors.Unit);
         }
@@ -192,6 +204,10 @@ public class Technician : Unit
     public void StartResearchProject(string techID)
     {
         if (isResearching) return;
+
+        if (AudioManager.Instance != null && AudioManager.Instance.researchSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.researchSFX);
+
         if (ResearchProjectHandler.Instance != null)
         {
             ResearchProjectHandler.Instance.StartProject(this, techID);

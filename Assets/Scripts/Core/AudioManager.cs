@@ -25,6 +25,8 @@ public class AudioManager : MonoBehaviour
     public AudioClip placeTowerSFX;
     public AudioClip placeWireSFX;
     public AudioClip placeBuildingSFX;
+    public AudioClip buttonClickSFX;
+    public AudioClip buttonHoverSFX;
 
     [Header("SFX Unit Actions")]
     public AudioClip constructSFX;

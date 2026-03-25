@@ -185,6 +185,9 @@ public class BuilderUnit : Unit
 
         bool isCanteen = (targetStructure is Canteen);
         
+        if (AudioManager.Instance != null && AudioManager.Instance.constructSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.constructSFX);
+
         if (targetTower != null)
         {
             targetTower.Build();
@@ -301,6 +304,9 @@ public class BuilderUnit : Unit
         owner.resources -= repairCost;
         if (targetTower != null)
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.repairSFX);
+
             targetTower.Repair(repairEfficiency);
             ActionLogUI.PostFiltered(owner, "Builder repaired Tower", ActionLogUI.Colors.Unit);
         }
@@ -366,6 +372,9 @@ public class BuilderUnit : Unit
             sabotageDamage = baseDamage *  damageMultiplier;
         }
         
+        if (AudioManager.Instance != null && AudioManager.Instance.sabotageSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.sabotageSFX);
+
         targetTower.TakeDamage(sabotageDamage);
 
         if (ShouldConsumeCharge())

@@ -115,10 +115,33 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private void Start()
     {
         // Hook up buttons in code
-        if (newGameButton != null) newGameButton.onClick.AddListener(OnNewGame);
-        if (loadGameButton != null) loadGameButton.onClick.AddListener(OnLoadGame);
-        if (settingsButton != null) settingsButton.onClick.AddListener(OnSettings);
-        if (exitButton != null) exitButton.onClick.AddListener(OnExit);
+        if (newGameButton != null)
+        {
+            if (newGameButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                newGameButton.gameObject.AddComponent<UIButtonSounds>();
+            newGameButton.onClick.AddListener(OnNewGame);
+        }
+
+        if (loadGameButton != null)
+        {
+            if (loadGameButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                loadGameButton.gameObject.AddComponent<UIButtonSounds>();
+            loadGameButton.onClick.AddListener(OnLoadGame);
+        }
+
+        if (settingsButton != null)
+        {
+            if (settingsButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                settingsButton.gameObject.AddComponent<UIButtonSounds>();
+            settingsButton.onClick.AddListener(OnSettings);
+        }
+
+        if (exitButton != null)
+        {
+            if (exitButton.gameObject.GetComponent<UIButtonSounds>() == null)
+                exitButton.gameObject.AddComponent<UIButtonSounds>();
+            exitButton.onClick.AddListener(OnExit);
+        }
 
         if (loadGameButton != null)
             loadGameButton.interactable = SaveSystem.HasSaveData();
@@ -364,8 +387,13 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     }
 
     // ── Hover ─────────────────────────────────────────────────────────────────
-    public void OnPointerEnter(PointerEventData _) => _hovered = true;
+    public void OnPointerEnter(PointerEventData _) 
+    { 
+        _hovered = true; 
+    }
     public void OnPointerExit(PointerEventData _)  => _hovered = false;
+
+    // Redundant manual sound calls removed, handled by UIButtonSounds component
 
     // ── Menu buttons ──────────────────────────────────────────────────────────
     public void OnNewGame()

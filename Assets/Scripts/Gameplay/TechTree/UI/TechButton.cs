@@ -18,6 +18,8 @@ public class TechButton : MonoBehaviour
 
         if (button != null)
         {
+            if (button.gameObject.GetComponent<UIButtonSounds>() == null)
+                button.gameObject.AddComponent<UIButtonSounds>();
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(OnTechClicked);
         }

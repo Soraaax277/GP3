@@ -109,6 +109,9 @@ public class ITPersonnel : Unit
 
         if (targetTower != null)
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.repairSFX);
+
             targetTower.Repair(repairEfficiency);
             ActionLogUI.PostFiltered(owner, "IT Specialist repaired a Tower.", ActionLogUI.Colors.Unit);
             Debug.Log($"[ITPersonnel] Tower repair complete with {repairEfficiency * 100}% efficiency (cost: {repairCost}).");

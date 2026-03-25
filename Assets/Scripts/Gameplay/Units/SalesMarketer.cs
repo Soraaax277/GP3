@@ -151,12 +151,18 @@ public class SalesMarketer : Unit
         // 50% recruitment chance
         if (Random.value >= 0.5f)
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.recruitSFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.recruitSFX);
+
             targetUnit.Recruit(owner);
             ActionLogUI.PostFiltered(owner, "Marketer recruited a worker!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
             Debug.Log($"[SalesMarketer] Successfully recruited {targetUnit.name}!");
         }
         else
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.denySFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.denySFX);
+
             Debug.Log("[SalesMarketer] Recruitment failed.");
         }
 
@@ -229,6 +235,9 @@ public class SalesMarketer : Unit
 
         Debug.Log($"[SalesMarketer] {owner.playerName}'s Marketer performing Deny action.");
 
+        if (AudioManager.Instance != null && AudioManager.Instance.denySFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.denySFX);
+
         List<HexTile> tilesInRange = GridManager.Instance.GetTilesInRange(currentTile, denyRange);
         int tilesAffected = 0;
 
@@ -298,6 +307,9 @@ public class SalesMarketer : Unit
         // 1. Chance to add own influence (Improve tile)
         if (Random.value < 0.5f)
         {
+            if (AudioManager.Instance != null && AudioManager.Instance.convertSFX != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.convertSFX);
+
             PlayerData oldOwner = currentTile.GetOwner();
             currentTile.AddInfluence(owner, denyAmount, true); 
             ActionLogUI.PostFiltered(owner, "Marketer improved local influence.", ActionLogUI.Colors.Unit);
