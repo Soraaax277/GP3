@@ -3,7 +3,7 @@ using UnityEngine;
 public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 {
     public HexTile ParentTile => tile;
-    private bool _isBuilderFinished;
+    public bool isBuilderFinished;
     public bool IsPowered { get; set; }
     
     public bool IsTechnicianActivated 
@@ -122,7 +122,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         if (parentNode != null) parentNode.towersPlacedCount++;
         TurnManager.Instance.RegisterTower(this);
 
-        _isBuilderFinished = false;
+        isBuilderFinished = false;
         state = TowerState.Hologram;
 
         UpdateEraVisuals();
@@ -141,9 +141,9 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
     public void Build()
     {
-        if (_isBuilderFinished || state == TowerState.Destroyed) return;
+        if (isBuilderFinished || state == TowerState.Destroyed) return;
 
-        _isBuilderFinished = true;
+        isBuilderFinished = true;
         Debug.Log($"[Tower {name}] Builder finished construction. Awaiting power from wires to solidify.");
 
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
@@ -157,8 +157,8 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         TowerState newState = state;
         if (state != TowerState.Destroyed)
         {
-            if (_isBuilderFinished && powered) newState = TowerState.Powered;
-            else if (_isBuilderFinished) newState = TowerState.Constructed;
+            if (isBuilderFinished && powered) newState = TowerState.Powered;
+            else if (isBuilderFinished) newState = TowerState.Constructed;
             else newState = TowerState.Hologram;
         }
 
@@ -283,7 +283,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public void Repair(float efficiencyMultiplier = 1.0f)
     {
         if (state != TowerState.Destroyed) return;
-        _isBuilderFinished = true; // Repaired implies built
+        isBuilderFinished = true; // Repaired implies built
         state = TowerState.Constructed;
         HologramUtil.MakeSolid(gameObject);
         currentDurability = Mathf.Min(baseDurability * efficiencyMultiplier, baseDurability);
@@ -304,8 +304,8 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         SetRangeColor(new Color(1f, 0f, 0f, 0.25f));
     }
 
-    public void SetBuilt() { _isBuilderFinished = true; state = TowerState.Constructed; }
-    public bool IsBuilt() => _isBuilderFinished || state == TowerState.Powered;
+    public void SetBuilt() { isBuilderFinished = true; state = TowerState.Constructed; }
+    public bool IsBuilt() => isBuilderFinished || state == TowerState.Powered;
     public bool IsDestroyed() => state == TowerState.Destroyed;
 
     // Reverts this tower to Hologram/blueprint state.
@@ -315,7 +315,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     // Mirrors exactly what Initialize() sets up for a fresh hologram.
     public void SetHologramState()
     {
-        _isBuilderFinished = false;
+        isBuilderFinished = false;
         state              = TowerState.Hologram;
         IsPowered          = false;
         HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));

@@ -14,7 +14,7 @@ public class SignalNode : MonoBehaviour
     public GameObject level2Visual;
     public GameObject level3Visual;
     public GameObject level4Visual;
-    [SerializeField] private int currentLevel = 1;
+    public int currentLevel = 1;
     private GameObject currentVisualObj;
 
     //  TOWER CAPACITY

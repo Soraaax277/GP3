@@ -76,9 +76,11 @@ public class StructureData
     public string featureKey;
     public int tileX;
     public int tileY;
+    public float rotationY;
     public bool isPlayerOwned;
     public bool isBuilt;
     public bool isBroken;
+    public bool isTechnicianActivated;
     public float currentDurability;
 }
 
@@ -113,6 +115,7 @@ public class BuildingData
     public string buildingType;
     public int tileX;
     public int tileY;
+    public int currentLevel;
     public int towersPlaced;
     public bool isPlayerOwned;
 }
@@ -124,6 +127,7 @@ public class TowerData
     public int tileY;
     public string state;
     public bool isPlayerOwned;
+    public bool isBuilderFinished;
     public int parentNodeX;
     public int parentNodeY;
     public float currentDurability;
@@ -142,6 +146,9 @@ public class WireData
     public float sclX, sclY, sclZ;
 
     public bool isPlayerOwned;
+    public bool isDigital;
+    public bool isTechnicianActivated;
+    public bool isDestroyed;
     public float currentDurability;
 }
 

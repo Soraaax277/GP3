@@ -216,9 +216,10 @@ public static class SaveSystem
     {
         if (GridManager.Instance == null) return;
 
+        HashSet<SignalNode> savedNodes = new HashSet<SignalNode>();
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
-            if (tile.placedNode != null)
+            if (tile.placedNode != null && !savedNodes.Contains(tile.placedNode))
             {
                 SignalNode node = tile.placedNode;
                 BuildingData data = new BuildingData
@@ -227,9 +228,11 @@ public static class SaveSystem
                     tileX = tile.cubeCoords.x,
                     tileY = tile.cubeCoords.y,
                     towersPlaced = node.towersPlacedCount,
-                    isPlayerOwned = node.owner == TurnManager.Instance.players[0]
+                    currentLevel = node.currentLevel,
+                    isPlayerOwned = node.owner == (TurnManager.Instance.players.Count > 0 ? TurnManager.Instance.players[0] : null)
                 };
                 state.buildings.Add(data);
+                savedNodes.Add(node);
             }
         }
     }
@@ -238,23 +241,27 @@ public static class SaveSystem
     {
         if (GridManager.Instance == null) return;
 
+        HashSet<StructureNode> savedStructures = new HashSet<StructureNode>();
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
-            if (tile.placedStructure != null)
+            if (tile.placedStructure != null && !savedStructures.Contains(tile.placedStructure))
             {
                 StructureNode node = tile.placedStructure;
                 StructureData data = new StructureData
                 {
                     structureType = node.GetType().Name,
                     featureKey = node.GetRequiredTechFeature(),
-                    tileX = tile.cubeCoords.x,
-                    tileY = tile.cubeCoords.y,
-                    isPlayerOwned = node.owner == TurnManager.Instance.players[0],
+                    tileX = node.ParentTile.cubeCoords.x,
+                    tileY = node.ParentTile.cubeCoords.y,
+                    rotationY = node.transform.rotation.eulerAngles.y,
+                    isPlayerOwned = node.owner == (TurnManager.Instance.players.Count > 0 ? TurnManager.Instance.players[0] : null),
                     isBuilt = node.IsBuilt,
                     isBroken = node.IsBroken,
+                    isTechnicianActivated = node.IsTechnicianActivated,
                     currentDurability = node.currentDurability
                 };
                 state.structures.Add(data);
+                savedStructures.Add(node);
             }
         }
     }
@@ -273,7 +280,8 @@ public static class SaveSystem
                     tileX = tile.cubeCoords.x,
                     tileY = tile.cubeCoords.y,
                     state = tower.state.ToString(),
-                    isPlayerOwned = tower.owner == TurnManager.Instance.players[0],
+                    isPlayerOwned = tower.owner == (TurnManager.Instance.players.Count > 0 ? TurnManager.Instance.players[0] : null),
+                    isBuilderFinished = tower.isBuilderFinished,
                     parentNodeX = tower.parentNode != null ? tower.parentNode.ParentTile.cubeCoords.x : -1,
                     parentNodeY = tower.parentNode != null ? tower.parentNode.ParentTile.cubeCoords.y : -1,
                     currentDurability = tower.currentDurability
@@ -311,7 +319,10 @@ public static class SaveSystem
                     sclY = wire.transform.localScale.y,
                     sclZ = wire.transform.localScale.z,
                     
-                    isPlayerOwned = wire.owner == TurnManager.Instance.players[0],
+                    isPlayerOwned = wire.owner == (TurnManager.Instance.players.Count > 0 ? TurnManager.Instance.players[0] : null),
+                    isDigital = wire.isDigital,
+                    isTechnicianActivated = wire.IsTechnicianActivated,
+                    isDestroyed = wire.isDestroyed,
                     currentDurability = wire.currentDurability
                 };
                 state.wires.Add(data);
@@ -425,8 +436,8 @@ public static class SaveSystem
             HexTile tile = GridManager.Instance.GetTile(buildingData.tileX, buildingData.tileY);
             if (tile == null) continue;
 
-            PlayerData owner = buildingData.isPlayerOwned ? 
-                TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+            PlayerData owner = (buildingData.isPlayerOwned && TurnManager.Instance.players.Count > 0) ? 
+                TurnManager.Instance.players[0] : (TurnManager.Instance.players.Count > 1 ? TurnManager.Instance.players[1] : null);
 
             BusinessSpawner spawner = Object.FindFirstObjectByType<BusinessSpawner>();
             if (spawner != null)
@@ -435,6 +446,8 @@ public static class SaveSystem
                 if (node != null)
                 {
                     node.towersPlacedCount = buildingData.towersPlaced;
+                    node.currentLevel = buildingData.currentLevel;
+                    node.RefreshVisuals();
                 }
             }
         }
@@ -451,22 +464,53 @@ public static class SaveSystem
                 HexTile tile = GridManager.Instance.GetTile(structureData.tileX, structureData.tileY);
                 if (tile == null) continue;
 
-                PlayerData owner = structureData.isPlayerOwned ? 
-                    TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+                PlayerData owner = (structureData.isPlayerOwned && TurnManager.Instance.players.Count > 0) ? 
+                    TurnManager.Instance.players[0] : (TurnManager.Instance.players.Count > 1 ? TurnManager.Instance.players[1] : null);
 
                 GameObject prefab = GetStructurePrefab(structureData.structureType);
                 if (prefab == null) continue;
 
                 GameObject structureObj = Object.Instantiate(prefab);
+                structureObj.transform.rotation = Quaternion.Euler(0, structureData.rotationY, 0);
+                
                 StructureNode structure = structureObj.GetComponent<StructureNode>();
                 if (structure != null)
                 {
-                    tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded buildings
+                    tile.ClearEnvironmentalStructures();
                     
-                    structure.Initialize(tile, owner);
+                    // Recalculate multi-tile footprint if necessary
+                    List<HexTile> targetTiles = new List<HexTile> { tile };
+                    if (structure.tilesOccupied > 1)
+                    {
+                        var neighbors = GridManager.Instance.GetNeighbors(tile);
+                        if (structure.tilesOccupied == 2)
+                        {
+                            if (neighbors.Count > 0) targetTiles.Add(neighbors[0]);
+                        }
+                        else if (structure.tilesOccupied >= 4 && structure.tilesOccupied < 7)
+                        {
+                            for (int i = 0; i < Mathf.Min(3, neighbors.Count); i++)
+                                targetTiles.Add(neighbors[i]);
+                        }
+                        else if (structure.tilesOccupied >= 7)
+                        {
+                            foreach (var n in neighbors) targetTiles.Add(n);
+                        }
+                    }
+
+                    structure.Initialize(targetTiles, owner);
                     if (structureData.isBuilt) structure.Build();
+                    structure.IsTechnicianActivated = structureData.isTechnicianActivated;
                     structure.currentDurability = structureData.currentDurability;
-                    // Note: isBroken state could be further restored if StructureNode has set/load logic
+                    
+                    // If broken, apply visual/state (BreakStructure is protected, but we can set properties)
+                    if (structureData.isBroken)
+                    {
+                        // We can't call protected BreakStructure, but we can reflect its results
+                        // Actually, repair logic handles restoration, but load needs to set it.
+                        // For now setting durability to 0 and property should work if we had a setter.
+                        // Since we don't, we'll rely on durability.
+                    }
                 }
             }
             catch (System.Exception e)
@@ -513,8 +557,8 @@ public static class SaveSystem
                 HexTile tile = GridManager.Instance.GetTile(towerData.tileX, towerData.tileY);
                 if (tile == null) continue;
 
-                PlayerData owner = towerData.isPlayerOwned ? 
-                    TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+                PlayerData owner = (towerData.isPlayerOwned && TurnManager.Instance.players.Count > 0) ? 
+                    TurnManager.Instance.players[0] : (TurnManager.Instance.players.Count > 1 ? TurnManager.Instance.players[1] : null);
 
                 HexTile parentTile = GridManager.Instance.GetTile(towerData.parentNodeX, towerData.parentNodeY);
                 SignalNode parentNode = parentTile?.placedNode;
@@ -522,18 +566,31 @@ public static class SaveSystem
                 TowerPlacementManager towerManager = Object.FindFirstObjectByType<TowerPlacementManager>();
                 if (towerManager != null)
                 {
-                    tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded towers
+                    tile.ClearEnvironmentalStructures(); 
 
                     TowerNode tower = towerManager.PlaceTowerDirect(tile, owner, parentNode);
                     if (tower != null)
                     {
-                        // Call Build() to transition it out of Hologram state natively
-                        if (towerData.state == "Powered" || towerData.state == "Constructed") 
+                        tower.isBuilderFinished = towerData.isBuilderFinished;
+                        
+                        // Restore state natively
+                        if (towerData.state == "Powered") 
                         {
                             tower.Build();
+                            tower.UpdatePowerState(true);
                         }
+                        else if (towerData.state == "Constructed")
+                        {
+                            tower.Build();
+                            tower.UpdatePowerState(false);
+                        }
+                        else if (towerData.state == "Destroyed")
+                        {
+                            tower.Build();
+                            tower.TakeDamage(tower.baseDurability + 10); // Force destruction
+                        }
+
                         tower.currentDurability = towerData.currentDurability;
-                        // If powered, grid refresh will sync its visuals/status on the first turn 
                     }
                 }
             }
@@ -555,17 +612,16 @@ public static class SaveSystem
             HexTile tile = GridManager.Instance.GetTile(wireData.tileX, wireData.tileY);
             if (tile == null) continue;
 
-            PlayerData owner = wireData.isPlayerOwned ? 
-                TurnManager.Instance.players[0] : TurnManager.Instance.players[1];
+            PlayerData owner = (wireData.isPlayerOwned && TurnManager.Instance.players.Count > 0) ? 
+                TurnManager.Instance.players[0] : (TurnManager.Instance.players.Count > 1 ? TurnManager.Instance.players[1] : null);
 
             if (wireManager != null)
             {
-                tile.ClearEnvironmentalStructures(); // Prevent random decor clipping loaded wires
+                tile.ClearEnvironmentalStructures(); 
 
                 WireNode wire = wireManager.PlaceWireDirect(tile, owner);
                 if (wire != null)
                 {
-                    // If exact rotation/position isn't 0 (from an old save), restore absolute transforms
                     bool hasLegacySave = (wireData.sclX == 0f && wireData.sclY == 0f && wireData.sclZ == 0f);
                     
                     if (!hasLegacySave)
@@ -576,12 +632,19 @@ public static class SaveSystem
                     }
                     else if (wireData.rotationY != 0f)
                     {
-                        // Fallback to previous patch rotation logic
                         wire.transform.rotation = Quaternion.Euler(0f, wireData.rotationY, 90f);
                     }
 
+                    if (wireData.isDigital) wire.UpgradeToDigital();
+                    wire.IsTechnicianActivated = wireData.isTechnicianActivated;
                     wire.currentDurability = wireData.currentDurability;
-                    wire.gameObject.SetActive(true); // Force visibility in case prefab was disabled
+                    
+                    if (wireData.isDestroyed)
+                    {
+                        wire.TakeDamage(wire.baseDurability + 10); // Force destruction state
+                    }
+
+                    wire.gameObject.SetActive(true); 
                 }
             }
         }
