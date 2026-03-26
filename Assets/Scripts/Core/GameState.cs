@@ -7,6 +7,8 @@ public class GameState
 {
     public int playerResources;
     public int enemyResources;
+    public string playerName;
+    public string enemyName;
     public int currentTurn;
     public int currentPlayerIndex;
     public string currentEra;

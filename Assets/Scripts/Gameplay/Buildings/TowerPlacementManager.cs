@@ -44,7 +44,8 @@ public class TowerPlacementManager : MonoBehaviour
 
     void Update()
     {
-        if (!isPlacing) return;
+        if (!isPlacing || PauseMenuUI.GameIsPaused) return;
+        if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
 
         FollowMouse();
 

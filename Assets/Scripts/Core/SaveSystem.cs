@@ -25,11 +25,13 @@ public static class SaveSystem
                 state.playerResearchPoints = p1.researchPoints;
                 state.playerHardwareEra = (int)p1.hardwareEra;
                 state.playerWorkforceEra = (int)p1.workforceEra;
+                state.playerName = p1.playerName;
                 
                 state.enemyResources = p2.resources;
                 state.enemyResearchPoints = p2.researchPoints;
                 state.enemyHardwareEra = (int)p2.hardwareEra;
                 state.enemyWorkforceEra = (int)p2.workforceEra;
+                state.enemyName = p2.playerName;
             }
         }
 
@@ -122,11 +124,13 @@ public static class SaveSystem
             p1.researchPoints = state.playerResearchPoints;
             p1.hardwareEra = (TurnManager.PlayerEra)state.playerHardwareEra;
             p1.workforceEra = (TurnManager.PlayerEra)state.playerWorkforceEra;
+            p1.playerName = state.playerName;
             
             p2.resources = state.enemyResources;
             p2.researchPoints = state.enemyResearchPoints;
             p2.hardwareEra = (TurnManager.PlayerEra)state.enemyHardwareEra;
             p2.workforceEra = (TurnManager.PlayerEra)state.enemyWorkforceEra;
+            p2.playerName = state.enemyName;
         }
 
         if (TechManager.Instance != null)

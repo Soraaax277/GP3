@@ -108,6 +108,7 @@ public class BuildingUIManager : MonoBehaviour
 
         if (!panel.activeSelf) return;
         if (placementManager != null && placementManager.IsPlacing) return;
+        if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
 
         if (Input.GetMouseButtonDown(0))
         {

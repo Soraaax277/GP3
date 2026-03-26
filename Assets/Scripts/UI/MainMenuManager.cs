@@ -207,6 +207,10 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private void Update()
     {
+        // If settings panel is active, block background rotation/sway 
+        // to keep the view stable for the user.
+        if (settingsPanel != null && settingsPanel.gameObject.activeInHierarchy) return;
+
         UpdateSway();
         UpdateCamera();
         if (!_glitchPlaying) CheckThresholds();

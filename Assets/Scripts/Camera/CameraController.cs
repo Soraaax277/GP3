@@ -66,6 +66,7 @@ public class CameraController : MonoBehaviour
         // THE LOCK
         // If any UI panel is active or we are animating, block inputs.
         if (IsBlockedByUI()) return;
+        if (PauseMenuUI.GameIsPaused) return;
 
         // 2. Normal Movement
         HandleMovement();
@@ -118,6 +119,9 @@ public class CameraController : MonoBehaviour
 
     private void HandleMovement()
     {
+        if (UnityEngine.EventSystems.EventSystem.current != null && 
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+
         Vector3 pos = transform.position;
 
         // WASD — never blocked by hover panels; only affects pan, not scroll.

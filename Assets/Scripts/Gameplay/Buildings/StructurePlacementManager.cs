@@ -38,7 +38,8 @@ public class StructurePlacementManager : MonoBehaviour
 
     private void Update()
     {
-        if (!isPlacing) return;
+        if (!isPlacing || PauseMenuUI.GameIsPaused) return;
+        if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
 
         HandleRotation();
         FollowMouse();

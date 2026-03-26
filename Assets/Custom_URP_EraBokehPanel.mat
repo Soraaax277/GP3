@@ -29,9 +29,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BlurSize: 0
+    - _BlurSize: 4.5
     - _BokehSamples: 16
-    - _Darkness: 0
+    - _Darkness: 0.45
     - _TintStrength: 0
     m_Colors:
     - _TintColor: {r: 0, g: 0, b: 0, a: 0}

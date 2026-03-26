@@ -14,6 +14,7 @@ public class PlayerInput : MonoBehaviour
 
     private void Update()
     {
+        if (PauseMenuUI.GameIsPaused) return;
         HandleHover();
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
