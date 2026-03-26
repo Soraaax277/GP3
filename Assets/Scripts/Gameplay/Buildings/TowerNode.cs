@@ -296,6 +296,16 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         state = TowerState.Destroyed;
         IsPowered = false;
         
+        // ── LIQUIDATION TRACKING ────────────────────────────────────
+        // If destroyed during another player's turn, it was an enemy attack (Saboteur).
+        // If destroyed during our turn, it was passive decay and does NOT count.
+        if (VictoryManager.Instance != null && TurnManager.Instance != null)
+        {
+            PlayerData activePlayer = TurnManager.Instance.currentPlayer;
+            if (activePlayer != null && activePlayer != owner)
+                VictoryManager.Instance.RecordDenial(activePlayer);
+        }
+        
         // JUICE (Phase 2)
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayTowerDestroyed(transform.position);
@@ -399,6 +409,9 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
     private void OnMouseDown()
     {
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+        if (PauseMenuUI.GameIsPaused) return;
         if (owner == null) return;
         if (TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
         if (owner.isAI) return;

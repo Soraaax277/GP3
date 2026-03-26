@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class TowerPlacementManager : MonoBehaviour
 {
@@ -51,12 +52,12 @@ public class TowerPlacementManager : MonoBehaviour
 
         if (Time.time < lastPlacementTime + 0.1f) return;
 
-        if (Input.GetMouseButtonDown(0) && hoveredTile != null && canPlace)
+        if (Mouse.current.leftButton.wasPressedThisFrame && hoveredTile != null && canPlace)
         {
             PlaceTower();
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             CancelPlacement();
         }
@@ -109,7 +110,7 @@ public class TowerPlacementManager : MonoBehaviour
 
     void FollowMouse()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
         if (!Physics.Raycast(ray, out RaycastHit hit)) return;
 
         HexTile tile = hit.collider.GetComponent<HexTile>();

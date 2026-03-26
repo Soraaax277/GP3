@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 public class StructurePlacementManager : MonoBehaviour
@@ -44,12 +45,12 @@ public class StructurePlacementManager : MonoBehaviour
         HandleRotation();
         FollowMouse();
 
-        if (Input.GetMouseButtonDown(0) && hoveredTile != null && CanPlace(hoveredTile))
+        if (Mouse.current.leftButton.wasPressedThisFrame && hoveredTile != null && CanPlace(hoveredTile))
         {
             PlaceStructure();
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             CancelPlacement();
         }
@@ -57,7 +58,7 @@ public class StructurePlacementManager : MonoBehaviour
 
     private void HandleRotation()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
         {
             currentYRotation += 60f;
             if (hologram != null) hologram.transform.rotation = Quaternion.Euler(0, currentYRotation, 0);
@@ -109,7 +110,7 @@ public class StructurePlacementManager : MonoBehaviour
 
     void FollowMouse()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
             HexTile tile = hit.collider.GetComponent<HexTile>();

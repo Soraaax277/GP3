@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 public class PauseMenuUI : MonoBehaviour
 {
@@ -52,7 +53,7 @@ public class PauseMenuUI : MonoBehaviour
         if (TechTreeWindowManager.IsTechTreeOpen) return;
         if (settingsPanel != null && settingsPanel.gameObject.activeInHierarchy) return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             TogglePause();
     }
 

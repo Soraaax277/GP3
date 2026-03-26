@@ -135988,6 +135988,7 @@ GameObject:
   - component: {fileID: 1897308830}
   - component: {fileID: 1897308831}
   - component: {fileID: 1897308832}
+  - component: {fileID: 1897308833}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -136075,6 +136076,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuestManager
   allQuests: []
+--- !u!114 &1897308833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1897308827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6def6b71ccc1ec740a162207a7eb8fb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VictoryManager
+  monopolyThreshold: 0.75
+  liquidationThreshold: 0.6
+  monopolyDirector: {fileID: 0}
+  exodusDirector: {fileID: 0}
+  liquidationDirector: {fileID: 0}
+  victoryScreenCanvas: {fileID: 0}
+  victoryHeadlineText: {fileID: 0}
+  debugForceMonopoly: 0
+  debugForceExodus: 0
+  debugForceLiquidation: 0
 --- !u!1 &1898541930
 GameObject:
   m_ObjectHideFlags: 0
@@ -136719,7 +136742,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1917709178
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136727,7 +136750,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1917709177}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8b6c0635eaf901c4f9c1643171a10dd6, type: 3}
   m_Name: 
@@ -136744,6 +136767,9 @@ MonoBehaviour:
   rpAmount: 9999999
   cheatForceEra: 1
   forceEraTarget: 0
+  debugForceMonopoly: 0
+  debugForceExodus: 0
+  debugForceLiquidation: 0
   applyOnStart: 1
   clampEveryFrame: 1
 --- !u!4 &1917709179

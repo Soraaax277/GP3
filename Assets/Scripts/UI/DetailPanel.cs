@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
@@ -252,7 +253,8 @@ public class DetailPanel : MonoBehaviour
 
     private bool IsPointerOverUI()
     {
-        var pd = new PointerEventData(EventSystem.current) { position = Input.mousePosition };
+        Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        var pd = new PointerEventData(EventSystem.current) { position = mousePos };
         var results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pd, results);
         return results.Count > 0;

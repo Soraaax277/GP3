@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class HexGridInteraction : MonoBehaviour
@@ -76,7 +77,8 @@ public class HexGridInteraction : MonoBehaviour
         }
 
         // Convert mouse position to local RectTransform UV coordinates (0 to 1)
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_rectTransform, Input.mousePosition, uiCam, out Vector2 localPoint))
+        Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_rectTransform, mouseScreenPos, uiCam, out Vector2 localPoint))
         {
             float nX = (localPoint.x - _rectTransform.rect.x) / _rectTransform.rect.width;
             float nY = (localPoint.y - _rectTransform.rect.y) / _rectTransform.rect.height;

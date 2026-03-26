@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -111,7 +112,7 @@ public class CameraController : MonoBehaviour
                 ? canvas.worldCamera
                 : null;
 
-            if (RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition, canvasCam))
+            if (RectTransformUtility.RectangleContainsScreenPoint(rect, Mouse.current.position.ReadValue(), canvasCam))
                 return true;
         }
         return false;
@@ -128,8 +129,15 @@ public class CameraController : MonoBehaviour
         // Skip entirely while a text field (e.g. company rename) has keyboard focus.
         if (!IsTyping)
         {
-            float h = Input.GetAxis("Horizontal");
-            float v = Input.GetAxis("Vertical");
+            var kb = Keyboard.current;
+            float h = 0f, v = 0f;
+            if (kb != null)
+            {
+                if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) h += 1f;
+                if (kb.aKey.isPressed || kb.leftArrowKey.isPressed)  h -= 1f;
+                if (kb.wKey.isPressed || kb.upArrowKey.isPressed)    v += 1f;
+                if (kb.sKey.isPressed || kb.downArrowKey.isPressed)  v -= 1f;
+            }
             pos += transform.right   * h * panSpeed * Time.deltaTime;
             pos += transform.forward * v * panSpeed * Time.deltaTime;
         }
@@ -139,42 +147,42 @@ public class CameraController : MonoBehaviour
         // Mouse Drag (Left) — suppressed while hovering a UI scroll panel.
         if (!hoverBlocked)
         {
-            if (Input.GetMouseButtonDown(0)) leftDragOrigin = Input.mousePosition;
-            if (Input.GetMouseButton(0))
+            if (Mouse.current.leftButton.wasPressedThisFrame) leftDragOrigin = Mouse.current.position.ReadValue();
+            if (Mouse.current.leftButton.isPressed)
             {
-                Vector3 difference = Input.mousePosition - leftDragOrigin;
+                Vector3 difference = (Vector3)Mouse.current.position.ReadValue() - leftDragOrigin;
                 Vector3 move = new Vector3(-difference.x, 0f, -difference.y) * panSpeed * Time.deltaTime * 0.1f;
                 pos += transform.TransformDirection(move);
-                leftDragOrigin = Input.mousePosition;
+                leftDragOrigin = Mouse.current.position.ReadValue();
             }
         }
         else
         {
             // Keep the drag origin in sync so releasing over the panel and then
             // dragging elsewhere doesn't cause a sudden camera jump.
-            leftDragOrigin = Input.mousePosition;
+            leftDragOrigin = Mouse.current.position.ReadValue();
         }
 
         // Mouse Rotation (Right)
-        if (Input.GetMouseButtonDown(1))
+        if (Mouse.current.rightButton.wasPressedThisFrame)
         {
-            rightDragOrigin = Input.mousePosition;
+            rightDragOrigin = Mouse.current.position.ReadValue();
             // Sync state just in case
             rotationEuler = transform.eulerAngles;
         }
-        if (Input.GetMouseButton(1))
+        if (Mouse.current.rightButton.isPressed)
         {
-            Vector3 difference = Input.mousePosition - rightDragOrigin;
+            Vector3 difference = (Vector3)Mouse.current.position.ReadValue() - rightDragOrigin;
             rotationEuler.y += difference.x * 0.2f;
             rotationEuler.x -= difference.y * 0.2f;
             rotationEuler.x = Mathf.Clamp(rotationEuler.x, 10f, 80f); 
             transform.rotation = Quaternion.Euler(rotationEuler);
-            rightDragOrigin = Input.mousePosition;
+            rightDragOrigin = Mouse.current.position.ReadValue();
         }
 
         // Zoom — suppressed while hovering a UI scroll panel so the
         // ScrollRect can consume the scroll wheel event instead.
-        float scroll = hoverBlocked ? 0f : Input.GetAxis("Mouse ScrollWheel");
+        float scroll = hoverBlocked ? 0f : Mouse.current.scroll.ReadValue().y * 0.1f;
         pos.y -= scroll * scrollSpeed * 100f * Time.deltaTime;
         
         // Clamping

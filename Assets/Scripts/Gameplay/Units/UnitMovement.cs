@@ -13,6 +13,7 @@ public class UnitMovement : MonoBehaviour
     private void OnMouseDown()
     {
         if (EventSystem.current.IsPointerOverGameObject()) return;
+        if (PauseMenuUI.GameIsPaused) return;
         if (unit == null || PlayerInput.Instance == null) return;
 
         if (unit.testingMode)

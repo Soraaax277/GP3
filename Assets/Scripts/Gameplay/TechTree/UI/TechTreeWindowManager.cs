@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Collections;
 using System;
@@ -280,7 +281,8 @@ public class TechTreeWindowManager : MonoBehaviour
 
         if (IsTechTreeOpen)
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            var kb = Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame)
             {
                 if (upgradeInfoPanel != null && upgradeInfoPanel.activeSelf)
                     CloseInfoPanel();
@@ -288,18 +290,22 @@ public class TechTreeWindowManager : MonoBehaviour
                     CloseTechTree();
             }
 
-            if (Input.GetMouseButtonDown(0)) pointerDownPosition = Input.mousePosition;
-            if (Input.GetMouseButtonUp(0))
+            var mouse = Mouse.current;
+            if (mouse != null)
             {
-                float distance = Vector2.Distance(pointerDownPosition, Input.mousePosition);
-                if (distance < dragThreshold) DetectClickOutside();
+                if (mouse.leftButton.wasPressedThisFrame) pointerDownPosition = mouse.position.ReadValue();
+                if (mouse.leftButton.wasReleasedThisFrame)
+                {
+                    float distance = Vector2.Distance(pointerDownPosition, mouse.position.ReadValue());
+                    if (distance < dragThreshold) DetectClickOutside();
+                }
             }
         }
     }
 
     private void DetectClickOutside()
     {
-        PointerEventData pointerData = new PointerEventData(EventSystem.current) { position = Input.mousePosition };
+        PointerEventData pointerData = new PointerEventData(EventSystem.current) { position = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero };
         List<RaycastResult> results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pointerData, results);
 

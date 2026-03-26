@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
@@ -110,12 +111,12 @@ public class BuildingUIManager : MonoBehaviour
         if (placementManager != null && placementManager.IsPlacing) return;
         if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
 
-        if (Input.GetMouseButtonDown(0))
+        if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (ignoreNextClick) { ignoreNextClick = false; return; }
             if (IsClickOnUIButton()) return;
 
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 if (currentBuilding != null && hit.collider.gameObject != GetBuildingGameObject())
@@ -130,7 +131,7 @@ public class BuildingUIManager : MonoBehaviour
 
     private bool IsClickOnUIButton()
     {
-        PointerEventData pd = new PointerEventData(EventSystem.current) { position = Input.mousePosition };
+        PointerEventData pd = new PointerEventData(EventSystem.current) { position = Mouse.current.position.ReadValue() };
         List<RaycastResult> results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pd, results);
         foreach (var r in results)

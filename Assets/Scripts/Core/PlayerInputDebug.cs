@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerInputDebug : MonoBehaviour
 {
@@ -7,12 +8,12 @@ public class PlayerInputDebug : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.B))
+        if (Keyboard.current != null && Keyboard.current.bKey.wasPressedThisFrame)
         {
             BuildNodeCommand.Execute(testTile, signalNodePrefab);
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             TurnManager.Instance.EndTurn();
         }

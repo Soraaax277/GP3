@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 // DEBUG / TESTING ONLY — attach to any persistent GameObject in the scene.
@@ -62,6 +63,14 @@ public class DebugCheatManager : MonoBehaviour
     [Tooltip("Which era to jump to when cheatForceEra is active.")]
     public TurnManager.GameEra forceEraTarget = TurnManager.GameEra.Industrial;
 
+    [Header("─── Force Victory (Debug) ───────────────────────")]
+    [Tooltip("Toggle ON in Inspector, then press End Turn — triggers Monopoly victory on the next tick.")]
+    public bool debugForceMonopoly = false;
+    [Tooltip("Toggle ON in Inspector, then press End Turn — triggers Exodus victory on the next tick.")]
+    public bool debugForceExodus = false;
+    [Tooltip("Toggle ON in Inspector, then press End Turn — triggers Liquidation victory on the next tick.")]
+    public bool debugForceLiquidation = false;
+
     [Header("─── Auto-Apply ──────────────────────────────────")]
     [Tooltip("Apply all active cheats automatically on Start.")]
     public bool applyOnStart = true;
@@ -101,6 +110,16 @@ public class DebugCheatManager : MonoBehaviour
         // Era force — checked first so the renderer swap happens before anything else
         if (cheatForceEra)
             CheatForceEra();
+
+        // ── Force Victory ─────────────────────────────────────────────────────
+        // Push Inspector toggles into VictoryManager then let it fire.
+        if (VictoryManager.Instance != null)
+        {
+            if (debugForceMonopoly)    { VictoryManager.Instance.debugForceMonopoly    = true; debugForceMonopoly    = false; }
+            if (debugForceExodus)      { VictoryManager.Instance.debugForceExodus      = true; debugForceExodus      = false; }
+            if (debugForceLiquidation) { VictoryManager.Instance.debugForceLiquidation = true; debugForceLiquidation = false; }
+            VictoryManager.Instance.DebugCheckForcedVictory();
+        }
 
         if (cheatRevealMap)
             StartCoroutine(ReapplyRevealAfterFOV());
@@ -165,14 +184,18 @@ public class DebugCheatManager : MonoBehaviour
         if (!cheatsEnabled) return;
 
         // ── Hotkeys ────────────────────────────────────────────────────────
-        if (Input.GetKeyDown(KeyCode.F1)) CheatUnlockAllTech();
-        if (Input.GetKeyDown(KeyCode.F2)) CheatSetGold();
-        if (Input.GetKeyDown(KeyCode.F3)) CheatSetRP();
-        if (Input.GetKeyDown(KeyCode.F4)) ApplyAllCheats();
-        if (Input.GetKeyDown(KeyCode.F5)) { CheatRevealMap(); RevealAllEnemyUnits(); }
-        if (Input.GetKeyDown(KeyCode.F6)) CheatUnlockAllFeatures();
-        if (Input.GetKeyDown(KeyCode.F7)) ToggleInstantResearch();
-        if (Input.GetKeyDown(KeyCode.F8)) CheatForceEra();
+        var kb = Keyboard.current;
+        if (kb != null)
+        {
+            if (kb.f1Key.wasPressedThisFrame) CheatUnlockAllTech();
+            if (kb.f2Key.wasPressedThisFrame) CheatSetGold();
+            if (kb.f3Key.wasPressedThisFrame) CheatSetRP();
+            if (kb.f4Key.wasPressedThisFrame) ApplyAllCheats();
+            if (kb.f5Key.wasPressedThisFrame) { CheatRevealMap(); RevealAllEnemyUnits(); }
+            if (kb.f6Key.wasPressedThisFrame) CheatUnlockAllFeatures();
+            if (kb.f7Key.wasPressedThisFrame) ToggleInstantResearch();
+            if (kb.f8Key.wasPressedThisFrame) CheatForceEra();
+        }
 
         // ── Per-frame clamp ────────────────────────────────────────────────
         if (!clampEveryFrame) return;

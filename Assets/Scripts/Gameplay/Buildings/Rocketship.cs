@@ -35,6 +35,12 @@ public class Rocketship : StructureNode
 
         ActionLogUI.PostFiltered(owner, $"SATELLITE LAUNCH SUCCESS! Earned {revenue}G Revenue.", ActionLogUI.Colors.Neutral);
         if (FeedbackController.Instance != null) FeedbackController.Instance.PlayLevelUpEffect(transform.position);
+
+        // ── EXODUS VICTORY ─────────────────────────────────────────────────
+        // This is the Exodus Victory trigger. The player successfully launched
+        // the rocket — fire the endgame sequence.
+        if (VictoryManager.Instance != null)
+            VictoryManager.Instance.TriggerExodusVictory(owner);
     }
 
     public override string GetRequiredTechFeature() => "Rocketship";

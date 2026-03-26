@@ -155,6 +155,12 @@ public class SalesMarketer : Unit
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.recruitSFX);
 
             targetUnit.Recruit(owner);
+            
+            // ── LIQUIDATION TRACKING ────────────────────────────────
+            // Stealing an enemy asset counts as a denial.
+            if (VictoryManager.Instance != null)
+                VictoryManager.Instance.RecordDenial(owner);
+
             ActionLogUI.PostFiltered(owner, "Marketer recruited a worker!", owner.isAI ? ActionLogUI.Colors.Enemy : ActionLogUI.Colors.Player);
             Debug.Log($"[SalesMarketer] Successfully recruited {targetUnit.name}!");
         }

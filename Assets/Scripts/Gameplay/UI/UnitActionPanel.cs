@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 using System.Collections.Generic;
 using DG.Tweening;
@@ -107,13 +108,14 @@ public class UnitActionPanel : MonoBehaviour
         if (mainCamera != null)
         {
             RectTransform panelRect = panel.GetComponent<RectTransform>();
+            Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
             bool mouseOverPanel = panelRect != null &&
-                RectTransformUtility.RectangleContainsScreenPoint(panelRect, Input.mousePosition, mainCamera);
+                RectTransformUtility.RectangleContainsScreenPoint(panelRect, mousePos, mainCamera);
 
             if (!mouseOverPanel)
             {
                 Vector3 unitScreenPos = mainCamera.WorldToScreenPoint(followTarget.position);
-                float deltaX = Input.mousePosition.x - unitScreenPos.x;
+                float deltaX = mousePos.x - unitScreenPos.x;
 
                 if (Mathf.Abs(deltaX) > flipDeadzone)
                 {
@@ -211,7 +213,8 @@ public class UnitActionPanel : MonoBehaviour
         if (mainCamera != null)
         {
             Vector3 unitScreenPos = mainCamera.WorldToScreenPoint(unit.transform.position);
-            _isFlippedLeft = (Input.mousePosition.x - unitScreenPos.x) > 0f;
+            Vector2 mp = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+            _isFlippedLeft = (mp.x - unitScreenPos.x) > 0f;
         }
         else
         {

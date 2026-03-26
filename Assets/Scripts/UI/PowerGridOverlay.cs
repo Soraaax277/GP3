@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 public class PowerGridOverlay : MonoBehaviour
@@ -50,7 +51,7 @@ public class PowerGridOverlay : MonoBehaviour
     private void Update()
     {
         // Toggle view
-        if (Input.GetKeyDown(KeyCode.P))
+        if (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
         {
             ToggleOverlay();
         }

@@ -222,6 +222,17 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         {
             if (t != null) t.hasStructure = false;
         }
+
+        // ── LIQUIDATION TRACKING ────────────────────────────────────
+        // If destroyed during another player's turn, it was an enemy attack (Saboteur).
+        // If destroyed during our turn, it was passive decay and does NOT count.
+        if (VictoryManager.Instance != null && TurnManager.Instance != null)
+        {
+            PlayerData activePlayer = TurnManager.Instance.currentPlayer;
+            if (activePlayer != null && activePlayer != owner)
+                VictoryManager.Instance.RecordDenial(activePlayer);
+        }
+
         Destroy(gameObject);
     }
 
@@ -229,6 +240,9 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
 
     protected virtual void OnMouseDown()
     {
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+        if (PauseMenuUI.GameIsPaused) return;
         if (owner == null) return;
         if (TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
         if (owner.isAI) return;

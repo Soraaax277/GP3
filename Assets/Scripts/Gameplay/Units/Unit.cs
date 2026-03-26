@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections; 
 using System.Collections.Generic;
 
@@ -377,7 +377,7 @@ public abstract class Unit : MonoBehaviour
         if (currentTile != null) currentTile.placedUnit = null;
         if (TurnManager.Instance != null)
             TurnManager.Instance.UnregisterUnit(this);
-        
+
         Debug.Log($"[Unit] {name} has been killed!");
         Destroy(gameObject);
     }

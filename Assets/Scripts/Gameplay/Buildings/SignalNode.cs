@@ -322,6 +322,9 @@ public class SignalNode : MonoBehaviour
 
     private void OnMouseDown()
     {
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+        if (PauseMenuUI.GameIsPaused) return;
         if (owner == null) return;
         if (TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
         if (owner.isAI) return;

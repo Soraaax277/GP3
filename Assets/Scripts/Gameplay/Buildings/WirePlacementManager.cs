@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class WirePlacementManager : MonoBehaviour
 {
@@ -57,12 +58,12 @@ public class WirePlacementManager : MonoBehaviour
 
         if (Time.time < lastStartTime + 0.1f) return;
 
-        if (Input.GetMouseButtonDown(0) && hoveredTile != null && isTileValid)
+        if (Mouse.current.leftButton.wasPressedThisFrame && hoveredTile != null && isTileValid)
         {
             PlaceWire();
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             CancelPlacement();
         }
@@ -70,7 +71,7 @@ public class WirePlacementManager : MonoBehaviour
 
     void HandleRotation()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
         {
             currentYRotation += 60f;
             hologram.transform.rotation = Quaternion.Euler(0, currentYRotation, 90);
@@ -113,7 +114,7 @@ public class WirePlacementManager : MonoBehaviour
         // was unguarded while the neighbor loop two lines later was protected.
         if (GridManager.Instance == null) return;
 
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
         if (!Physics.Raycast(ray, out RaycastHit hit)) return;
 
         HexTile tile = hit.collider.GetComponent<HexTile>();
