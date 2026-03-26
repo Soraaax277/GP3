@@ -136005,6 +136005,7 @@ MonoBehaviour:
   downsample: 4
   iterations: 3
   blurRadius: 2
+  _blurredTexture: {fileID: 0}
 --- !u!1 &1898541930
 GameObject:
   m_ObjectHideFlags: 0
@@ -146044,7 +146045,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2028920861
 RectTransform:
   m_ObjectHideFlags: 0
