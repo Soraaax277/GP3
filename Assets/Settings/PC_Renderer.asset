@@ -93,7 +93,8 @@ MonoBehaviour:
   - {fileID: 6891331491717378404}
   - {fileID: -1881060190609008539}
   - {fileID: 6969647720867809218}
-  m_RendererFeatureMap: ad6b866f10d7b46c81647965488d6393a67514645c028e71f067e0425a0dd56264f146d97aeda25f65189f11b921e5e5c2c7efe3ac29b960
+  - {fileID: 6936548948182107727}
+  m_RendererFeatureMap: ad6b866f10d7b46c81647965488d6393a67514645c028e71f067e0425a0dd56264f146d97aeda25f65189f11b921e5e5c2c7efe3ac29b9604f06815784924360
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -159,6 +160,19 @@ MonoBehaviour:
     hexPanelWidth: 0.1
     hexGridScale: 25
     hexColor: {r: 0, g: 0.82, b: 1, a: 1}
+--- !u!114 &6936548948182107727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1da995f0983f0fc4eb1f31d309d966d3, type: 3}
+  m_Name: BokehGrabFeature
+  m_EditorClassIdentifier: Assembly-CSharp::BokehGrabFeature
+  m_Active: 1
 --- !u!114 &6969647720867809218
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using DG.Tweening;
 
 public class UnitActionPanel : MonoBehaviour
 {
@@ -30,6 +31,13 @@ public class UnitActionPanel : MonoBehaviour
     [Header("World Space Settings")]
     public Vector3 menuOffset = new Vector3(3.75f, 0.25f, -3.5f);
 
+    [Header("Panel Flip")]
+    [Tooltip("The ScrollViewport child of the panel — its X scale is counter-flipped so buttons stay readable.")]
+    public Transform scrollViewport;
+
+    [Tooltip("Horizontal screen-space deadzone in pixels. Prevents jitter when mouse is directly over the unit.")]
+    public float flipDeadzone = 40f;
+
     [Header("Button Text Colors")]
     [Tooltip("Label color when the player can afford the action.")]
     public Color colorCanAfford = Color.white;
@@ -46,13 +54,16 @@ public class UnitActionPanel : MonoBehaviour
     private HexTile lastRefreshTile;
     private readonly List<GameObject> spawnedButtons = new List<GameObject>();
 
+    // Flip state — tracked so we only apply changes when it actually changes
+    private bool _isFlippedLeft = false;
+
     // ── Internal data ─────────────────────────────────────────────────────────
     private struct ActionConfig
     {
         public string label;
-        public int cost;           
+        public int cost;
         public bool interactable;
-        public bool isDisplay;      // For non-clickable placeholder text
+        public bool isDisplay;
         public System.Action onClick;
     }
 
@@ -88,24 +99,98 @@ public class UnitActionPanel : MonoBehaviour
     {
         if (!panel.activeSelf || followTarget == null) return;
 
-        // Position tracking
+        // ── Flip logic ────────────────────────────────────────────────────────
+        // Convert unit world position to screen space, compare against mouse X.
+        // A deadzone prevents jitter when the cursor sits directly over the unit.
+        // Flip is frozen when the mouse is inside the panel so buttons stay
+        // hittable and a click never triggers a mid-action flip.
         if (mainCamera != null)
         {
-            Vector3 offset = mainCamera.transform.rotation * menuOffset;
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            bool mouseOverPanel = panelRect != null &&
+                RectTransformUtility.RectangleContainsScreenPoint(panelRect, Input.mousePosition, mainCamera);
+
+            if (!mouseOverPanel)
+            {
+                Vector3 unitScreenPos = mainCamera.WorldToScreenPoint(followTarget.position);
+                float deltaX = Input.mousePosition.x - unitScreenPos.x;
+
+                if (Mathf.Abs(deltaX) > flipDeadzone)
+                {
+                    bool wantFlip = deltaX > 0f; // mouse is to the right → flip panel left
+                    if (wantFlip != _isFlippedLeft)
+                    {
+                        _isFlippedLeft = wantFlip;
+                        ApplyFlip();
+                    }
+                }
+            }
+        }
+
+        // ── Position tracking ─────────────────────────────────────────────────
+        Vector3 activeOffset = GetCurrentOffset();
+
+        if (mainCamera != null)
+        {
+            Vector3 offset = mainCamera.transform.rotation * activeOffset;
             panel.transform.position = followTarget.position + offset;
             panel.transform.rotation = mainCamera.transform.rotation;
         }
         else
         {
-            panel.transform.position = followTarget.position + menuOffset;
+            panel.transform.position = followTarget.position + activeOffset;
         }
 
-        // DYNAMIC REFRESH: If unit is moving, its context (available actions) changes.
-        // Refresh buttons when the unit enters a new tile to show new context (like Construct).
+        // ── Dynamic refresh ───────────────────────────────────────────────────
         if (currentUnit != null && currentUnit.isMoving && currentUnit.currentTile != lastRefreshTile)
-        {
             Refresh(true);
-        }
+    }
+
+    // Returns the offset with X sign adjusted for current flip state.
+    private Vector3 GetCurrentOffset()
+    {
+        return new Vector3(
+            _isFlippedLeft ? -Mathf.Abs(menuOffset.x) : Mathf.Abs(menuOffset.x),
+            menuOffset.y,
+            menuOffset.z);
+    }
+
+    [Header("Flip Animation")]
+    [Tooltip("Total duration of the card-flip squeeze in seconds.")]
+    public float flipDuration = 0.2f;
+    [Tooltip("Ease applied to the flip squeeze.")]
+    public Ease flipEase = Ease.InOutSine;
+
+    // Squeezes the panel to scaleX=0 at the midpoint, snaps direction, then expands back.
+    // The ScrollViewport is counter-scaled so buttons/text are never flipped visually.
+    private void ApplyFlip()
+    {
+        float targetX = _isFlippedLeft ? -1f : 1f;
+
+        // Kill any in-progress tweens on both transforms
+        DOTween.Kill(panel.transform);
+        if (scrollViewport != null) DOTween.Kill(scrollViewport);
+
+        float half = flipDuration * 0.5f;
+
+        // Phase 1: squeeze to 0
+        panel.transform.DOScaleX(0f, half).SetEase(flipEase).OnComplete(() =>
+        {
+            // Snap direction at the invisible midpoint
+            Vector3 ps = panel.transform.localScale;
+            panel.transform.localScale = new Vector3(targetX, ps.y, ps.z);
+
+            if (scrollViewport != null)
+            {
+                Vector3 sv = scrollViewport.localScale;
+                scrollViewport.localScale = new Vector3(targetX, sv.y, sv.z);
+            }
+
+            // Phase 2: expand back out
+            panel.transform.DOScaleX(targetX, half).SetEase(flipEase);
+            if (scrollViewport != null)
+                scrollViewport.DOScaleX(targetX, half).SetEase(flipEase);
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -118,6 +203,29 @@ public class UnitActionPanel : MonoBehaviour
 
         currentUnit  = unit;
         followTarget = unit.transform;
+
+        // Pre-compute the correct flip direction from the current mouse position
+        // so both panel and scrollViewport are already at the right scale the moment
+        // the panel becomes visible. This prevents Update()'s flip logic from firing
+        // ApplyFlip() on frame 1 and causing the entrance glitch.
+        if (mainCamera != null)
+        {
+            Vector3 unitScreenPos = mainCamera.WorldToScreenPoint(unit.transform.position);
+            _isFlippedLeft = (Input.mousePosition.x - unitScreenPos.x) > 0f;
+        }
+        else
+        {
+            _isFlippedLeft = false;
+        }
+
+        float openScaleX = _isFlippedLeft ? -1f : 1f;
+        DOTween.Kill(panel.transform);
+        panel.transform.localScale = new Vector3(openScaleX, panel.transform.localScale.y, panel.transform.localScale.z);
+        if (scrollViewport != null)
+        {
+            DOTween.Kill(scrollViewport);
+            scrollViewport.localScale = new Vector3(openScaleX, scrollViewport.localScale.y, scrollViewport.localScale.z);
+        }
 
         Refresh(silent);
 
@@ -133,27 +241,24 @@ public class UnitActionPanel : MonoBehaviour
 
         lastRefreshTile = currentUnit.currentTile;
         ClearButtons();
-        
-        // Ensure unit has up-to-date tech flags
+
         currentUnit.CheckTechStatus();
 
         List<ActionConfig> actions = BuildActionsFor(currentUnit);
-        
+
         if (actions.Count == 0)
         {
-            actions.Add(new ActionConfig 
-            { 
-                label = "NO ACTIONS AVAILABLE", 
-                cost = 0, 
-                interactable = false, 
-                isDisplay = true 
+            actions.Add(new ActionConfig
+            {
+                label        = "NO ACTIONS AVAILABLE",
+                cost         = 0,
+                interactable = false,
+                isDisplay    = true
             });
         }
 
         if (headerText != null)
-        {
-            headerText.text = $"SELECT AN ACTION:";
-        }
+            headerText.text = "SELECT AN ACTION:";
 
         foreach (ActionConfig action in actions)
             SpawnButton(action);
@@ -163,9 +268,6 @@ public class UnitActionPanel : MonoBehaviour
 
     public void Close()
     {
-        // REMOVED: Deselection logic. Close() now only hides the UI.
-        // deselecting should be handled by PlayerInput explicitly.
-
         UIAnimator animator = panel.GetComponent<UIAnimator>();
         if (animator != null)
         {
@@ -192,20 +294,19 @@ public class UnitActionPanel : MonoBehaviour
 
     private List<ActionConfig> BuildActionsFor(Unit unit)
     {
-        var  actions = new List<ActionConfig>();
-        bool canAct  = unit.CanAct;
-        int  gold    = unit.owner.resources;
+        var actions = new List<ActionConfig>();
+        int gold    = unit.owner.resources;
+        bool canAct = unit.canAct;
 
-        // --- PHASE 3: REFILL SYSTEM ---
-        if (unit.IsNearServiceCenter() && unit.CurrentCharges < unit.MaxCharges)
+        if (unit.IsNearServiceCenter())
         {
             int refillCost = unit.GetRefillCost();
-            actions.Add(new ActionConfig 
-            { 
-                label = "Refill", 
-                cost = refillCost, 
-                interactable = gold >= refillCost, 
-                onClick = () => { unit.RefillCharges(); Close(); } 
+            actions.Add(new ActionConfig
+            {
+                label        = "Refill",
+                cost         = refillCost,
+                interactable = gold >= refillCost,
+                onClick      = () => { unit.RefillCharges(); Close(); }
             });
         }
 
@@ -214,39 +315,38 @@ public class UnitActionPanel : MonoBehaviour
             if (builder.canConstructTower)
             {
                 int cost = builder.GetBuildingCost();
-                actions.Add(new ActionConfig { label = "Construct", cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.ConstructAdjacentInfrastructure(); Close(); } });
+                actions.Add(new ActionConfig { label = "Construct",   cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.ConstructAdjacentInfrastructure(); Close(); } });
             }
             if (builder.canRepairInfrastructure)
             {
                 int cost = builder.GetRepairCost();
-                actions.Add(new ActionConfig { label = "Repair", cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.RepairAdjacentStructure(); Close(); } });
+                actions.Add(new ActionConfig { label = "Repair",      cost = cost, interactable = canAct && gold >= cost, onClick = () => { builder.RepairAdjacentStructure(); Close(); } });
             }
             if (builder.canSabotage)
-                actions.Add(new ActionConfig { label = "Sabotage", cost = 0, interactable = canAct, onClick = () => { builder.DamageAdjacentStructure(); Close(); } });
+                actions.Add(new ActionConfig { label = "Sabotage",    cost = 0,    interactable = canAct,                 onClick = () => { builder.DamageAdjacentStructure(); Close(); } });
         }
         else if (unit is WireSpecialist specialist)
         {
             int wireCost = WirePlacementManager.Instance != null ? WirePlacementManager.Instance.GetCurrentWireCost() : 0;
-            actions.Add(new ActionConfig { label = "Lay Wire", cost = wireCost, interactable = canAct && gold >= wireCost, onClick = () => { WirePlacementManager.Instance.StartWirePlacement(specialist); Close(); } });
+            actions.Add(new ActionConfig { label = "Lay Wire",        cost = wireCost, interactable = canAct && gold >= wireCost, onClick = () => { WirePlacementManager.Instance.StartWirePlacement(specialist); Close(); } });
             if (specialist.canRepairTowers)
             {
                 int cost = specialist.GetRepairCost();
                 actions.Add(new ActionConfig { label = "Repair Tower", cost = cost, interactable = canAct && gold >= cost, onClick = () => { specialist.RepairAdjacentTower(); Close(); } });
             }
             if (specialist.canSabotage)
-                actions.Add(new ActionConfig { label = "Sabotage", cost = 0, interactable = canAct, onClick = () => { specialist.DamageAdjacentStructure(); Close(); } });
+                actions.Add(new ActionConfig { label = "Sabotage",    cost = 0,    interactable = canAct, onClick = () => { specialist.DamageAdjacentStructure(); Close(); } });
         }
         else if (unit is Technician technician)
         {
             if (technician.IsAtBase() && !technician.isResearching)
             {
-                // Simple hardcoded example, ideally this would pull from a list of Grand Wonders
-                actions.Add(new ActionConfig 
-                { 
-                    label = "Research HW", 
-                    cost = 500, 
-                    interactable = canAct && gold >= 500 && technician.owner.researchPoints >= 200, 
-                    onClick = () => { technician.StartResearchProject("Era4Hardware"); Close(); } 
+                actions.Add(new ActionConfig
+                {
+                    label        = "Research HW",
+                    cost         = 500,
+                    interactable = canAct && gold >= 500 && technician.owner.researchPoints >= 200,
+                    onClick      = () => { technician.StartResearchProject("Era4Hardware"); Close(); }
                 });
             }
             int repairCost = technician.GetRepairCost();
@@ -287,7 +387,7 @@ public class UnitActionPanel : MonoBehaviour
         }
         else if (unit is SalesMarketer marketer)
         {
-            actions.Add(new ActionConfig { label = "Deny", cost = 0, interactable = canAct, onClick = () => { marketer.PerformDeny(); Close(); } });
+            actions.Add(new ActionConfig { label = "Deny",    cost = 0, interactable = canAct, onClick = () => { marketer.PerformDeny(); Close(); } });
             if (marketer.canRecruit)
                 actions.Add(new ActionConfig { label = "Recruit", cost = 0, interactable = canAct, onClick = () => { marketer.RecruitNearestWorker(); Close(); } });
         }
@@ -303,10 +403,6 @@ public class UnitActionPanel : MonoBehaviour
     //  Scroll Rect management
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Enables vertical scrolling if button count exceeds scrollButtonThreshold.
-    /// Uses spawnedButtons.Count — always accurate, no layout timing issues.
-    /// </summary>
     private void RefreshScrollRect()
     {
         if (buttonScrollRect == null) return;
@@ -315,8 +411,6 @@ public class UnitActionPanel : MonoBehaviour
 
         buttonScrollRect.enabled  = true;
         buttonScrollRect.vertical = needsScroll;
-
-        // Always reset content position to top when panel opens.
         buttonScrollRect.verticalNormalizedPosition = 1f;
 
         RectTransform contentRect = buttonContainer as RectTransform;
@@ -348,7 +442,6 @@ public class UnitActionPanel : MonoBehaviour
         if (texts.Length >= 1)
         {
             texts[0].text  = config.label;
-            // Use same color logic as BuildingUIManager for consistency
             texts[0].color = config.isDisplay ? Color.gray : (config.interactable ? colorCanAfford : colorNotInteractable);
         }
 
@@ -356,9 +449,9 @@ public class UnitActionPanel : MonoBehaviour
         {
             if (config.cost > 0)
             {
-                bool canAfford     = currentUnit != null && currentUnit.owner.resources >= config.cost;
-                texts[1].text      = $"{config.cost}G";
-                texts[1].color     = canAfford ? colorCanAfford : colorCannotAfford;
+                bool canAfford    = currentUnit != null && currentUnit.owner.resources >= config.cost;
+                texts[1].text     = $"{config.cost}G";
+                texts[1].color    = canAfford ? colorCanAfford : colorCannotAfford;
                 texts[1].gameObject.SetActive(true);
             }
             else
@@ -370,11 +463,8 @@ public class UnitActionPanel : MonoBehaviour
         Button btn = go.GetComponent<Button>();
         if (btn != null)
         {
-            // Add automatic hover/click SFX
             if (go.GetComponent<UIButtonSounds>() == null)
-            {
                 go.AddComponent<UIButtonSounds>();
-            }
 
             btn.interactable = config.interactable && !config.isDisplay;
             if (config.onClick != null)
