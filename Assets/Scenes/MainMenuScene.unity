@@ -1576,6 +1576,23 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8737553947556868559, guid: 1d1592ca42e2bbb41a519495ba08004f, type: 3}
   m_PrefabInstance: {fileID: 1370119499}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1368497346 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2778796014588617708, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
+  m_PrefabInstance: {fileID: 3232684536751159473}
+  m_PrefabAsset: {fileID: 0}
+--- !u!225 &1368497349
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1368497346}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1001 &1370119499
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2935,7 +2952,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIAnimator
   uiType: 1
-  overrideTheme: {fileID: 0}
+  overrideTheme: {fileID: 11400000, guid: 1b7069238da168f4ba2bde3e5929814e, type: 2}
   slideDirection: 1
   useCustomSlidePosition: 0
   customOffScreenX: 500
@@ -3411,6 +3428,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: GridTransitionCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 3566680487782019385, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3566680487782019385, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3566680487782019385, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5263336380444835821, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -3491,10 +3520,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 747094443261825476, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2778796014588617708, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1368497349}
   m_SourcePrefab: {fileID: 100100000, guid: 60a2b4aa5535bfa42917a25814dcc411, type: 3}
 --- !u!114 &4657269457512023508 stripped
 MonoBehaviour:

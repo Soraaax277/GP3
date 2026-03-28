@@ -27,6 +27,11 @@ public class CameraController : MonoBehaviour
     public float buildDistance = 20f;  
     public float lockTransitionTime = 0.5f; 
 
+    [Header("Startup Lock")]
+    [Tooltip("Blocks camera input on scene start. Match to GridTransitionManager.glitchOutDuration + EraAnnouncementController.startupDelay (default: 1.2 + 1.5 = 2.7).")]
+    public float startupLockDuration = 2.7f;
+    private bool _startupLocked = true;
+
     // Cutscene Mode flag
     [Header("Cutscene Settings")]
     // Exposed in the Inspector via the backing field; use the property in code.
@@ -90,6 +95,17 @@ public class CameraController : MonoBehaviour
         
         // Initialize rotation state
         rotationEuler = transform.eulerAngles;
+
+        // Lock camera for the grid-out + era announcement window
+        if (startupLockDuration > 0f)
+            StartCoroutine(StartupLockRoutine());
+    }
+
+    private IEnumerator StartupLockRoutine()
+    {
+        _startupLocked = true;
+        yield return new WaitForSecondsRealtime(startupLockDuration);
+        _startupLocked = false;
     }
 
     private void LateUpdate()
@@ -107,6 +123,9 @@ public class CameraController : MonoBehaviour
     {
         // Block input if in cutscene mode (AI Turn / Victory sequence)
         if (_cutsceneMode) return true;
+
+        // Block input during the opening grid-transition + era announcement
+        if (_startupLocked) return true;
 
         if (blockingPanels != null)
         {

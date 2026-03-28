@@ -41,6 +41,8 @@ public class EraAnnouncementController : MonoBehaviour
     public TextMeshProUGUI hudEraText;
 
     [Header("Timing")]
+    [Tooltip("One-time delay before the very first announcement, so the GridTransitionManager fade-in can finish.")]
+    public float startupDelay     = 1.5f;
     public float blurFadeDuration = 0.7f;
     public float textFadeInTime   = 0.5f;
     public float holdDuration     = 2.5f;
@@ -59,8 +61,9 @@ public class EraAnnouncementController : MonoBehaviour
     private static readonly int ID_TintColor    = Shader.PropertyToID("_TintColor");
     private static readonly int ID_TintStrength = Shader.PropertyToID("_TintStrength");
 
-    private Material _panelMat; // instance material so we don't modify the shared asset
-    private bool     _isPlaying = false;
+    private Material _panelMat;     // instance material so we don't modify the shared asset
+    private bool     _isPlaying     = false;
+    private bool     _hasPlayedOnce = false; // guards the one-time startup delay
 
     // ── Per-era data ──────────────────────────────────────────────────────────
 
@@ -134,7 +137,8 @@ public class EraAnnouncementController : MonoBehaviour
         if (announcementCanvas != null)
             announcementCanvas.SetActive(true);
 
-        TriggerAnnouncement(TurnManager.GameEra.Industrial);
+        // Do NOT self-trigger here. TurnManager.StartGame() calls
+        // TriggerAnnouncement when the game begins — let it be the single source.
     }
 
     // -------------------------------------------------------------------------
@@ -175,6 +179,13 @@ public class EraAnnouncementController : MonoBehaviour
     private IEnumerator PlayAnnouncement(TurnManager.GameEra era)
     {
         _isPlaying = true;
+
+        // First-ever announcement: wait for the GridTransitionManager to finish.
+        if (!_hasPlayedOnce)
+        {
+            _hasPlayedOnce = true;
+            yield return new WaitForSeconds(startupDelay);
+        }
 
         if (announcementCanvas != null)
             announcementCanvas.SetActive(true);

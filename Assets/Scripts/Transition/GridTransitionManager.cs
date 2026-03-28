@@ -2,8 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using DG.Tweening;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 
 public class GridTransitionManager : MonoBehaviour
 {
@@ -11,16 +11,15 @@ public class GridTransitionManager : MonoBehaviour
 
     [Header("Configuration")]
     public GameObject cellPrefab;
-    public int columns = 16;
-    public int rows = 9;
-    public float waveSpeed = 0.05f;
-    public float fadeDuration = 0.5f;
+    public int stripCount = 25;
+    public float glitchInDuration  = 0.4f;  // Cover animation (leaving a scene)
+    public float glitchOutDuration = 1.2f;  // Reveal animation (entering a scene)
+    public float maxXOffset = 12f;           // Max horizontal glitch shift in pixels
 
-    [Header("Grid Reference")]
-    public GridLayoutGroup gridLayout;
-
-    private List<RectTransform> cells = new List<RectTransform>();
-    private bool isGridGenerated = false;
+    private List<RectTransform> strips     = new List<RectTransform>();
+    private List<CanvasGroup>   stripGroups = new List<CanvasGroup>();
+    private bool     isGridGenerated = false;
+    private Sequence masterSequence;
 
     void Awake()
     {
@@ -29,10 +28,13 @@ public class GridTransitionManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject.transform.parent.gameObject);
 
-            // Set capacity high enough for all cells up front.
-            // columns * rows = max concurrent tweens in the wave.
-            // Add headroom for anything else in the project.
-            DOTween.SetTweensCapacity(columns * rows + 200, 50);
+            // Worst-case tween budget per AnimateGrid call:
+            //   25 strips x 9 tweens (double-flicker path) = 225 tweeners
+            //   25 strip sequences + 1 master             = 26  sequences
+            // Two calls can briefly overlap (glitch-in fires, scene loads, glitch-out starts),
+            // so double both budgets: 450 tweeners / 52 sequences.
+            // Add 150 / 50 headroom for everything else in the project.
+            DOTween.SetTweensCapacity(600, 100);
         }
         else
         {
@@ -57,97 +59,164 @@ public class GridTransitionManager : MonoBehaviour
         Canvas.ForceUpdateCanvases();
         yield return null;
 
-        float width  = rt.rect.width;
-        float height = rt.rect.height;
+        float totalHeight = rt.rect.height;
+        float totalWidth  = rt.rect.width;
+        float stripHeight = totalHeight / stripCount;
 
-        Vector2 cellSize = new Vector2(width / columns, height / rows);
-
-        gridLayout.cellSize        = cellSize;
-        gridLayout.spacing         = Vector2.zero;
-        gridLayout.constraint      = GridLayoutGroup.Constraint.FixedColumnCount;
-        gridLayout.constraintCount = columns;
-
-        for (int i = 0; i < (columns * rows); i++)
+        for (int i = 0; i < stripCount; i++)
         {
-            GameObject cell = Instantiate(cellPrefab, transform);
+            GameObject    cellObj = Instantiate(cellPrefab, transform);
+            RectTransform strip   = cellObj.GetComponent<RectTransform>();
 
-            cell.transform.localScale    = Vector3.zero;
-            cell.transform.localPosition = Vector3.zero;
+            strip.anchorMin = Vector2.zero;
+            strip.anchorMax = Vector2.zero;
+            strip.pivot     = new Vector2(0.5f, 0.5f);
+            strip.sizeDelta = new Vector2(totalWidth, stripHeight);
+            strip.anchoredPosition = new Vector2(
+                totalWidth * 0.5f,
+                stripHeight * i + stripHeight * 0.5f
+            );
 
-            Destroy(cell.GetComponent<ContentSizeFitter>());
-            Destroy(cell.GetComponent<LayoutElement>());
+            CanvasGroup cg = cellObj.AddComponent<CanvasGroup>();
+            cg.alpha = 0f;
 
-            cells.Add(cell.GetComponent<RectTransform>());
+            strips.Add(strip);
+            stripGroups.Add(cg);
         }
 
         isGridGenerated = true;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  PUBLIC ENTRY POINT
-    //  Covers the screen with the grid wipe, loads the scene asynchronously,
-    //  then reveals the new scene by animating the grid back out.
-    //  Two-way: cover → load → reveal.
-    // ─────────────────────────────────────────────────────────────────────────
     public void LoadScene(string sceneName)
     {
         if (!isGridGenerated)
         {
-            Debug.LogWarning("[GridTransitionManager] Grid not ready yet, loading instantly.");
+            Debug.LogWarning("Grid not ready yet, loading instantly.");
             SceneManager.LoadScene(sceneName);
             return;
         }
 
-        AnimateGrid(true, () => StartCoroutine(LoadAndReveal(sceneName)));
+        AnimateGrid(true, () =>
+        {
+            SceneManager.LoadScene(sceneName);
+            StartCoroutine(AnimateOutAfterLoad());
+        });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Waits for the scene to finish loading, THEN plays the reveal.
-    //  Using LoadSceneAsync means we know exactly when the scene is ready
-    //  before we start animating the cells away.
-    // ─────────────────────────────────────────────────────────────────────────
-    private IEnumerator LoadAndReveal(string sceneName)
+    private IEnumerator AnimateOutAfterLoad()
     {
-        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
-
-        // Keep the screen covered (cells at full scale) while loading.
-        while (!op.isDone)
-            yield return null;
-
-        // Scene is fully loaded and active. Now reveal it.
+        yield return new WaitForSecondsRealtime(0.1f);
         AnimateGrid(false, null);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  ANIMATE GRID
-    //  show = true  → cells scale up  (cover,   plays before scene load)
-    //  show = false → cells scale down (reveal,  plays after scene load)
-    // ─────────────────────────────────────────────────────────────────────────
     private void AnimateGrid(bool show, System.Action onComplete)
     {
-        // Kill any in-progress grid animation before starting a new one.
-        // Tag-based kill so we don't nuke unrelated project tweens.
-        DOTween.Kill("GridTransition");
-
-        float endScale = show ? 1.05f : 0f;
-
-        Sequence seq = DOTween.Sequence()
-                              .SetUpdate(true)
-                              .SetId("GridTransition");
-
-        for (int i = 0; i < cells.Count; i++)
+        // Kill everything in flight before creating new tweens
+        masterSequence?.Kill();
+        for (int i = 0; i < strips.Count; i++)
         {
-            int x       = i % columns;
-            int y       = i / columns;
-            int visualY = (rows - 1) - y; // top-left origin
-
-            float delay = (x + visualY) * waveSpeed;
-
-            seq.Insert(delay, cells[i].DOScale(endScale, fadeDuration)
-                                      .SetEase(Ease.InOutQuad)
-                                      .SetUpdate(true));
+            DOTween.Kill(stripGroups[i]);
+            DOTween.Kill(strips[i]);
         }
 
-        seq.OnComplete(() => onComplete?.Invoke());
+        // Snap strips to a clean known state
+        float canonicalX = strips.Count > 0 ? strips[0].anchoredPosition.x : 0f;
+        for (int i = 0; i < strips.Count; i++)
+        {
+            Vector2 p = strips[i].anchoredPosition;
+            p.x = canonicalX;
+            strips[i].anchoredPosition = p;
+            stripGroups[i].alpha = show ? 0f : 1f;
+        }
+
+        float duration      = show ? glitchInDuration : glitchOutDuration;
+        float staggerWindow = duration * 0.5f;
+
+        // ── Per-transition globals ─────────────────────────────────────────────
+        // Changes the overall character of every glitch so no two look the same
+        float globalSpeedMult  = Random.Range(0.75f, 1.25f); // anim runs faster or slower overall
+        float globalOffsetMult = Random.Range(0.5f,  1.5f);  // shifts tighter or wilder overall
+
+        masterSequence = DOTween.Sequence();
+        masterSequence.SetUpdate(true);
+
+        for (int i = 0; i < strips.Count; i++)
+        {
+            RectTransform strip = strips[i];
+            CanvasGroup   cg    = stripGroups[i];
+
+            // ── Per-strip randomisation ────────────────────────────────────────
+            float randomDelay   = Random.Range(0f, staggerWindow);
+
+            // Each strip gets its own flicker tempo — no sync'd pulsing across strips
+            float flickerSpeed  = duration * Random.Range(0.10f, 0.22f) * globalSpeedMult;
+
+            // X offset scaled by the per-transition global
+            float xOffset       = Random.Range(-maxXOffset, maxXOffset) * globalOffsetMult;
+
+            // Alpha targets vary per strip so the coverage looks uneven
+            float alphaHigh     = Random.Range(0.65f, 0.95f);
+            float alphaMid      = Random.Range(0.10f, 0.35f);
+            float alphaLow      = Random.Range(0.20f, 0.45f);
+
+            // ~35% of strips stutter twice before settling/cutting
+            bool doubleFlicker  = Random.value > 0.65f;
+
+            Vector2 originPos = strip.anchoredPosition;
+
+            Sequence stripSeq = DOTween.Sequence();
+            stripSeq.SetUpdate(true);
+
+            if (show)
+            {
+                // First flicker hit
+                stripSeq.Append(cg.DOFade(alphaHigh, flickerSpeed));
+                stripSeq.Join(strip.DOAnchorPosX(originPos.x + xOffset, flickerSpeed));
+
+                if (doubleFlicker)
+                {
+                    // Dip back down then spike again before settling
+                    float xOffset2 = Random.Range(-maxXOffset, maxXOffset) * globalOffsetMult * 0.6f;
+                    stripSeq.Append(cg.DOFade(alphaMid, flickerSpeed * 0.7f));
+                    stripSeq.Join(strip.DOAnchorPosX(originPos.x + xOffset2, flickerSpeed * 0.7f));
+                    stripSeq.Append(cg.DOFade(alphaHigh * 0.9f, flickerSpeed * 0.5f));
+                }
+                else
+                {
+                    stripSeq.Append(cg.DOFade(alphaMid, flickerSpeed));
+                }
+
+                // Settle into full opacity — duration also varied so strips don't finish together
+                stripSeq.Append(cg.DOFade(1f, flickerSpeed * Random.Range(0.8f, 1.4f)).SetEase(Ease.OutQuad));
+                stripSeq.Join(strip.DOAnchorPosX(originPos.x, flickerSpeed).SetEase(Ease.OutQuad));
+            }
+            else
+            {
+                // Initial stutter
+                stripSeq.Append(cg.DOFade(alphaLow, flickerSpeed));
+                stripSeq.Join(strip.DOAnchorPosX(originPos.x + xOffset, flickerSpeed));
+
+                if (doubleFlicker)
+                {
+                    // Snap back partway, spike bright, then cut
+                    float xOffset2 = Random.Range(-maxXOffset * 0.4f, maxXOffset * 0.4f) * globalOffsetMult;
+                    stripSeq.Append(cg.DOFade(alphaHigh, flickerSpeed * 0.5f));
+                    stripSeq.Join(strip.DOAnchorPosX(originPos.x + xOffset2, flickerSpeed * 0.5f));
+                }
+                else
+                {
+                    stripSeq.Append(cg.DOFade(alphaHigh * 0.85f, flickerSpeed));
+                    stripSeq.Join(strip.DOAnchorPosX(originPos.x, flickerSpeed * 0.5f));
+                }
+
+                // Fade out — duration varied so strips don't all vanish at once
+                stripSeq.Append(cg.DOFade(0f, flickerSpeed * Random.Range(0.8f, 1.3f)).SetEase(Ease.InQuad));
+                stripSeq.Join(strip.DOAnchorPosX(originPos.x, flickerSpeed * 0.4f).SetEase(Ease.InQuad));
+            }
+
+            masterSequence.Insert(randomDelay, stripSeq);
+        }
+
+        masterSequence.OnComplete(() => onComplete?.Invoke());
     }
 }
