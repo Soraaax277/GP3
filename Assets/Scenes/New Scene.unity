@@ -119,6 +119,84 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &964147275
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 964147277}
+  - component: {fileID: 964147276}
+  m_Layer: 0
+  m_Name: VictoryGrid
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &964147276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964147275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7494bd731aec87a45a2ffc8e4a4548bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VictoryGridManager
+  width: 300
+  height: 180
+  hexSize: 1
+  noiseScale: 0.04
+  landThreshold: -0.1
+  edgeFalloff: 0.8
+  hexTilePrefab: {fileID: 7627528651135053935, guid: c08c523f97d6bbe4b9199b17fab38981, type: 3}
+  waterTilePrefab: {fileID: 0}
+  waterMaterial: {fileID: 0}
+  sandBedDepth: 0.18
+  sandBedScale: 1.02
+  grassMaterial: {fileID: 0}
+  futuristicBuildings:
+  - {fileID: 2738083836793474306, guid: 49879abe3bd071c4999e57a6d25064d8, type: 3}
+  - {fileID: 7766446485876353658, guid: 0ae7ff292c9e6ca4fb588eb5b4f7a848, type: 3}
+  - {fileID: 2226897124642851816, guid: b6a0b75543db7e84f9e10ec3b3e064c6, type: 3}
+  - {fileID: 2289415242264867195, guid: ac18c71b4367fd943b15a630753a27c1, type: 3}
+  bpoBuildings:
+  - {fileID: 874797575419168954, guid: 80948eb175da9ba489dcf366e338aaa0, type: 3}
+  - {fileID: 6925926071195437682, guid: f1a9249548155224bba4ab247c22c6e0, type: 3}
+  - {fileID: 6394798834482981869, guid: 91576fdcad13fb94b8d4c5cfa22c53ee, type: 3}
+  - {fileID: 6026591426518143972, guid: 266201995ea709948b135fbeef63c161, type: 3}
+  - {fileID: 4596232290716146924, guid: 1c4406dc62d580b458c6e60738818091, type: 3}
+  - {fileID: 1478508000599345289, guid: f6de75b8450e9464784c4510e654e32e, type: 3}
+  - {fileID: 726823328793361326, guid: b7066d1c70bbd3b41813cae7dc12b904, type: 3}
+  buildingCoverage: 0.35
+  futuristicScaleMultiplier: 1
+  bpoScaleMultiplier: 0.5
+  bpoSpawnChance: 0.02
+  randomizeRotation: 1
+  buildingPositionSpread: 0.35
+  autoFrameCamera: 1
+  mapOffsetX: 0
+  mapOffsetY: 0
+--- !u!4 &964147277
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964147275}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 336.89252, y: 2.45454, z: 153.18916}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1227763189
 GameObject:
   m_ObjectHideFlags: 0
@@ -221,6 +299,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1718845298}
   - component: {fileID: 1718845297}
+  - component: {fileID: 1718845299}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -308,9 +387,39 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &1718845299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718845296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1227763192}
   - {fileID: 1718845298}
+  - {fileID: 964147277}

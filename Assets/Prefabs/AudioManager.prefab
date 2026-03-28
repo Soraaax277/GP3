@@ -45,14 +45,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   audioMixer: {fileID: 24100000, guid: bda5b4188a718dc42a39efe65a7a9d92, type: 2}
+  masterSlider: {fileID: 0}
+  musicSlider: {fileID: 0}
+  sfxSlider: {fileID: 0}
   bgmMenu: {fileID: 8300000, guid: a39b1a410c9a14449aa9213800d1488f, type: 3}
   bgmIndustrial: {fileID: 8300000, guid: e865702ffef63fd4a911fbf380c139cd, type: 3}
   bgmEarly80s: {fileID: 8300000, guid: b423b19081ec6cb4f9c7d1a5b4c992e1, type: 3}
   bgmRetro: {fileID: 8300000, guid: 6767b4fb48e94cc42be5c396d8bf2957, type: 3}
   bgmFuturistic: {fileID: 8300000, guid: 423eed364ec91f643bccd7bb15b679e8, type: 3}
+  bgmVictoryMonopoly: {fileID: 8300000, guid: 033d5db879e7abe46a0de38c90ffd6b7, type: 3}
+  bgmVictoryExodus: {fileID: 8300000, guid: bd55dbd575e511944837c086e9471771, type: 3}
+  bgmVictoryLiquidation: {fileID: 8300000, guid: e1e1d12ebb1a83946a913ad29eca6a32, type: 3}
   placeTowerSFX: {fileID: 0}
   placeWireSFX: {fileID: 0}
   placeBuildingSFX: {fileID: 0}
+  buttonClickSFX: {fileID: 0}
+  buttonHoverSFX: {fileID: 0}
   constructSFX: {fileID: 0}
   repairSFX: {fileID: 0}
   sabotageSFX: {fileID: 0}
@@ -73,6 +81,3 @@ MonoBehaviour:
   techBoomSFX: {fileID: 0}
   saboteurSFX: {fileID: 0}
   geyserSFX: {fileID: 0}
-  musicSource: {fileID: 0}
-  sfxSource: {fileID: 0}
-  hazardSource: {fileID: 0}

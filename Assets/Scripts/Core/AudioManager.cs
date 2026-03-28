@@ -20,6 +20,11 @@ public class AudioManager : MonoBehaviour
     public AudioClip bgmEarly80s;
     public AudioClip bgmRetro;
     public AudioClip bgmFuturistic;
+    
+    [Header("Victory BGMs")]
+    public AudioClip bgmVictoryMonopoly;
+    public AudioClip bgmVictoryExodus;
+    public AudioClip bgmVictoryLiquidation;
 
     [Header("SFX Structures")]
     public AudioClip placeTowerSFX;
@@ -68,8 +73,14 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-        // NO DONT DESTROY ON LOAD - We want one manager per scene
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+        
         Instance = this;
+        DontDestroyOnLoad(this.gameObject);
         
         // Setup internal audio sources so we always have them
         EnsureAudioSourcesExist();
@@ -139,7 +150,12 @@ public class AudioManager : MonoBehaviour
 
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.ToLower();
 
-        if (sceneName.Contains("menu") || sceneName.Contains("main"))
+        if (sceneName.Contains("victory"))
+        {
+            // Do not override BGM. The VictoryManager already started the victory music!
+            yield break;
+        }
+        else if (sceneName.Contains("menu") || sceneName.Contains("main"))
         {
             if (bgmMenu != null) PlayBGM(bgmMenu);
         }
@@ -180,8 +196,7 @@ public class AudioManager : MonoBehaviour
     {
         if (Instance != this) return;
 
-        // Stop any currently running BGM initialization and start a fresh one for the new scene
-        StopAllCoroutines();
+        // Note: We no longer StopAllCoroutines() because it kills the seamless crossfade!
         StartCoroutine(AutoInitializeBGM());
     }
 
@@ -215,15 +230,7 @@ public class AudioManager : MonoBehaviour
 
         if (targetClip != null)
         {
-            if (fade)
-            {
-                if (musicFadeCoroutine != null) StopCoroutine(musicFadeCoroutine);
-                musicFadeCoroutine = StartCoroutine(FadeBGM(targetClip, 2f));
-            }
-            else
-            {
-                PlayBGM(targetClip);
-            }
+            PlayBGM(targetClip);
         }
     }
 
@@ -307,24 +314,16 @@ public class AudioManager : MonoBehaviour
 
     public void PlayBGM(AudioClip clip, bool loop = true)
     {
-        // FINAL SAFETY: If the manager is being destroyed or the source is gone, stop here
         if (Instance != this || musicSource == null) return;
+        if (musicSource.clip == clip) return; // already playing this track
 
-        try 
-        {
-            if (musicSource.clip == clip) return;
-            musicSource.clip = clip;
-            musicSource.loop = loop;
-            musicSource.volume = 1f; // Reset volume in case it was fading
-            musicSource.Play();
-        }
-        catch (UnityEngine.MissingReferenceException)
-        {
-            // Catch-all for rare race conditions during scene disposal
-        }
+        if (musicFadeCoroutine != null) StopCoroutine(musicFadeCoroutine);
+        
+        if (gameObject.activeInHierarchy)
+            musicFadeCoroutine = StartCoroutine(FadeBGM(clip, 2f, loop));
     }
 
-    private IEnumerator FadeBGM(AudioClip newClip, float duration)
+    private IEnumerator FadeBGM(AudioClip newClip, float duration, bool loop)
     {
         if (musicSource == null || Instance != this) yield break;
 
@@ -350,7 +349,10 @@ public class AudioManager : MonoBehaviour
 
         // Switch and Fade in
         musicSource.clip = newClip;
+        musicSource.loop = loop;
         musicSource.Play();
+        
+        float baseVolume = GetMusicVolume(); // Fade in to user's volume
         
         for (float t = 0; t < duration / 2; t += Time.deltaTime)
         {

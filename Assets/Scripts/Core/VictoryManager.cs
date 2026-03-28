@@ -339,6 +339,24 @@ public class VictoryManager : MonoBehaviour
         // Restore time so coroutines and camera movement run normally.
         Time.timeScale = 1f;
 
+        // Play the victory BGM via the AudioManager
+        if (AudioManager.Instance != null)
+        {
+            AudioClip victoryBGM = type switch
+            {
+                VictoryType.Monopoly => AudioManager.Instance.bgmVictoryMonopoly,
+                VictoryType.Exodus => AudioManager.Instance.bgmVictoryExodus,
+                VictoryType.Liquidation => AudioManager.Instance.bgmVictoryLiquidation,
+                _ => null
+            };
+
+            if (victoryBGM != null)
+            {
+                // Play it seamlessly. It will crossfade and continue into the victory scene!
+                AudioManager.Instance.PlayBGM(victoryBGM, false);
+            }
+        }
+
         if (type == VictoryType.Monopoly)
             StartCoroutine(MonopolyCameraSequence(winner, targetScene));
         else if (type == VictoryType.Liquidation)
