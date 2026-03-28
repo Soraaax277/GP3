@@ -131,7 +131,7 @@ public class PauseMenuUI : MonoBehaviour
         DG.Tweening.DOTween.KillAll();
         Time.timeScale = 1f;
         GameIsPaused = false;
-        SceneManager.LoadScene("MainMenuScene");
+        GridTransitionManager.Instance.LoadScene("MainMenuScene");
     }
 
     public void OnSettings()

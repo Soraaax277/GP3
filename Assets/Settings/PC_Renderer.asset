@@ -150,11 +150,11 @@ MonoBehaviour:
     fogDensity: 0.65
     chromaticStrength: 0.05
     sharpness: 0.8
-    grainIntensity: 0
+    grainIntensity: 0.05
     grainSize: 1
     vignetteIntensity: 0
     outlineIntensity: 0.25
-    outlineThickness: 2.5
+    outlineThickness: 3
     outlineColor: {r: 0, g: 0.6603774, b: 0.6085831, a: 1}
     hexOpacity: 0.3
     hexPanelWidth: 0.1

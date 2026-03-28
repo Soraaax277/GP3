@@ -27,9 +27,39 @@ public class CameraController : MonoBehaviour
     public float buildDistance = 20f;  
     public float lockTransitionTime = 0.5f; 
 
-    // Cutscene Mode flag 
+    // Cutscene Mode flag
     [Header("Cutscene Settings")]
-    public bool cutsceneMode = false;
+    // Exposed in the Inspector via the backing field; use the property in code.
+    [SerializeField] private bool _cutsceneMode = false;
+
+    /// <summary>
+    /// When set to true, immediately stops any in-flight camera transition coroutine
+    /// and prevents CameraController from touching the transform — giving VictoryManager
+    /// (or any other system) exclusive control over the camera.
+    /// </summary>
+    public bool cutsceneMode
+    {
+        get => _cutsceneMode;
+        set
+        {
+            if (_cutsceneMode == value) return;
+            _cutsceneMode = value;
+
+            if (value)
+            {
+                // Kill any active transition so it cannot fight an external camera sequence.
+                if (activeRoutine != null)
+                {
+                    StopCoroutine(activeRoutine);
+                    activeRoutine = null;
+                }
+                isTransitioning = false;
+
+                // Sync rotation state so HandleMovement won't snap when control returns.
+                rotationEuler = transform.eulerAngles;
+            }
+        }
+    }
 
     private Vector3 leftDragOrigin;
     private Vector3 rightDragOrigin;
@@ -75,8 +105,8 @@ public class CameraController : MonoBehaviour
 
     private bool IsBlockedByUI()
     {
-        // Block input if in cutscene mode (AI Turn)
-        if (cutsceneMode) return true;
+        // Block input if in cutscene mode (AI Turn / Victory sequence)
+        if (_cutsceneMode) return true;
 
         if (blockingPanels != null)
         {
@@ -249,6 +279,14 @@ public class CameraController : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < lockTransitionTime)
         {
+            // Yield immediately if cutscene mode was activated mid-transition
+            // (e.g. victory fires while we are still panning to a build target).
+            if (_cutsceneMode)
+            {
+                isTransitioning = false;
+                yield break;
+            }
+
             float t = elapsed / lockTransitionTime;
             t = t * t * (3f - 2f * t); // SmoothStep
 

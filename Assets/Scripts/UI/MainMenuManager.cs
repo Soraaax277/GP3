@@ -404,7 +404,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         Time.timeScale = 1f;
         SaveSystem.DeleteSave();
-        SceneManager.LoadScene("GameScene");
+        GridTransitionManager.Instance.LoadScene("GameScene");;
     }
 
     public void OnLoadGame()
@@ -412,7 +412,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         if (SaveSystem.HasSaveData())
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene("GameScene");
+            GridTransitionManager.Instance.LoadScene("GameScene");;
         }
     }
 

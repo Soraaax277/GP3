@@ -11,6 +11,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/GameScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/MonopolyEnding.unity
+    guid: d87725f01b68e6849bbba51d19cde206
+  - enabled: 1
+    path: Assets/Scenes/ExodusEnding.unity
+    guid: 9845f4bc96b3ad3428f40fcf4d40778d
+  - enabled: 1
+    path: Assets/Scenes/LiquidationScene.unity
+    guid: 0b813df496116e04aaa45ebeaf2aca33
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

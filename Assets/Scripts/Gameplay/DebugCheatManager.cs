@@ -17,6 +17,10 @@ using System.Collections.Generic;
 //   F5  — Reveal entire map (disable fog of war) + reveal all enemy units
 //   F6  — Force-unlock all building/unit features by name
 //   F7  — Toggle instant research (0-turn completion)
+//   F8  — Force era jump
+//   F9  — Force MONOPOLY victory immediately
+//   F10 — Force EXODUS victory immediately
+//   F11 — Force LIQUIDATION victory immediately
 //
 // REMOVE THIS FILE BEFORE SHIPPING.
 public class DebugCheatManager : MonoBehaviour
@@ -64,11 +68,11 @@ public class DebugCheatManager : MonoBehaviour
     public TurnManager.GameEra forceEraTarget = TurnManager.GameEra.Industrial;
 
     [Header("─── Force Victory (Debug) ───────────────────────")]
-    [Tooltip("Toggle ON in Inspector, then press End Turn — triggers Monopoly victory on the next tick.")]
+    [Tooltip("Press F9, or right-click the component → 'Debug: Force Monopoly Victory'.")]
     public bool debugForceMonopoly = false;
-    [Tooltip("Toggle ON in Inspector, then press End Turn — triggers Exodus victory on the next tick.")]
+    [Tooltip("Press F10, or right-click the component → 'Debug: Force Exodus Victory'.")]
     public bool debugForceExodus = false;
-    [Tooltip("Toggle ON in Inspector, then press End Turn — triggers Liquidation victory on the next tick.")]
+    [Tooltip("Press F11, or right-click the component → 'Debug: Force Liquidation Victory'.")]
     public bool debugForceLiquidation = false;
 
     [Header("─── Auto-Apply ──────────────────────────────────")]
@@ -112,14 +116,10 @@ public class DebugCheatManager : MonoBehaviour
             CheatForceEra();
 
         // ── Force Victory ─────────────────────────────────────────────────────
-        // Push Inspector toggles into VictoryManager then let it fire.
-        if (VictoryManager.Instance != null)
-        {
-            if (debugForceMonopoly)    { VictoryManager.Instance.debugForceMonopoly    = true; debugForceMonopoly    = false; }
-            if (debugForceExodus)      { VictoryManager.Instance.debugForceExodus      = true; debugForceExodus      = false; }
-            if (debugForceLiquidation) { VictoryManager.Instance.debugForceLiquidation = true; debugForceLiquidation = false; }
-            VictoryManager.Instance.DebugCheckForcedVictory();
-        }
+        // Inspector toggles fire immediately on the next turn start.
+        if (debugForceMonopoly)    { debugForceMonopoly    = false; DebugForceMonopoly();    }
+        if (debugForceExodus)      { debugForceExodus      = false; DebugForceExodus();      }
+        if (debugForceLiquidation) { debugForceLiquidation = false; DebugForceLiquidation(); }
 
         if (cheatRevealMap)
             StartCoroutine(ReapplyRevealAfterFOV());
@@ -195,6 +195,9 @@ public class DebugCheatManager : MonoBehaviour
             if (kb.f6Key.wasPressedThisFrame) CheatUnlockAllFeatures();
             if (kb.f7Key.wasPressedThisFrame) ToggleInstantResearch();
             if (kb.f8Key.wasPressedThisFrame) CheatForceEra();
+            if (kb.f9Key.wasPressedThisFrame)  DebugForceMonopoly();
+            if (kb.f10Key.wasPressedThisFrame) DebugForceExodus();
+            if (kb.f11Key.wasPressedThisFrame) DebugForceLiquidation();
         }
 
         // ── Per-frame clamp ────────────────────────────────────────────────
@@ -521,6 +524,49 @@ public class DebugCheatManager : MonoBehaviour
 
         Debug.Log($"[DebugCheatManager] Force-unlocked {buildingFeatures.Length} building features " +
                   $"and {unitNames.Length} unit types for {player.playerName}.");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  Force Victory — instant, no turn-end required
+    // ═════════════════════════════════════════════════════════════════════════
+
+    [ContextMenu("Debug: Force Monopoly Victory")]
+    public void DebugForceMonopoly()
+    {
+        if (VictoryManager.Instance == null)
+        {
+            Debug.LogWarning("[DebugCheatManager] VictoryManager not found.");
+            return;
+        }
+        Debug.Log("[DebugCheatManager] [DEBUG] Forcing MONOPOLY victory.");
+        PlayerData human = GetHumanPlayer();
+        VictoryManager.Instance.TriggerVictory(VictoryType.Monopoly, human);
+    }
+
+    [ContextMenu("Debug: Force Exodus Victory")]
+    public void DebugForceExodus()
+    {
+        if (VictoryManager.Instance == null)
+        {
+            Debug.LogWarning("[DebugCheatManager] VictoryManager not found.");
+            return;
+        }
+        Debug.Log("[DebugCheatManager] [DEBUG] Forcing EXODUS victory.");
+        PlayerData human = GetHumanPlayer();
+        VictoryManager.Instance.TriggerVictory(VictoryType.Exodus, human);
+    }
+
+    [ContextMenu("Debug: Force Liquidation Victory")]
+    public void DebugForceLiquidation()
+    {
+        if (VictoryManager.Instance == null)
+        {
+            Debug.LogWarning("[DebugCheatManager] VictoryManager not found.");
+            return;
+        }
+        Debug.Log("[DebugCheatManager] [DEBUG] Forcing LIQUIDATION victory.");
+        PlayerData human = GetHumanPlayer();
+        VictoryManager.Instance.TriggerVictory(VictoryType.Liquidation, human);
     }
 
     // Forces the world era and sets currentTurn to the first turn of that era.
