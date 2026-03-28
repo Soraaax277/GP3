@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections; 
 using System.Collections.Generic;
 
@@ -14,6 +14,10 @@ public abstract class Unit : MonoBehaviour
 
     private Renderer[] renderers;
     private Material[] originalMaterials;
+    protected Animator animator;
+
+    [Header("Movement Settings")]
+    public float moveSpeedPerHex = 0.8f; // Slowed down from 0.3f so the walk animation is visible
 
     public int moveRange = 3;
     public int visionRange = 2;
@@ -94,7 +98,18 @@ public abstract class Unit : MonoBehaviour
         currentTile = spawnTile;
         owner = player;
 
-        transform.position = spawnTile.transform.position + Vector3.up * 1f;
+        // Make units a little bit smaller per request
+        transform.localScale = Vector3.one * 0.6f;
+
+        // Origin of the models is in the chest, so they need a bump up from the surface
+        float yOffset = 0.5f;
+
+        // Snap exactly to the top surface of the tile + the chest offset
+        transform.position = new Vector3(
+            spawnTile.transform.position.x,
+            spawnTile.GetSurfaceY() + yOffset,
+            spawnTile.transform.position.z
+        );
 
         isFresh = true;
         canAct = false;
@@ -105,13 +120,40 @@ public abstract class Unit : MonoBehaviour
         if (TurnManager.Instance != null)
             TurnManager.Instance.RegisterUnit(this);
 
+        animator = GetComponentInChildren<Animator>();
+
         renderers = GetComponentsInChildren<Renderer>();
 
         originalMaterials = new Material[renderers.Length];
         for (int i = 0; i < renderers.Length; i++)
         {
             if (renderers[i] != null)
-                originalMaterials[i] = renderers[i].sharedMaterial; // Save sharedMaterial to avoid cloning
+            {
+                Material mat = renderers[i].sharedMaterial;
+                if (mat != null)
+                {
+                    Texture tex = mat.mainTexture;
+                    if (tex == null && mat.HasProperty("_BaseMap"))
+                    {
+                        tex = mat.GetTexture("_BaseMap");
+                    }
+                    else if (tex == null && mat.HasProperty("_BaseColorMap"))
+                    {
+                        tex = mat.GetTexture("_BaseColorMap");
+                    }
+
+                    if (tex != null)
+                    {
+                        Material freshUnlit = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                        freshUnlit.SetTexture("_BaseMap", tex);
+                        freshUnlit.mainTexture = tex;
+                        freshUnlit.SetInt("_Cull", 0); // Added: Force Double Sided (Cull Off) for Sketchfab rips
+                        renderers[i].sharedMaterial = freshUnlit;
+                        mat = freshUnlit;
+                    }
+                }
+                originalMaterials[i] = mat; // Save sharedMaterial to avoid cloning
+            }
         }
 
         CheckTechStatus();
@@ -153,7 +195,14 @@ public abstract class Unit : MonoBehaviour
                 {
                     // Accessing .material creates an instance clone.
                     // We only do this when selecting to apply the tint.
-                    renderers[i].material.color = Color.green; 
+                    if (renderers[i].material.HasProperty("_BaseColor"))
+                    {
+                        renderers[i].material.SetColor("_BaseColor", Color.green);
+                    }
+                    else
+                    {
+                        renderers[i].material.color = Color.green; 
+                    }
                     
                     if (AudioManager.Instance != null && AudioManager.Instance.selectSFX != null)
                         AudioManager.Instance.PlaySFX(AudioManager.Instance.selectSFX);
@@ -234,16 +283,34 @@ public abstract class Unit : MonoBehaviour
         // Use the passed 'range' or movementRemaining, whichever is smaller
         int limit = Mathf.Min(range, movementRemaining);
 
+        // Start walking animation
+        if (animator != null)
+            animator.SetBool("isWalking", true);
+
         for (int i = 0; i < path.Count; i++)
         {
             if (limit <= 0 && !testingMode) break;
 
             HexTile nextTile = path[i];
             Vector3 startPos = transform.position;
-            Vector3 endPos = nextTile.transform.position + Vector3.up * 1f;
             
-            float duration = 0.3f;
+            float yOffset = 0.5f;
+            Vector3 endPos = new Vector3(
+                nextTile.transform.position.x, 
+                nextTile.GetSurfaceY() + yOffset, 
+                nextTile.transform.position.z
+            );
+            
+            float duration = moveSpeedPerHex;
             float elapsed = 0f;
+            
+            // Turn to face the target tile
+            Vector3 lookDir = (endPos - startPos).normalized;
+            lookDir.y = 0; // Keep rotation strictly horizontal
+            if (lookDir.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(lookDir);
+            }
             
             while (elapsed < duration)
             {
@@ -267,6 +334,10 @@ public abstract class Unit : MonoBehaviour
 
         currentTile.placedUnit = this;
         isMoving = false;
+        
+        // Stop walking animation
+        if (animator != null)
+            animator.SetBool("isWalking", false);
 
         // QUEST HOOKS
         if (QuestManager.Instance != null && owner != null)

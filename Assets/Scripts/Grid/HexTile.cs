@@ -32,6 +32,20 @@ public class HexTile : MonoBehaviour
     public bool isExplored;   // For Fog of War: Has the player ever seen this?
     public bool isVisible;    // For Fog of War: Is the player currently seeing this?
 
+    /// <summary>
+    /// Calculates the exact world Y-coordinate of the topmost face of this tile's collider.
+    /// Used to perfectly snap units, towers, and indicators to the ground regardless of tile height.
+    /// </summary>
+    public float GetSurfaceY()
+    {
+        BoxCollider box = GetComponent<BoxCollider>();
+        if (box == null) return transform.position.y;
+
+        float halfHeight = box.size.y * 0.5f * transform.lossyScale.y;
+        float centerY    = box.center.y * transform.lossyScale.y;
+        return transform.position.y + centerY + halfHeight;
+    }
+
     private Renderer rend;
     private Color baseColor;
 

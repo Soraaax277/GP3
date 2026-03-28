@@ -390,13 +390,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     private float GetTileSurfaceY()
     {
         if (tile == null) return transform.position.y;
-
-        BoxCollider box = tile.GetComponent<BoxCollider>();
-        if (box == null) return tile.transform.position.y;
-
-        float halfHeight = box.size.y * 0.5f * tile.transform.lossyScale.y;
-        float centerY    = box.center.y * tile.transform.lossyScale.y;
-        return tile.transform.position.y + centerY + halfHeight;
+        return tile.GetSurfaceY();
     }
 
     public void UpdateRangeVisuals()
