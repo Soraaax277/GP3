@@ -25172,6 +25172,7 @@ MonoBehaviour:
   buildHeight: 12.5
   buildDistance: 10
   lockTransitionTime: 0.5
+  startupLockDuration: 2.7
   _cutsceneMode: 0
 --- !u!1 &331834537
 GameObject:
@@ -160028,8 +160029,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
-  m_fontSizeBase: 18
+  m_fontSize: 13.5
+  m_fontSizeBase: 13.5
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -171878,17 +171879,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BuildUIManager
   panel: {fileID: 1810445274}
   actionButtonPrefab: {fileID: 4689897870023844034, guid: 0eff3e9dc69b31448aafa9a0491e03d0, type: 3}
+  reminderButtonPrefab: {fileID: 4689897870023844034, guid: ed0c572a81b369c469f0bef441192b69, type: 3}
   buttonContainer: {fileID: 1883627546}
   headerText: {fileID: 250945177}
   subHeaderText: {fileID: 712133754}
   buttonScrollRect: {fileID: 1077324208}
   scrollButtonThreshold: 3
+  scrollBottomPadding: 24
   mainCamera: {fileID: 330585545}
   menuOffset: {x: 0, y: 0.25, z: -3.5}
   colorCanAfford: {r: 0, g: 0, b: 0, a: 1}
   colorCannotAfford: {r: 1, g: 0, b: 0, a: 1}
-  colorNotInteractable: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  colorDisplay: {r: 0, g: 1, b: 1, a: 1}
+  colorNotInteractable: {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 1}
+  colorReminder: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 1}
   placementManager: {fileID: 875296316}
   ignoreNextClick: 0
 --- !u!4 &2142417076
@@ -172212,6 +172215,7 @@ MonoBehaviour:
   eraLabel: {fileID: 1828722651}
   flavorLabel: {fileID: 222210765}
   hudEraText: {fileID: 1256555033}
+  startupDelay: 1.5
   blurFadeDuration: 0.6
   textFadeInTime: 0.5
   holdDuration: 2.5

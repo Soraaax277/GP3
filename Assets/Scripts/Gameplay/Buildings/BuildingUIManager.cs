@@ -34,6 +34,9 @@ public class BuildingUIManager : MonoBehaviour
     [Tooltip("Prefab: Button root + 'ActionLabel' TMP + 'CostLabel' TMP children.")]
     public GameObject actionButtonPrefab;
 
+    [Tooltip("Prefab used for display/reminder rows (non-interactable info text). Falls back to actionButtonPrefab if unassigned.")]
+    public GameObject reminderButtonPrefab;
+
     [Tooltip("The Content RectTransform inside the panel that owns the Vertical Layout Group + ContentSizeFitter.")]
     public Transform buttonContainer;
 
@@ -49,6 +52,9 @@ public class BuildingUIManager : MonoBehaviour
     [Tooltip("Number of buttons at which the list switches to a scrollable view.")]
     public int scrollButtonThreshold = 5;
 
+    [Tooltip("Height in pixels of the empty spacer added at the bottom of the scroll content.")]
+    public float scrollBottomPadding = 24f;
+
     public Camera mainCamera;
 
     [Header("World Space Settings")]
@@ -58,7 +64,7 @@ public class BuildingUIManager : MonoBehaviour
     public Color colorCanAfford       = Color.white;
     public Color colorCannotAfford    = Color.red;
     public Color colorNotInteractable = Color.grey;
-    public Color colorDisplay         = Color.cyan;
+    public Color colorReminder        = new Color(0.588f, 0.588f, 0.588f); // #969696
 
     [Header("Dependencies")]
     public TowerPlacementManager placementManager;
@@ -651,7 +657,7 @@ public class BuildingUIManager : MonoBehaviour
     {
         SpawnButton(new ActionConfig
         {
-            label        = text,
+            label        = "\u24d8 " + text,
             cost         = 0,
             interactable = false,
             isDisplay    = true,
@@ -700,7 +706,12 @@ public class BuildingUIManager : MonoBehaviour
             return;
         }
 
-        GameObject go = Instantiate(actionButtonPrefab, buttonContainer);
+        // Use the reminder prefab for display rows if one is assigned; otherwise fall back to actionButtonPrefab.
+        GameObject prefabToUse = (config.isDisplay && reminderButtonPrefab != null)
+            ? reminderButtonPrefab
+            : actionButtonPrefab;
+
+        GameObject go = Instantiate(prefabToUse, buttonContainer);
         spawnedButtons.Add(go);
 
         TextMeshProUGUI[] texts = go.GetComponentsInChildren<TextMeshProUGUI>(true);
@@ -709,7 +720,7 @@ public class BuildingUIManager : MonoBehaviour
         {
             texts[0].text  = config.label;
             texts[0].color = config.isDisplay
-                ? colorDisplay
+                ? colorReminder
                 : (config.interactable ? colorCanAfford : colorNotInteractable);
         }
 
@@ -740,6 +751,34 @@ public class BuildingUIManager : MonoBehaviour
             }
         }
 
+        // For reminder rows: bypass ContentSizeFitter entirely and directly
+        // set the height from TMP's measured preferredHeight. This is the only
+        // reliable way to size dynamic text at spawn time in Unity.
+        if (config.isDisplay && texts.Length >= 1)
+        {
+            // Force TMP to calculate its layout immediately.
+            texts[0].ForceMeshUpdate();
+
+            float padding = 16f; // top + bottom padding inside the background
+            float neededHeight = texts[0].preferredHeight + padding;
+
+            // Resize the root of the spawned prefab.
+            RectTransform goRect = go.GetComponent<RectTransform>();
+            if (goRect != null)
+            {
+                goRect.sizeDelta = new Vector2(goRect.sizeDelta.x, neededHeight);
+            }
+
+            // Also resize the background child if it is a separate object.
+            RectTransform bgRect = go.transform.childCount > 0
+                ? go.transform.GetChild(0).GetComponent<RectTransform>()
+                : null;
+            if (bgRect != null && bgRect != goRect)
+            {
+                bgRect.sizeDelta = new Vector2(bgRect.sizeDelta.x, neededHeight);
+            }
+        }
+
         LayoutRebuilder.ForceRebuildLayoutImmediate(buttonContainer as RectTransform);
     }
 
@@ -757,12 +796,16 @@ public class BuildingUIManager : MonoBehaviour
     /// <summary>
     /// Enables vertical scrolling if button count exceeds scrollButtonThreshold.
     /// Uses spawnedButtons.Count — always accurate, no layout timing issues.
+    /// Always appends a bottom spacer so the last item isn't flush against the edge.
     /// </summary>
     private void RefreshScrollRect()
     {
-        if (buttonScrollRect == null) return;
-
+        // Count real buttons before adding the spacer so the threshold is accurate.
         bool needsScroll = spawnedButtons.Count > scrollButtonThreshold;
+
+        SpawnBottomSpacer();
+
+        if (buttonScrollRect == null) return;
 
         buttonScrollRect.enabled  = true;
         buttonScrollRect.vertical = needsScroll;
@@ -778,33 +821,53 @@ public class BuildingUIManager : MonoBehaviour
             contentRect.anchoredPosition = pos;
         }
     }
+
+    /// <summary>
+    /// Adds an invisible fixed-height spacer at the bottom of the button list so
+    /// the last item is never flush against the scroll viewport edge.
+    /// Tracked in spawnedButtons so it's destroyed on ClearButtons().
+    /// </summary>
+    private void SpawnBottomSpacer()
+    {
+        if (buttonContainer == null) return;
+
+        GameObject spacer = new GameObject("BottomSpacer", typeof(RectTransform));
+        spacer.transform.SetParent(buttonContainer, false);
+
+        LayoutElement le = spacer.AddComponent<LayoutElement>();
+        le.minHeight       = scrollBottomPadding;
+        le.preferredHeight = scrollBottomPadding;
+
+        spawnedButtons.Add(spacer);
+    }
+
     private void ShowWirePanel(WireNode wire)
     {
         ClearButtons();
         if (headerText != null) headerText.text = "POWER WIRE";
-        
+
         PlayerData p = wire.owner;
         bool canUpgrade = TechManager.Instance != null && TechManager.Instance.IsFeatureUnlockedFor(p, "DialupInfrastructure");
-        
+
         if (!wire.isDigital)
         {
-             SpawnButton(new ActionConfig
-             {
-                 label = "Upgrade to Digital",
-                 cost = 25,
-                 interactable = canUpgrade,
-                 onClick = () => {
-                     if (p.resources >= 25) {
-                         p.resources -= 25;
-                         wire.UpgradeToDigital();
-                         ShowWirePanel(wire);
-                     }
-                 }
-             });
+            SpawnButton(new ActionConfig
+            {
+                label        = "Upgrade to Digital",
+                cost         = 25,
+                interactable = canUpgrade,
+                onClick      = () => {
+                    if (p.resources >= 25) {
+                        p.resources -= 25;
+                        wire.UpgradeToDigital();
+                        ShowWirePanel(wire);
+                    }
+                }
+            });
         }
         else
         {
-             SpawnDisplayRow("Wire is Digital");
+            SpawnDisplayRow("Wire is Digital");
         }
     }
 }

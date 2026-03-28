@@ -43,18 +43,18 @@ public class DetailPanel : MonoBehaviour
     private static readonly Dictionary<System.Type, UnitMeta> UnitMetas
         = new Dictionary<System.Type, UnitMeta>
     {
-        { typeof(BuilderUnit),     new UnitMeta { displayName = "Builder",          description = "Primary construction unit." } },
+        { typeof(BuilderUnit),     new UnitMeta { displayName = "Builder",          description = "Work at: Canteens (Rest here to regain a free build charge). \nRefill at: Service Centers or Advanced Service Centers to reset Build charges." } },
         { typeof(WireSpecialist),  new UnitMeta { displayName = "Wire Specialist",  description = "Infrastructure unit. Charge wires and connect across the grid." } },
         { typeof(ScoutUnit),       new UnitMeta { displayName = "Scout",            description = "Exploration unit with high movement & vision." } },
-        { typeof(Technician),      new UnitMeta { displayName = "Technician",       description = "Field support unit. Power up and activate adjacent wires." } },
-        { typeof(Businessman),     new UnitMeta { displayName = "Businessman",      description = "Corporate unit with recruit charges." } },
-        { typeof(SalesMarketer),   new UnitMeta { displayName = "Sales Marketer",   description = "Persuasion/Area-Denial unit." } },
-        { typeof(Saboteurs),       new UnitMeta { displayName = "Saboteur",         description = "Dedicated aggressive unit. Damages enemy towers." } },
-        { typeof(MaintenanceCrew), new UnitMeta { displayName = "Maintenance Crew", description = "Specializes in repairing destroyed towers with decent efficiency." } },
-        { typeof(Foremen),         new UnitMeta { displayName = "Foremen",          description = "Elite builder unit. The builders' superiors." } },
-        { typeof(ITPersonnel),     new UnitMeta { displayName = "IT Personnel",     description = "Highly efficient, can repair both towers and wires. Generates income if placed on a BPO." } },
-        { typeof(RoboWorker),      new UnitMeta { displayName = "Robo Worker",      description = "Futuristic construction drone." } },
-        { typeof(RoboMarshall),    new UnitMeta { displayName = "Robo Marshall",    description = "The ultimate robotic repair entity. Superior repair efficiency." } },
+        { typeof(Technician),      new UnitMeta { displayName = "Technician",       description = "Work at: Power Boxes (Energy Trading) and Rocketships (Launch Payload). \nRefill at: Service Centers or Advanced Service Centers. Uses charges for specialized wire hacking/tuning." } },
+        { typeof(Businessman),     new UnitMeta { displayName = "Businessman",      description = "Work at: BPO Centers (+50G), Business Centers (+10% Profit), and Rocketships (Launch). \nRefill at: Service Centers or Advanced Service Centers to reset Recruitment charges." } },
+        { typeof(SalesMarketer),   new UnitMeta { displayName = "Sales Marketer",   description = "Work at: Commercial Hubs (50% Recruitment Discount). \nRefill at: Service Centers or Advanced Service Centers to reset Marketing charges." } },
+        { typeof(Saboteurs),       new UnitMeta { displayName = "Saboteur",         description = "Refill at: Service Centers or Advanced Service Centers to reset Sabotage charges." } },
+        { typeof(MaintenanceCrew), new UnitMeta { displayName = "Maintenance Crew", description = "Work at: Service Centers (Coordinate local maintenance). \nRefill at: Service Centers or Advanced Service Centers to reset Repair charges." } },
+        { typeof(Foremen),         new UnitMeta { displayName = "Foremen",          description = "Work at: Canteens (+10G kickback every time a worker builds). \nRefill at: Service Centers or Advanced Service Centers to reset Build charges." } },
+        { typeof(ITPersonnel),     new UnitMeta { displayName = "IT Personnel",     description = "Work at: Signal Boosters (+2G per hex), Tesseracts (Data Harvesting), and BPO Centers (+30G). \nRefill at: Service Centers or Advanced Service Centers to reset Repair charges." } },
+        { typeof(RoboWorker),      new UnitMeta { displayName = "Robo Worker",      description = "Work at: Canteens (Rest here to regain a free build charge). \nRefill at: Service Centers or Advanced Service Centers to reset Build charges." } },
+        { typeof(RoboMarshall),    new UnitMeta { displayName = "Robo Marshall",    description = "Work at: Service Centers (Coordinate local maintenance). Refill at: Service Centers or Advanced Service Centers to reset Repair charges." } },
     };
 
     // ── Building / Structure data (static) ────────────────────────────────────

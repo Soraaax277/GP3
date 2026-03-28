@@ -16,6 +16,21 @@ public class GridTransitionManager : MonoBehaviour
     public float glitchOutDuration = 1.2f;  // Reveal animation (entering a scene)
     public float maxXOffset = 12f;           // Max horizontal glitch shift in pixels
 
+    [Header("Fallback Panel")]
+    [Tooltip("Assign the Image GameObject that sits behind the strips. Add a CanvasGroup to it manually.")]
+    public Image fallbackPanel;
+    [Tooltip("Color of the fallback panel.")]
+    public Color fallbackColor = Color.black;
+    [Tooltip("Seconds of slow loading before the fallback panel fades in.")]
+    public float fallbackDelay = 1.5f;
+    [Tooltip("How long the fallback panel takes to gently fade in.")]
+    public float fallbackFadeInDuration = 0.6f;
+    [Tooltip("How long the fallback panel takes to fade out alongside the glitch-out.")]
+    public float fallbackFadeOutDuration = 0.8f;
+
+    private CanvasGroup      fallbackCanvasGroup;
+    private Coroutine        fallbackCoroutine;
+
     private List<RectTransform> strips     = new List<RectTransform>();
     private List<CanvasGroup>   stripGroups = new List<CanvasGroup>();
     private bool     isGridGenerated = false;
@@ -44,8 +59,30 @@ public class GridTransitionManager : MonoBehaviour
 
     void Start()
     {
+        InitFallbackPanel();
         StartCoroutine(GenerateGridRoutine());
     }
+
+    // ── Fallback panel setup ───────────────────────────────────────────────────
+
+    private void InitFallbackPanel()
+    {
+        if (fallbackPanel == null) return;
+
+        fallbackPanel.color = fallbackColor;
+
+        fallbackCanvasGroup = fallbackPanel.GetComponent<CanvasGroup>();
+        if (fallbackCanvasGroup == null)
+        {
+            Debug.LogWarning("GridTransitionManager: fallbackPanel has no CanvasGroup. Add one manually.");
+            fallbackCanvasGroup = null;
+        }
+
+        if (fallbackCanvasGroup != null)
+            fallbackCanvasGroup.alpha = 0f;
+    }
+
+    // ── Grid generation ────────────────────────────────────────────────────────
 
     IEnumerator GenerateGridRoutine()
     {
@@ -87,6 +124,8 @@ public class GridTransitionManager : MonoBehaviour
         isGridGenerated = true;
     }
 
+    // ── Public entry point ─────────────────────────────────────────────────────
+
     public void LoadScene(string sceneName)
     {
         if (!isGridGenerated)
@@ -98,16 +137,71 @@ public class GridTransitionManager : MonoBehaviour
 
         AnimateGrid(true, () =>
         {
-            SceneManager.LoadScene(sceneName);
-            StartCoroutine(AnimateOutAfterLoad());
+            StartCoroutine(LoadSceneWithFallback(sceneName));
         });
     }
 
-    private IEnumerator AnimateOutAfterLoad()
+    // ── Scene loading with fallback ────────────────────────────────────────────
+
+    // Starts the async load and kicks off a countdown. If the scene takes
+    // longer than fallbackDelay, the fallback panel gently fades in to cover
+    // the gap. Once loading is done, AnimateGrid(false) and the panel fade-out
+    // both run in parallel.
+    private IEnumerator LoadSceneWithFallback(string sceneName)
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
+        asyncLoad.allowSceneActivation = false;   // Hold until we're ready
+
+        float elapsed       = 0f;
+        bool  panelShown    = false;
+
+        while (asyncLoad.progress < 0.9f)          // 0.9 = fully loaded, waiting for activation
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            if (!panelShown && elapsed >= fallbackDelay)
+            {
+                panelShown = true;
+                FadeFallbackPanel(1f, fallbackFadeInDuration);
+            }
+
+            yield return null;
+        }
+
+        // Scene is ready — activate it then kick off the reveal
+        asyncLoad.allowSceneActivation = true;
+        yield return asyncLoad;                    // Wait one frame for scene to fully activate
+
+        StartCoroutine(AnimateOutAfterLoad(panelShown));
+    }
+
+    // ── Animate out + optional panel fade-out ─────────────────────────────────
+
+    private IEnumerator AnimateOutAfterLoad(bool hideFallbackPanel)
     {
         yield return new WaitForSecondsRealtime(0.1f);
+
+        // Both the glitch-out and the panel fade-out fire at the same time
         AnimateGrid(false, null);
+
+        if (hideFallbackPanel)
+            FadeFallbackPanel(0f, fallbackFadeOutDuration);
     }
+
+    // ── Fallback panel tween helper ────────────────────────────────────────────
+
+    private void FadeFallbackPanel(float targetAlpha, float duration)
+    {
+        if (fallbackCanvasGroup == null) return;
+
+        DOTween.Kill(fallbackCanvasGroup);
+        fallbackCanvasGroup
+            .DOFade(targetAlpha, duration)
+            .SetEase(targetAlpha > 0f ? Ease.OutQuad : Ease.InQuad)
+            .SetUpdate(true);
+    }
+
+    // ── Grid animation ─────────────────────────────────────────────────────────
 
     private void AnimateGrid(bool show, System.Action onComplete)
     {
