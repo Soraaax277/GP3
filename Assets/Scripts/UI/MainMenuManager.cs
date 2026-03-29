@@ -110,6 +110,17 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private void Awake()
     {
         Instance = this;
+
+        // ── FRESH INSTALL CLEANUP ───────────────────────────────────────────
+        // Ensures that when a player first downloads/runs the game, they don't 
+        // find any "ghost" save data from previous builds or development leaks.
+        if (PlayerPrefs.GetInt("Initialized_Build_v1", 0) == 0)
+        {
+            SaveSystem.DeleteSave();
+            PlayerPrefs.SetInt("Initialized_Build_v1", 1);
+            PlayerPrefs.Save();
+            Debug.Log("[MainMenuManager] First run detected. Wiping legacy save data.");
+        }
     }
 
     private void Start()
