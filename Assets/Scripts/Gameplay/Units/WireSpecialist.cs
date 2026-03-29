@@ -160,7 +160,7 @@ public class WireSpecialist : Unit
         if (TurnManager.Instance != null)
             TurnManager.Instance.RegisterWire(wireNode);
 
-        if (AudioManager.Instance != null && AudioManager.Instance.layWireSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.layWireSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.layWireSFX);
 
         if (FeedbackController.Instance != null)
@@ -218,7 +218,7 @@ public class WireSpecialist : Unit
             sabotageDamage = baseDamage * damageMultiplier;
         }
 
-        if (AudioManager.Instance != null && AudioManager.Instance.sabotageSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.sabotageSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.sabotageSFX);
 
         targetWire.TakeDamage(sabotageDamage);
@@ -282,7 +282,7 @@ public class WireSpecialist : Unit
 
         owner.resources -= repairCost;
         
-        if (AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.repairSFX);
 
         targetTower.Repair(repairEfficiency);

@@ -60,7 +60,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         
         HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f)); 
         
-        if (AudioManager.Instance != null && AudioManager.Instance.placeBuildingSFX != null)
+        if (!player.isAI && AudioManager.Instance != null && AudioManager.Instance.placeBuildingSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.placeBuildingSFX);
 
         foreach (var t in occupiedTiles)
@@ -166,7 +166,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         RemoveInfluence();
         IsPowered = powered;
         
-        if (IsPowered && AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
+        if (IsPowered && owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
 
         SetRangeColor(IsPowered ? new Color(0f, 1f, 0f, 0.4f) : new Color(0.5f, 0.5f, 0.5f, 0.25f));

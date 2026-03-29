@@ -41,7 +41,11 @@ public class PlayerInput : MonoBehaviour
                     Unit unit = hit.collider.GetComponentInParent<Unit>();
                     if (unit != null)
                     {
-                        if (TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null && !TurnManager.Instance.currentPlayer.isAI)
+                        // Check if it's the player's turn and the clicked unit belongs to the player
+                        bool isPlayerTurn = TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null && !TurnManager.Instance.currentPlayer.isAI;
+                        bool isOwnedByPlayer = unit.owner != null && !unit.owner.isAI;
+
+                        if (isPlayerTurn && isOwnedByPlayer)
                         {
                             if (UnitActionPanel.Instance != null) UnitActionPanel.Instance.Open(unit);
                             BuildingUIManager.Instance.Close();
@@ -57,13 +61,13 @@ public class PlayerInput : MonoBehaviour
                 foreach (var hit in hits)
                 {
                     SignalNode business = hit.collider.GetComponentInParent<SignalNode>();
-                    if (business != null) { DeselectUnit(); BuildingUIManager.Instance.Open(business); UnitActionPanel.Instance.Close(); return; }
+                    if (business != null && business.owner != null && !business.owner.isAI) { DeselectUnit(); BuildingUIManager.Instance.Open(business); UnitActionPanel.Instance.Close(); return; }
 
                     StructureNode structure = hit.collider.GetComponentInParent<StructureNode>();
-                    if (structure != null) { DeselectUnit(); BuildingUIManager.Instance.Open(structure); UnitActionPanel.Instance.Close(); return; }
+                    if (structure != null && structure.owner != null && !structure.owner.isAI) { DeselectUnit(); BuildingUIManager.Instance.Open(structure); UnitActionPanel.Instance.Close(); return; }
 
                     TowerNode tower = hit.collider.GetComponentInParent<TowerNode>();
-                    if (tower != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tower); UnitActionPanel.Instance.Close(); return; }
+                    if (tower != null && tower.owner != null && !tower.owner.isAI) { DeselectUnit(); BuildingUIManager.Instance.Open(tower); UnitActionPanel.Instance.Close(); return; }
                 }
 
                 // 3. Finally, fallback to interacting with the HexTile base
@@ -72,9 +76,27 @@ public class PlayerInput : MonoBehaviour
                     HexTile tile = hit.collider.GetComponent<HexTile>();
                     if (tile != null)
                     {
-                        if (tile.placedStructure != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tile.placedStructure); UnitActionPanel.Instance.Close(); return; }
-                        if (tile.placedTower != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tile.placedTower); UnitActionPanel.Instance.Close(); return; }
-                        if (tile.placedSignalNode != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tile.placedSignalNode); UnitActionPanel.Instance.Close(); return; }
+                        if (tile.placedStructure != null && tile.placedStructure.owner != null && !tile.placedStructure.owner.isAI) 
+                        { 
+                            DeselectUnit(); 
+                            BuildingUIManager.Instance.Open(tile.placedStructure); 
+                            UnitActionPanel.Instance.Close(); 
+                            return; 
+                        }
+                        if (tile.placedTower != null && tile.placedTower.owner != null && !tile.placedTower.owner.isAI) 
+                        { 
+                            DeselectUnit(); 
+                            BuildingUIManager.Instance.Open(tile.placedTower); 
+                            UnitActionPanel.Instance.Close(); 
+                            return; 
+                        }
+                        if (tile.placedSignalNode != null && tile.placedSignalNode.owner != null && !tile.placedSignalNode.owner.isAI) 
+                        { 
+                            DeselectUnit(); 
+                            BuildingUIManager.Instance.Open(tile.placedSignalNode); 
+                            UnitActionPanel.Instance.Close(); 
+                            return; 
+                        }
                         
                         // Hit an empty tile
                         DeselectAndClose();

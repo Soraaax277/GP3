@@ -83,14 +83,41 @@ public class CameraController : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
-        if (GridManager.Instance != null)
+        // Wait for GridManager to finish generating the world continent.
+        while (GridManager.Instance == null || !GridManager.Instance.IsReady)
+            yield return null;
+
+        // ── CALCULATE DYNAMIC WORLD LIMITS ──────────────────────────────────
+        // Instead of hard-coded multipliers, we scan all active tiles to find
+        // the EXACT world-space footprint of the generated continent. This
+        // creates a "box" boundary that keeps the player inside the map.
+        if (GridManager.Instance != null && GridManager.Instance.tiles != null)
         {
-            float hexWidth = GridManager.Instance.hexSize * 2f;
-            float hexHeight = Mathf.Sqrt(3f) * GridManager.Instance.hexSize;
-            panLimitX = new Vector2(0f, GridManager.Instance.width * hexWidth);
-            panLimitZ = new Vector2(0f, GridManager.Instance.height * hexHeight);
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+            bool foundTiles = false;
+
+            foreach (var tile in GridManager.Instance.GetAllTiles())
+            {
+                if (tile == null) continue;
+                Vector3 p = tile.transform.position;
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.z < minZ) minZ = p.z;
+                if (p.z > maxZ) maxZ = p.z;
+                foundTiles = true;
+            }
+
+            if (foundTiles)
+            {
+                // Add a small buffer (5 units) so the player can look at the 
+                // very edge of the map clearly.
+                float buffer = 5f;
+                panLimitX = new Vector2(minX - buffer, maxX + buffer);
+                panLimitZ = new Vector2(minZ - buffer, maxZ + buffer);
+            }
         }
         
         // Initialize rotation state
@@ -98,7 +125,7 @@ public class CameraController : MonoBehaviour
 
         // Lock camera for the grid-out + era announcement window
         if (startupLockDuration > 0f)
-            StartCoroutine(StartupLockRoutine());
+            yield return StartCoroutine(StartupLockRoutine());
     }
 
     private IEnumerator StartupLockRoutine()

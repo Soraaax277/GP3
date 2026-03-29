@@ -5,31 +5,65 @@ public class Rocketship : StructureNode
 {
     private void Awake()
     {
-        tilesOccupied = 1;
+        // 1 tile footprint to keep the map clickable.
+        tilesOccupied = 1; 
         expansionRadius = 3; 
-        visionRange = 8;         // Big vision for the end-game structure
+        visionRange = 10;         
         autoScaleToFit = true;
-        verticalOffset = 10f;    // Lifts the rocket above ground in all 3 hologram/build states
+        
+        // Locked to 8.93f to reach the target Y=10.24 height exactly.
+        verticalOffset = 8.93f;    
     }
 
     private void Start()
     {
         AutoScaleToFitTiles();
         transform.localScale *= 8.0f;
-
-        // Also apply the vertical lift directly on the built structure (Start fires after Initialize)
-        Vector3 pos = transform.position;
-        pos.y += verticalOffset;
-        transform.position = pos;
     }
 
     public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
         baseGoldCost = 500;
         base.Initialize(tiles, player);
+
+        // Force ground alignment immediately after instantiation 
+        // using the 8.93f offset to reach Y=10.24.
+        Vector3 pos = transform.position;
+        pos.y = tiles[0].GetSurfaceY() + 8.93f;
+        transform.position = pos;
     }
 
-    public bool CanLaunch() => IsMannedBy<Technician>() && IsMannedBy<Businessman>();
+    public bool CanLaunch()
+    {
+        if (IsMannedBy<Technician>() && IsMannedBy<Businessman>()) return true;
+
+        // Radius 2 cluster (19 tiles) Manning Fallback
+        // This ensures your specialists can be standing anywhere within a 2-hex 
+        // distance from the rocket's base to activate the launch.
+        bool techFound = false;
+        bool bizFound = false;
+
+        List<HexTile> manningArea = GridManager.Instance.GetTilesInRange(ParentTile, 2);
+        foreach (var tile in manningArea)
+        {
+            if (tile.placedUnit is Technician t && t.owner == owner) techFound = true;
+            if (tile.placedUnit is Businessman b && b.owner == owner) bizFound = true;
+        }
+
+        return techFound && bizFound;
+    }
+
+    protected override void OnMouseDown()
+    {
+        // Call base to open the menu
+        base.OnMouseDown();
+
+        // Extra: If it can launch, tell the player they can use the button
+        if (CanLaunch())
+        {
+             Debug.Log("[Rocketship] Manned and ready for launch! Button enabled in UI.");
+        }
+    }
 
     public void Launch()
     {

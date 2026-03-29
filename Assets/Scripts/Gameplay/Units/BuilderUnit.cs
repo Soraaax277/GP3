@@ -185,7 +185,7 @@ public class BuilderUnit : Unit
 
         bool isCanteen = (targetStructure is Canteen);
         
-        if (AudioManager.Instance != null && AudioManager.Instance.constructSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.constructSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.constructSFX);
 
         if (targetTower != null)
@@ -304,7 +304,7 @@ public class BuilderUnit : Unit
         owner.resources -= repairCost;
         if (targetTower != null)
         {
-            if (AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
+            if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.repairSFX);
 
             targetTower.Repair(repairEfficiency);

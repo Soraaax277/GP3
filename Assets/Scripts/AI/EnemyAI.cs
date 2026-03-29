@@ -279,11 +279,14 @@ public class EnemyAI : MonoBehaviour
 
     private HexTile FindBestStructureSpot(PlayerData aiPlayer)
     {
-        // Find a tile adjacent to the AI's owned network that is not occupied
+        // Find a tile adjacent to the AI's owned network OR a tile with positive influence
         foreach (var tile in GridManager.Instance.tiles.Values)
         {
             if (tile.IsOccupied() || tile.placedStructure != null) continue;
             if (tile.type == HexTile.TileType.Water) continue;
+
+            // NEW: Influence expansion check
+            if (tile.GetInfluence(aiPlayer) > 0) return tile;
 
             foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(tile))
             {

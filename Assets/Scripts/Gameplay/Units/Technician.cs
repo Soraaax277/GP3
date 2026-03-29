@@ -97,7 +97,7 @@ public class Technician : Unit
 
         targetWire.IsTechnicianActivated = true;
         
-        if (AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
 
         ActionLogUI.PostFiltered(owner, "Technician powered up the grid!", ActionLogUI.Colors.Unit);
@@ -165,7 +165,7 @@ public class Technician : Unit
         owner.resources -= repairCost;
         if (targetTower != null)
         {
-            if (AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
+            if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.repairSFX != null)
                 AudioManager.Instance.PlaySFX(AudioManager.Instance.repairSFX);
 
             targetTower.Repair(repairEfficiency);
@@ -205,7 +205,7 @@ public class Technician : Unit
     {
         if (isResearching) return;
 
-        if (AudioManager.Instance != null && AudioManager.Instance.researchSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.researchSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.researchSFX);
 
         if (ResearchProjectHandler.Instance != null)

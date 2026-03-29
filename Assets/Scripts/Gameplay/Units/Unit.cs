@@ -39,7 +39,7 @@ public abstract class Unit : MonoBehaviour
         CurrentCharges = MaxCharges;
         refillsHappened++;
         
-        if (AudioManager.Instance != null && AudioManager.Instance.refillSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.refillSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.refillSFX);
 
         if (refillsHappened >= 3)
@@ -62,13 +62,13 @@ public abstract class Unit : MonoBehaviour
         {
             moveRange += 1;
             movementRemaining = moveRange;
-            if (FeedbackController.Instance != null)
+            if (owner != null && !owner.isAI && FeedbackController.Instance != null)
                 FeedbackController.Instance.PlayLevelUpEffect(transform.position);
         }
         else if (level == 3)
         {
             // "Expert" Perk: 20% chance to not consume a charge
-            if (FeedbackController.Instance != null)
+            if (owner != null && !owner.isAI && FeedbackController.Instance != null)
                 FeedbackController.Instance.PlayLevelUpEffect(transform.position);
         }
     }
@@ -275,7 +275,7 @@ public abstract class Unit : MonoBehaviour
         // Remove start tile from path
         path.RemoveAt(0);
 
-        if (AudioManager.Instance != null && AudioManager.Instance.moveSFX != null)
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.moveSFX != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.moveSFX);
 
         currentTile.placedUnit = null;

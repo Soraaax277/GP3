@@ -120,6 +120,8 @@ public class StructurePlacementManager : MonoBehaviour
 
                 StructureNode holoNode = hologram != null ? hologram.GetComponent<StructureNode>() : null;
                 float extraLift = holoNode != null ? holoNode.verticalOffset : 0f;
+                // Force sync for Rocketship
+                if (currentPrefab != null && currentPrefab.GetComponent<Rocketship>() != null) extraLift = 8.93f;
 
                 float surfaceY = GetTileSurfaceY(tile) + _hologramBottomOffset + extraLift;
                 hologram.transform.position = new Vector3(tile.transform.position.x, surfaceY, tile.transform.position.z);
@@ -175,7 +177,12 @@ public class StructurePlacementManager : MonoBehaviour
         PlayerData currentPlayer = TurnManager.Instance.currentPlayer;
         foreach (var t in targets)
         {
-            // Adjacency/Influence check
+            // ── INFLUENCE CHECK (NEW territorial Rule) ──────────────────────
+            // If the player has ANY influence spread to this tile (via Towers, 
+            // Signals, or Expansion structures), they can build here.
+            if (t.GetInfluence(currentPlayer) > 0) return true;
+
+            // Adjacency fallback
             foreach (SignalNode hq in currentPlayer.ownedNodes)
             {
                 if (hq == null) continue;
@@ -205,7 +212,13 @@ public class StructurePlacementManager : MonoBehaviour
         if (owner.resources < cost) return;
         owner.resources -= cost;
 
+        // ── CALCULATE SURFACE Y ───────────────────────────────────────────
+        // Use an injected lift for the massive Rocketship model to ensure it 
+        // doesn't sink into the ground. Based on inspector feedback, 8.93f 
+        // is the magic number needed to reach the target Y=10.24 height.
         float extraLift = (prefabNode != null) ? prefabNode.verticalOffset : 0f;
+        if (currentPrefab.GetComponent<Rocketship>() != null) extraLift = 8.93f;
+
         float surfaceY = GetTileSurfaceY(hoveredTile) + _hologramBottomOffset + extraLift;
 
         GameObject realStructure = Instantiate(

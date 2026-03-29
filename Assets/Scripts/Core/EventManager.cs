@@ -30,6 +30,47 @@ public class EventManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // ── HIDE PRE-PLACED PARTICLES ────────────────────────────────────────
+        // Find the 'ParticleSystems' container (as seen in hierarchy) and 
+        // deactivate it immediately to prevent spray from showing up at startup.
+        Transform container = transform.Find("ParticleSystems");
+        if (container != null) container.gameObject.SetActive(false);
+
+        // Also check for any siblings/children with particle system names
+        foreach (Transform child in transform)
+        {
+            if (child.name.Contains("Rain") || child.name.Contains("Sun") || child.name.Contains("Explo"))
+                child.gameObject.SetActive(false);
+        }
+    }
+
+    private void Update()
+    {
+        // ── VISIBILITY GATE (REAL-TIME) ──────────────────────────────────────
+        // If no event is active, ensure the particle system is deactivated 
+        // to prevent any stray particles from showing up.
+        if (activeEvent == EventType.None)
+        {
+            if (currentParticleSystem != null && currentParticleSystem.activeSelf)
+                currentParticleSystem.SetActive(false);
+            return;
+        }
+
+        // Sync particle visibility every frame so that if the player moves 
+        // a unit (revealing/hiding the tile), the event effect responds 
+        // immediately. 
+        if (targetTile != null && currentParticleSystem != null)
+        {
+            // Ensure the object is active if an event is running
+            if (!currentParticleSystem.activeSelf) currentParticleSystem.SetActive(true);
+
+            bool visible = targetTile.isVisible;
+            foreach (var r in currentParticleSystem.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.enabled != visible) r.enabled = visible;
+            }
+        }
     }
 
     public void ProcessTurnEvents()
@@ -41,7 +82,7 @@ public class EventManager : MonoBehaviour
             AdvanceEventClock();
         }
 
-        // Apply visual/status effects and recurring damage
+        // Apply status effects and recurring damage (visuals handled in Update)
         ApplyEventEffects(isStartOfCycle);
     }
 
@@ -144,7 +185,11 @@ public class EventManager : MonoBehaviour
 
     private void ApplyEventEffects(bool dealDamage)
     {
-        if (activeEvent == EventType.None || targetTile == null) return;
+        if (activeEvent == EventType.None || targetTile == null) 
+        {
+            if (currentParticleSystem != null) Destroy(currentParticleSystem);
+            return;
+        }
 
         // Each tile's hazard impact determines how strongly it is hit
         float impact = targetTile.hazardImpact;

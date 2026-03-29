@@ -60,7 +60,14 @@ public class TechTreeGraph : MonoBehaviour
         if (linePrefab == null || lineContainer == null) return;
 
         // Create the line linked to the prefab
-        GameObject newLine = (GameObject)PrefabUtility.InstantiatePrefab(linePrefab, lineContainer);
+        GameObject newLine;
+        #if UNITY_EDITOR
+        if (!Application.isPlaying) newLine = (GameObject)PrefabUtility.InstantiatePrefab(linePrefab, lineContainer);
+        else newLine = Instantiate(linePrefab, lineContainer);
+        #else
+        newLine = Instantiate(linePrefab, lineContainer);
+        #endif
+
         RectTransform lineRect = newLine.GetComponent<RectTransform>();
 
         // Coordinate Conversion
