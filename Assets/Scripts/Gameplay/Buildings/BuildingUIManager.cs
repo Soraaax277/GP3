@@ -198,9 +198,13 @@ public class BuildingUIManager : MonoBehaviour
         // so dispatch order doesn't matter here — but keeping advanced before base is
         // consistent convention and safe-guards against future refactoring.
         else if (building is AdvancedBusinessCenter   abc)     ShowAdvancedBusinessCenter(abc);
+        else if (building is BusinessCenter           bc)      ShowBusinessCenter(bc);
         else if (building is Canteen                  canteen) ShowCanteen(canteen);
         else if (building is WireNode                 wire)    ShowWirePanel(wire);
         else if (building is Rocketship               rs)      ShowRocketship(rs);
+        else if (building is PowerBox                 pb)      ShowPowerBox(pb);
+        else if (building is SignalBooster            sb)      ShowSignalBooster(sb);
+        else if (building is Tesseract                tes)     ShowTesseract(tes);
         else
         {
             ClearButtons();
@@ -410,6 +414,7 @@ public class BuildingUIManager : MonoBehaviour
         else
             SpawnDisplayRow("Move a Businessman or IT Personnel\nonto this tile to earn passive gold.");
 
+        TryAddEjectButton(bpo);
         RefreshScrollRect();
     }
 
@@ -433,6 +438,7 @@ public class BuildingUIManager : MonoBehaviour
             onClick      = () => { hub.ToggleAutoSpawn(); ShowCommercialHub(hub); }
         });
 
+        TryAddEjectButton(hub);
         RefreshScrollRect();
     }
 
@@ -466,6 +472,7 @@ public class BuildingUIManager : MonoBehaviour
             if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
         }
 
+        TryAddEjectButton(sc);
         RefreshScrollRect();
     }
 
@@ -505,6 +512,7 @@ public class BuildingUIManager : MonoBehaviour
             if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
         }
 
+        TryAddEjectButton(asc);
         RefreshScrollRect();
     }
 
@@ -539,6 +547,7 @@ public class BuildingUIManager : MonoBehaviour
             if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
         }
 
+        TryAddEjectButton(abc);
         RefreshScrollRect();
     }
 
@@ -569,6 +578,7 @@ public class BuildingUIManager : MonoBehaviour
             if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
         }
 
+        TryAddEjectButton(canteen);
         RefreshScrollRect();
     }
 
@@ -593,6 +603,7 @@ public class BuildingUIManager : MonoBehaviour
             SpawnDisplayRow("Requires: 1 Technician & 1 Businessman stationed on Rocketship hexes.");
         }
 
+        TryAddEjectButton(rs);
         RefreshScrollRect();
     }
 
@@ -652,6 +663,119 @@ public class BuildingUIManager : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────────────
     //  Button / display row helpers
     // ─────────────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Unit Eject  –  Free "push out" with no action/movement cost.
+    //  Finds the first unit on the building's occupied tiles (owner only),
+    //  then teleports it to the nearest free adjacent hex.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Adds a "Make Unit Leave" button if any owned unit is stationed in the building.
+    /// Shows the first unit's type name so the player knows who is leaving.
+    /// </summary>
+    private void TryAddEjectButton(StructureNode building)
+    {
+        if (building == null) return;
+
+        var stationed = building.GetStationedUnits();
+        if (stationed.Count == 0) return;
+
+        Unit first = stationed[0];
+        string unitName = first.GetType().Name;
+
+        // Friendly display name from a simple map — falls back to class name
+        string displayName = unitName
+            .Replace("Unit", "")
+            .Replace("Crew", " Crew");
+
+        SpawnButton(new ActionConfig
+        {
+            label        = $"Eject {displayName}  ({stationed.Count} inside)",
+            cost         = 0,
+            interactable = true,
+            onClick      = () => { EjectFirstUnit(building); }
+        });
+    }
+
+    /// <summary>
+    /// Teleports the first stationed unit to the nearest free adjacent tile.
+    /// Costs nothing — movement and charges are untouched.
+    /// </summary>
+    private void EjectFirstUnit(StructureNode building)
+    {
+        var stationed = building.GetStationedUnits();
+        if (stationed.Count == 0) return;
+
+        Unit unit = stationed[0];
+        HexTile ejectTile = FindFreeEjectTile(building);
+
+        if (ejectTile == null)
+        {
+            Debug.LogWarning("[BuildingUIManager] EjectFirstUnit: No free adjacent tile found.");
+            return;
+        }
+
+        // Clear old tile
+        if (unit.currentTile != null)
+            unit.currentTile.placedUnit = null;
+
+        // Place on new tile
+        ejectTile.placedUnit = unit;
+        unit.currentTile     = ejectTile;
+
+        // Snap world position (same yOffset used in Unit.Initialize)
+        float yOffset = 0.5f;
+        unit.transform.position = new Vector3(
+            ejectTile.transform.position.x,
+            ejectTile.GetSurfaceY() + yOffset,
+            ejectTile.transform.position.z
+        );
+
+        // Refresh the panel so the button updates or disappears
+        Open(building);
+    }
+
+    /// <summary>
+    /// Finds the first walkable, structure-free tile adjacent to any occupied tile
+    /// of the building that also has no unit on it.
+    /// </summary>
+    private HexTile FindFreeEjectTile(StructureNode building)
+    {
+        if (GridManager.Instance == null) return null;
+
+        // Collect all occupied tiles so we don't eject back onto the building itself
+        var footprint = new HashSet<HexTile>();
+        foreach (var t in building.GetStationedUnits()) { } // just for clarity — footprint built below
+        // Re-use GetStationedUnits' tile loop via the public occupiedTiles indirectly:
+        // We'll check all neighbours of ParentTile and secondary tiles via GridManager.
+        var checkedTiles = new HashSet<HexTile>();
+
+        // Check neighbours of every occupied tile in order (ParentTile first)
+        var toCheck = new List<HexTile>();
+        toCheck.Add(building.ParentTile);
+        foreach (var t in GridManager.Instance.GetTilesInRange(building.ParentTile, building.tilesOccupied))
+        {
+            if (t.placedStructure == building) toCheck.Add(t);
+        }
+
+        foreach (var occupied in toCheck)
+        {
+            if (occupied == null) continue;
+            foreach (HexTile neighbor in GridManager.Instance.GetNeighbors(occupied))
+            {
+                if (neighbor == null) continue;
+                if (checkedTiles.Contains(neighbor)) continue;
+                checkedTiles.Add(neighbor);
+
+                // Must be walkable (Land, no unit) and no structure
+                if (neighbor.IsWalkable() && !neighbor.hasStructure)
+                    return neighbor;
+            }
+        }
+
+        return null;
+    }
 
     private void SpawnDisplayRow(string text)
     {
@@ -839,6 +963,80 @@ public class BuildingUIManager : MonoBehaviour
         le.preferredHeight = scrollBottomPadding;
 
         spawnedButtons.Add(spacer);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Business Center
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowBusinessCenter(BusinessCenter bc)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "BUSINESS CENTER";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        bool managed = BusinessCenter.IsCorporateManagementActive(bc.owner);
+        SpawnDisplayRow($"Corporate Management: {(managed ? "ACTIVE (+10% BPO Income)" : "Inactive — station a Businessman here")}");
+
+        TryAddEjectButton(bc);
+        RefreshScrollRect();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Power Box
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowPowerBox(PowerBox pb)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "POWER BOX";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        bool hasTech = pb.IsMannedBy<Technician>();
+        SpawnDisplayRow(hasTech
+            ? "Energy Trading: ACTIVE  (20–100G / turn, 10% fuse risk)"
+            : "Station a Technician here to enable Energy Trading.");
+
+        TryAddEjectButton(pb);
+        RefreshScrollRect();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Signal Booster
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowSignalBooster(SignalBooster sb)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "SIGNAL BOOSTER";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        bool hasIT = sb.IsMannedBy<ITPersonnel>();
+        SpawnDisplayRow(hasIT
+            ? $"Signal Monetization: ACTIVE  (+2G per hex in range)"
+            : "Station an IT Personnel here to enable Signal Monetization.");
+
+        TryAddEjectButton(sb);
+        RefreshScrollRect();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Tesseract
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void ShowTesseract(Tesseract tes)
+    {
+        ClearButtons();
+        if (headerText != null) headerText.text = "TESSERACT";
+        if (subHeaderText != null) subHeaderText.gameObject.SetActive(false);
+
+        bool hasIT = tes.IsMannedBy<ITPersonnel>();
+        SpawnDisplayRow(hasIT
+            ? "Data Harvesting: ACTIVE  (+15G per non-owned hex in range / turn)"
+            : "Station an IT Personnel here to enable Data Harvesting.");
+
+        TryAddEjectButton(tes);
+        RefreshScrollRect();
     }
 
     private void ShowWirePanel(WireNode wire)

@@ -17,7 +17,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     [Header("Size Settings")]
     public int   tilesOccupied  = 1;  // 1, 2, or 4 tiles 
     public bool  autoScaleToFit = true; // Automatically scale to fit the occupied tiles
-    public float verticalOffset = 0f;  // Extra Y lift for buildings whose pivot is off-center
+    public float verticalOffset = 0f;   // Optional Y-lift applied on top of tile surface (used by e.g. Rocketship)
 
     [Header("Expansion Settings")]
     public int expansionRadius     = 2; // claimed hexes when built
@@ -335,6 +335,22 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
                 return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Returns all units owned by this building's player that are currently
+    /// stationed on any of its occupied tiles, in tile order (first tile first).
+    /// </summary>
+    public List<Unit> GetStationedUnits()
+    {
+        var result = new List<Unit>();
+        if (occupiedTiles == null) return result;
+        foreach (var tile in occupiedTiles)
+        {
+            if (tile != null && tile.placedUnit != null && tile.placedUnit.owner == owner)
+                result.Add(tile.placedUnit);
+        }
+        return result;
     }
 
     public List<HexTile> GetTilesInRange()
