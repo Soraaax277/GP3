@@ -157,6 +157,11 @@ public class TurnManager : MonoBehaviour
         currentEra = GameEra.Industrial;
         currentPlayerIndex = 0;
 
+        // Force the era announcement to fire on New Game exactly like it does on Load Game.
+        // Without this, StartTurn() runs without ever calling UpdateEra(), so the 
+        // EraAnnouncementController never gets triggered and the EraCanvas never shows.
+        UpdateEra(true);
+
         StartTurn();
     }
 
