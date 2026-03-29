@@ -102,7 +102,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
         // 2. Measure current model bounds in LOCAL space
         // Skip tiny/degenerate renderers that might cause 'division by zero' or massive scaling
         Bounds b = new Bounds(Vector3.zero, Vector3.zero);
-        Renderer[] rends = GetComponentsInChildren<Renderer>();
+        Renderer[] rends = GetComponentsInChildren<Renderer>(true);
         bool first = true;
         foreach (var r in rends)
         {

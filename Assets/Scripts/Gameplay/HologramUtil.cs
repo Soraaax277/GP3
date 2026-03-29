@@ -32,6 +32,7 @@ public class OriginalMaterialStorage : MonoBehaviour
     {
         foreach (var r in renderers)
         {
+            if (r == null) continue;
             if (r.gameObject.name.Contains("RangeIndicator") || r.gameObject.name.Contains("Cylinder")) continue;
 
             bool found = false;
@@ -70,7 +71,7 @@ public static class HologramUtil
 {
     public static void MakeHologram(GameObject obj, Color color)
     {
-        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
         
         // Store original materials if not already stored, or update if new ones arrived
         OriginalMaterialStorage storage = obj.GetComponent<OriginalMaterialStorage>();
@@ -113,7 +114,7 @@ public static class HologramUtil
         
         // Ensure any newly-created active children (from Era visuals that weren't caught in MakeHologram initially)
         // are forcefully set to solid by removing any tint they might have accidentally inherited.
-        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(false);
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer r in renderers)
         {
             if (r.gameObject.name.Contains("RangeIndicator") || r.gameObject.name.Contains("Cylinder")) continue;

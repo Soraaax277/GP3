@@ -81,6 +81,7 @@ MonoBehaviour:
   goldUpkeep: 10
   tilesOccupied: 1
   autoScaleToFit: 1
+  verticalOffset: 0
   expansionRadius: 2
   baseInfluenceAmount: 5
   baseGoldCost: 100
@@ -135,6 +136,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7635826562936255635, guid: 1874696fc31db65478865fb5aa7729c0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 23cff0fceb47d86488c5e11ab19578a0, type: 2}
+    - target: {fileID: -7635826562936255635, guid: 1874696fc31db65478865fb5aa7729c0, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 23cff0fceb47d86488c5e11ab19578a0, type: 2}
+    - target: {fileID: -7635826562936255635, guid: 1874696fc31db65478865fb5aa7729c0, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 23cff0fceb47d86488c5e11ab19578a0, type: 2}
+    - target: {fileID: -7635826562936255635, guid: 1874696fc31db65478865fb5aa7729c0, type: 3}
+      propertyPath: 'm_Materials.Array.data[3]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 23cff0fceb47d86488c5e11ab19578a0, type: 2}
     - target: {fileID: 919132149155446097, guid: 1874696fc31db65478865fb5aa7729c0, type: 3}
       propertyPath: m_Name
       value: GroundTower
