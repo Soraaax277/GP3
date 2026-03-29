@@ -20,6 +20,9 @@ public class EventManager : MonoBehaviour
     public GameObject hyperInflationParticlePrefab;
     public GameObject techBoomParticlePrefab;
 
+    [Header("Single Tile Target")]
+    public HexTile targetTile;
+
     private GameObject currentParticleSystem;
 
     private void Awake()
@@ -41,7 +44,6 @@ public class EventManager : MonoBehaviour
             AdvanceEventClock();
         }
 
-        // Apply visual/status effects and recurring damage
         ApplyEventEffects(isStartOfCycle);
     }
 
@@ -64,23 +66,17 @@ public class EventManager : MonoBehaviour
 
     private void TryStartRandomEvent()
     {
-        // Use the inspector-controlled chance
         if (Random.value < eventSpawnChance)
         {
             StartRandomEvent();
         }
     }
 
-    [Header("Single Tile Target")]
-    public HexTile targetTile;
-
     private void StartRandomEvent()
     {
-        // Pick random event except None
         activeEvent = (EventType)Random.Range(1, (int)EventType.TechBoom + 1);
-        eventDurationLeft = Random.Range(3, 6); // Lasts 3-5 turns
+        eventDurationLeft = Random.Range(3, 6);
 
-        // Pick a random target tile
         List<HexTile> allTiles = new List<HexTile>(GridManager.Instance.GetAllTiles());
         if (allTiles.Count > 0)
         {
@@ -101,11 +97,11 @@ public class EventManager : MonoBehaviour
         AudioClip clip = null;
         switch (type)
         {
-            case EventType.AcidRain: clip = AudioManager.Instance.acidRainSFX; break;
-            case EventType.SolarFlare: clip = AudioManager.Instance.solarFlareSFX; break;
-            case EventType.PowerOutage: clip = AudioManager.Instance.powerOutageSFX; break;
+            case EventType.AcidRain:       clip = AudioManager.Instance.acidRainSFX;       break;
+            case EventType.SolarFlare:     clip = AudioManager.Instance.solarFlareSFX;     break;
+            case EventType.PowerOutage:    clip = AudioManager.Instance.powerOutageSFX;    break;
             case EventType.HyperInflation: clip = AudioManager.Instance.hyperInflationSFX; break;
-            case EventType.TechBoom: clip = AudioManager.Instance.techBoomSFX; break;
+            case EventType.TechBoom:       clip = AudioManager.Instance.techBoomSFX;       break;
         }
 
         if (clip != null)
@@ -118,24 +114,24 @@ public class EventManager : MonoBehaviour
     {
         switch (type)
         {
-            case EventType.AcidRain: return "Acid Rain is falling from the sky!";
-            case EventType.SolarFlare: return "A Solar Flare is disrupting communications!";
-            case EventType.PowerOutage: return "A major Thunderstorm has started!";
+            case EventType.AcidRain:       return "Acid Rain is falling from the sky!";
+            case EventType.SolarFlare:     return "A Solar Flare is disrupting communications!";
+            case EventType.PowerOutage:    return "A major Thunderstorm has started!";
             case EventType.HyperInflation: return "Hyper-inflation is hitting the local economy!";
-            case EventType.TechBoom: return "A localized Tech-Boom is occurring!";
-            default: return "An unusual environmental event is starting!";
+            case EventType.TechBoom:       return "A localized Tech-Boom is occurring!";
+            default:                       return "An unusual environmental event is starting!";
         }
     }
 
     private void EndCurrentEvent()
     {
         Debug.Log($"[EventManager] Event {activeEvent} at {targetTile?.cubeCoords} has ended.");
-        
+
         if (targetTile != null) targetTile.isHyperinflated = false;
 
         activeEvent = EventType.None;
         targetTile = null;
-        
+
         if (currentParticleSystem != null)
         {
             Destroy(currentParticleSystem);
@@ -146,20 +142,17 @@ public class EventManager : MonoBehaviour
     {
         if (activeEvent == EventType.None || targetTile == null) return;
 
-        // Each tile's hazard impact determines how strongly it is hit
         float impact = targetTile.hazardImpact;
         PlayerData owner = targetTile.GetOwner();
         string ownerName = owner != null ? owner.playerName : "Wilderness (None)";
 
-        // Influence/Gold suppression (Income is derived from influence)
         int suppressionPenalty = Mathf.RoundToInt(15 * impact);
 
         switch (activeEvent)
         {
             case EventType.AcidRain:
                 if (dealDamage) Debug.Log($"[EventManager] Acid Rain hitting {targetTile.cubeCoords}. Owner: {ownerName}");
-                
-                // Penalty to influence (and thus gold) - Always applied, but reported on turn start
+
                 targetTile.influenceSuppression += suppressionPenalty;
                 if (owner != null && dealDamage)
                 {
@@ -168,13 +161,13 @@ public class EventManager : MonoBehaviour
 
                 if (dealDamage)
                 {
-                    if (targetTile.placedTower != null) 
+                    if (targetTile.placedTower != null)
                     {
                         float dmg = 5f * impact;
                         targetTile.placedTower.currentDurability -= dmg;
                         Debug.Log($" > Corroding Tower: {targetTile.placedTower.name} (-{dmg} HP)");
                     }
-                    if (targetTile.placedWire != null) 
+                    if (targetTile.placedWire != null)
                     {
                         float dmg = 3f * impact;
                         targetTile.placedWire.currentDurability -= dmg;
@@ -197,8 +190,7 @@ public class EventManager : MonoBehaviour
 
             case EventType.PowerOutage:
                 if (dealDamage) Debug.Log($"[EventManager] Thunderstorm over {targetTile.cubeCoords}. Owner: {ownerName}");
-                
-                // Penalty to influence (and thus gold income)
+
                 targetTile.influenceSuppression += suppressionPenalty;
                 if (owner != null && dealDamage)
                 {
@@ -207,14 +199,13 @@ public class EventManager : MonoBehaviour
 
                 if (dealDamage)
                 {
-                    // 50% chance to CRITICALLY DESTROY buildings/infrastructure
                     float disasterRoll = Random.value;
                     if (disasterRoll < 0.5f)
                     {
                         if (targetTile.placedTower != null)
                         {
                             Debug.Log(" > [CRITICAL] Lightning struck the Tower! It is now DESTROYED.");
-                            targetTile.placedTower.TakeDamage(999f); 
+                            targetTile.placedTower.TakeDamage(999f);
                         }
                         if (targetTile.placedStructure != null)
                         {
@@ -228,7 +219,6 @@ public class EventManager : MonoBehaviour
                         }
                     }
 
-                    // 50% chance to kill unit on tile
                     if (targetTile.placedUnit != null)
                     {
                         if (Random.value < 0.5f)
@@ -245,9 +235,8 @@ public class EventManager : MonoBehaviour
                 break;
 
             case EventType.HyperInflation:
-                // Always set flag so mid-turn expansions pick it up immediately
                 targetTile.isHyperinflated = true;
-                
+
                 if (owner != null && dealDamage)
                 {
                     Debug.Log($"[EventManager] Hyper-Inflation hits {targetTile.cubeCoords}! LOCAL GOLD BOOST ACTIVE for {owner.playerName} (+200% revenue contribution).");
@@ -257,7 +246,7 @@ public class EventManager : MonoBehaviour
                     Debug.Log($"[EventManager] Hyper-Inflation hits {targetTile.cubeCoords}, but it's Wilderness. No one gains gold.");
                 }
                 break;
-            
+
             case EventType.TechBoom:
                 if (dealDamage) Debug.Log($"[EventManager] Tech Boom at {targetTile.cubeCoords}. Owner: {ownerName} | Visual explosion effect triggering.");
                 break;
@@ -272,16 +261,18 @@ public class EventManager : MonoBehaviour
         GameObject prefab = null;
         switch (activeEvent)
         {
-            case EventType.AcidRain: prefab = rainParticlePrefab; break;
-            case EventType.SolarFlare: prefab = solarFlareParticlePrefab; break;
-            case EventType.PowerOutage: prefab = powerOutageParticlePrefab; break;
+            case EventType.AcidRain:       prefab = rainParticlePrefab;          break;
+            case EventType.SolarFlare:     prefab = solarFlareParticlePrefab;    break;
+            case EventType.PowerOutage:    prefab = powerOutageParticlePrefab;   break;
             case EventType.HyperInflation: prefab = hyperInflationParticlePrefab; break;
-            case EventType.TechBoom: prefab = techBoomParticlePrefab; break;
+            case EventType.TechBoom:       prefab = techBoomParticlePrefab;      break;
         }
 
         if (prefab != null)
         {
-            // Use the prefab's authored rotation so things like the horizontal SunRay stay horizontal
+            // Use the prefab's authored rotation so things like the horizontal SunRay stay horizontal.
+            // Instantiate with NO parent so the prefab's own active state is used directly —
+            // avoids the inactive-parent problem where spawned objects inherit a disabled state.
             Quaternion spawnRot = prefab.transform.rotation;
             Vector3 spawnPos = targetTile.transform.position;
 
@@ -297,47 +288,69 @@ public class EventManager : MonoBehaviour
                 spawnPos += Vector3.up * 2.74f;
 
             currentParticleSystem = Instantiate(prefab, spawnPos, spawnRot, transform);
-            
+
             float hexScale = GridManager.Instance != null ? GridManager.Instance.hexSize : 1f;
             float maxAuthoredSize = 0.5f;
 
-            // Force hierarchy scaling and find the authored shape's maximum extent
-            foreach (var ps in currentParticleSystem.GetComponentsInChildren<ParticleSystem>())
+            foreach (var ps in currentParticleSystem.GetComponentsInChildren<ParticleSystem>(true))
             {
                 var main = ps.main;
                 main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+
                 var shape = ps.shape;
                 if (shape.enabled)
                 {
-                    if (shape.shapeType == ParticleSystemShapeType.Sphere || shape.shapeType == ParticleSystemShapeType.Circle || shape.shapeType == ParticleSystemShapeType.Hemisphere)
+                    if (shape.shapeType == ParticleSystemShapeType.Sphere ||
+                        shape.shapeType == ParticleSystemShapeType.Circle ||
+                        shape.shapeType == ParticleSystemShapeType.Hemisphere)
                     {
                         maxAuthoredSize = Mathf.Max(maxAuthoredSize, shape.radius * 2f);
                     }
-                    else if (shape.shapeType == ParticleSystemShapeType.Box || shape.shapeType == ParticleSystemShapeType.Rectangle)
+                    else if (shape.shapeType == ParticleSystemShapeType.Box ||
+                             shape.shapeType == ParticleSystemShapeType.Rectangle)
                     {
                         float boxMax = Mathf.Max(shape.scale.x, Mathf.Max(shape.scale.y, shape.scale.z));
                         maxAuthoredSize = Mathf.Max(maxAuthoredSize, boxMax);
                     }
                 }
 
-                // Make the Thunderstorm (PowerOutage) cloud 3D-ish by forcing it to face the camera as a Billboard instead of a flat ground decal
-                var renderer = ps.GetComponent<ParticleSystemRenderer>();
-                if (renderer != null && activeEvent == EventType.PowerOutage)
+                var psr = ps.GetComponent<ParticleSystemRenderer>();
+                if (psr != null)
                 {
-                    renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                    if (activeEvent == EventType.PowerOutage)
+                        psr.renderMode = ParticleSystemRenderMode.Billboard;
+
+                    // Always draw event particles on top of fog mesh and fog cloud particles
+                    psr.sortingLayerName = "Default";
+                    psr.sortingOrder = 10;
                 }
             }
 
-            // Fix the one-sided bug on Solar Flare by generating a full "X" cross of duplicates so it's visible perfectly from all 4 3D sides!
+            // Fix the one-sided bug on Solar Flare by generating a full "X" cross of duplicates
+            // so it's visible from all four sides in 3D.
             if (activeEvent == EventType.SolarFlare)
             {
-                Instantiate(prefab, spawnPos, spawnRot * Quaternion.Euler(0, 90, 0), currentParticleSystem.transform).transform.localScale = Vector3.one;
-                Instantiate(prefab, spawnPos, spawnRot * Quaternion.Euler(0, 180, 0), currentParticleSystem.transform).transform.localScale = Vector3.one;
-                Instantiate(prefab, spawnPos, spawnRot * Quaternion.Euler(0, 270, 0), currentParticleSystem.transform).transform.localScale = Vector3.one;
+                Quaternion[] solarRotations = new Quaternion[]
+                {
+                    spawnRot * Quaternion.Euler(0,  90, 0),
+                    spawnRot * Quaternion.Euler(0, 180, 0),
+                    spawnRot * Quaternion.Euler(0, 270, 0),
+                };
+
+                foreach (Quaternion rot in solarRotations)
+                {
+                    GameObject clone = Instantiate(prefab, spawnPos, rot, currentParticleSystem.transform);
+                    clone.transform.localScale = Vector3.one;
+
+                    foreach (var psr in clone.GetComponentsInChildren<ParticleSystemRenderer>(true))
+                    {
+                        psr.sortingLayerName = "Default";
+                        psr.sortingOrder = 10;
+                    }
+                }
             }
 
-            // Target size is roughly exactly one hex tile diameter
-            float targetSize = hexScale * 1.75f; 
+            float targetSize = hexScale * 1.75f;
             float dynamicScale = targetSize / maxAuthoredSize;
 
             if (activeEvent == EventType.TechBoom)
@@ -361,33 +374,35 @@ public class EventManager : MonoBehaviour
         GameObject particles = new GameObject("Procedural_Disaster_Particles");
         particles.transform.SetParent(transform);
         particles.transform.position = targetTile.transform.position + Vector3.up * 5f;
-        
+
         var ps = particles.AddComponent<ParticleSystem>();
         var main = ps.main;
         main.startLifetime = 2f;
         main.startSpeed = 5f;
         main.startSize = 0.3f;
         main.maxParticles = 500;
-        
+
         var emission = ps.emission;
         emission.rateOverTime = 100f;
 
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Box;
-        shape.scale = new Vector3(2f, 2f, 1f); // Cover roughly one hex
+        shape.scale = new Vector3(2f, 2f, 1f);
         shape.rotation = new Vector3(90, 0, 0);
 
         switch (activeEvent)
         {
-            case EventType.AcidRain:
-                main.startColor = new Color(0.2f, 0.8f, 0.2f, 0.5f);
-                break;
-            case EventType.SolarFlare:
-                main.startColor = new Color(1f, 0.5f, 0f, 0.5f);
-                break;
-            case EventType.PowerOutage:
-                main.startColor = new Color(0.1f, 0.1f, 0.1f, 0.5f);
-                break;
+            case EventType.AcidRain:    main.startColor = new Color(0.2f, 0.8f, 0.2f, 0.5f); break;
+            case EventType.SolarFlare:  main.startColor = new Color(1f, 0.5f, 0f,   0.5f); break;
+            case EventType.PowerOutage: main.startColor = new Color(0.1f, 0.1f, 0.1f, 0.5f); break;
+        }
+
+        // Procedural particles also render above fog
+        var psr = particles.GetComponent<ParticleSystemRenderer>();
+        if (psr != null)
+        {
+            psr.sortingLayerName = "Default";
+            psr.sortingOrder = 10;
         }
 
         currentParticleSystem = particles;
@@ -411,8 +426,11 @@ public class ParticleLoopTimer : MonoBehaviour
     {
         if (particleSystems == null) return;
 
-        // Offset the explosion slightly on a different X or Y (or Z) each time it loops to make it look scattered!
-        transform.position = originalPosition + new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f));
+        transform.position = originalPosition + new Vector3(
+            Random.Range(-1f, 1f),
+            Random.Range(-1f, 1f),
+            Random.Range(-1f, 1f)
+        );
 
         foreach (var ps in particleSystems)
         {
