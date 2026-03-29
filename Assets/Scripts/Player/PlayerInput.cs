@@ -30,91 +30,57 @@ public class PlayerInput : MonoBehaviour
             }
 
             Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+            RaycastHit[] hits = Physics.RaycastAll(ray, 1000f);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if (hits.Length > 0)
             {
-                Unit unit = hit.collider.GetComponentInParent<Unit>();
-                if (unit != null)
+                // 1. Prioritize Units first if they are anywhere in the click ray
+                foreach (var hit in hits)
                 {
-                    // BLOCK: Only select units if it's the player's turn 
-                    if (TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null && !TurnManager.Instance.currentPlayer.isAI)
+                    Unit unit = hit.collider.GetComponentInParent<Unit>();
+                    if (unit != null)
                     {
-                        // Ensure panels refresh on EVERY click, even if already selected
-                        if (UnitActionPanel.Instance != null)
-                            UnitActionPanel.Instance.Open(unit);
-
-                        BuildingUIManager.Instance.Close();
-                        if (DetailPanel.Instance != null) DetailPanel.Instance.ShowUnit(unit);
-
-                        if (selectedUnit != unit)
+                        if (TurnManager.Instance != null && TurnManager.Instance.currentPlayer != null && !TurnManager.Instance.currentPlayer.isAI)
                         {
-                            SelectUnit(unit);
+                            if (UnitActionPanel.Instance != null) UnitActionPanel.Instance.Open(unit);
+                            BuildingUIManager.Instance.Close();
+                            if (DetailPanel.Instance != null) DetailPanel.Instance.ShowUnit(unit);
+                            if (selectedUnit != unit) SelectUnit(unit);
+                            return;
                         }
                         return;
                     }
-                    else
+                }
+
+                // 2. Then try to find specific buildings being clicked directly
+                foreach (var hit in hits)
+                {
+                    SignalNode business = hit.collider.GetComponentInParent<SignalNode>();
+                    if (business != null) { DeselectUnit(); BuildingUIManager.Instance.Open(business); UnitActionPanel.Instance.Close(); return; }
+
+                    StructureNode structure = hit.collider.GetComponentInParent<StructureNode>();
+                    if (structure != null) { DeselectUnit(); BuildingUIManager.Instance.Open(structure); UnitActionPanel.Instance.Close(); return; }
+
+                    TowerNode tower = hit.collider.GetComponentInParent<TowerNode>();
+                    if (tower != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tower); UnitActionPanel.Instance.Close(); return; }
+                }
+
+                // 3. Finally, fallback to interacting with the HexTile base
+                foreach (var hit in hits)
+                {
+                    HexTile tile = hit.collider.GetComponent<HexTile>();
+                    if (tile != null)
                     {
-                        Debug.Log("[PlayerInput] Cannot select unit: It is currently the AI's turn!");
+                        if (tile.placedStructure != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tile.placedStructure); UnitActionPanel.Instance.Close(); return; }
+                        if (tile.placedTower != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tile.placedTower); UnitActionPanel.Instance.Close(); return; }
+                        if (tile.placedSignalNode != null) { DeselectUnit(); BuildingUIManager.Instance.Open(tile.placedSignalNode); UnitActionPanel.Instance.Close(); return; }
+                        
+                        // Hit an empty tile
+                        DeselectAndClose();
                         return;
                     }
                 }
-
-                SignalNode business = hit.collider.GetComponentInParent<SignalNode>();
-                if (business != null)
-                {
-                    DeselectUnit();
-                    BuildingUIManager.Instance.Open(business);
-                    UnitActionPanel.Instance.Close();
-                    return;
-                }
-
-                StructureNode structure = hit.collider.GetComponentInParent<StructureNode>();
-                if (structure != null)
-                {
-                    DeselectUnit();
-                    BuildingUIManager.Instance.Open(structure);
-                    UnitActionPanel.Instance.Close();
-                    return;
-                }
-
-                TowerNode tower = hit.collider.GetComponentInParent<TowerNode>();
-                if (tower != null)
-                {
-                    DeselectUnit();
-                    BuildingUIManager.Instance.Open(tower);
-                    UnitActionPanel.Instance.Close();
-                    return;
-                }
-
-                // --- NEW TILE CLICK FALLBACK ---
-                HexTile tile = hit.collider.GetComponent<HexTile>();
-                if (tile != null)
-                {
-                    if (tile.placedStructure != null)
-                    {
-                        DeselectUnit();
-                        BuildingUIManager.Instance.Open(tile.placedStructure);
-                        UnitActionPanel.Instance.Close();
-                        return;
-                    }
-                    if (tile.placedTower != null)
-                    {
-                        DeselectUnit();
-                        BuildingUIManager.Instance.Open(tile.placedTower);
-                        UnitActionPanel.Instance.Close();
-                        return;
-                    }
-                    if (tile.placedSignalNode != null)
-                    {
-                        DeselectUnit();
-                        BuildingUIManager.Instance.Open(tile.placedSignalNode);
-                        UnitActionPanel.Instance.Close();
-                        return;
-                    }
-                }
-
-                // If we reach here, we've clicked something that isn't a Unit or a Building (e.g., Ground)
-                DeselectAndClose();
             }
             else
             {
@@ -131,10 +97,16 @@ public class PlayerInput : MonoBehaviour
                 return;
 
             Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out RaycastHit hit))
-                return;
+            RaycastHit[] hits = Physics.RaycastAll(ray, 1000f);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-            HexTile tile = hit.collider.GetComponent<HexTile>();
+            HexTile tile = null;
+            foreach (var hit in hits)
+            {
+                tile = hit.collider.GetComponent<HexTile>();
+                if (tile != null) break;
+            }
+
             if (tile != null)
             {
                 if (selectedUnit.CanMoveTo(tile, selectedUnit.movementRemaining))
@@ -185,17 +157,25 @@ public class PlayerInput : MonoBehaviour
         }
 
         Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        RaycastHit[] hits = Physics.RaycastAll(ray, 1000f);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-        if (!Physics.Raycast(ray, out RaycastHit hit))
+        HexTile tile = null;
+        foreach (var hit in hits)
         {
-            ClearHighlights();
-            hoveredTile = null;
-            return;
+            tile = hit.collider.GetComponent<HexTile>();
+            if (tile != null) break;
         }
 
-        HexTile tile = hit.collider.GetComponent<HexTile>();
         if (tile == null || tile == hoveredTile)
+        {
+            if (tile == null)
+            {
+                ClearHighlights();
+                hoveredTile = null;
+            }
             return;
+        }
 
         hoveredTile = tile;
         PreviewPath(tile);

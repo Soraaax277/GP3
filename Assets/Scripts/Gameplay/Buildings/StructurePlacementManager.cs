@@ -117,10 +117,11 @@ public class StructurePlacementManager : MonoBehaviour
             if (tile != null)
             {
                 hoveredTile = tile;
-                
-                // ALWAYS place on the hovered tile's position. 
-                // DO NOT use average position for multi-tile buildings, as it offsets the pivot.
-                float surfaceY = GetTileSurfaceY(tile) + _hologramBottomOffset;
+
+                StructureNode holoNode = hologram != null ? hologram.GetComponent<StructureNode>() : null;
+                float extraLift = holoNode != null ? holoNode.verticalOffset : 0f;
+
+                float surfaceY = GetTileSurfaceY(tile) + _hologramBottomOffset + extraLift;
                 hologram.transform.position = new Vector3(tile.transform.position.x, surfaceY, tile.transform.position.z);
 
                 bool possible = CanPlace(tile);
@@ -204,7 +205,8 @@ public class StructurePlacementManager : MonoBehaviour
         if (owner.resources < cost) return;
         owner.resources -= cost;
 
-        float surfaceY = GetTileSurfaceY(hoveredTile) + _hologramBottomOffset;
+        float extraLift = (prefabNode != null) ? prefabNode.verticalOffset : 0f;
+        float surfaceY = GetTileSurfaceY(hoveredTile) + _hologramBottomOffset + extraLift;
 
         GameObject realStructure = Instantiate(
             currentPrefab,

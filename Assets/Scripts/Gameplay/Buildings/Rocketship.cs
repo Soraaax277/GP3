@@ -3,10 +3,28 @@ using System.Collections.Generic;
 
 public class Rocketship : StructureNode
 {
+    private void Awake()
+    {
+        tilesOccupied = 1;
+        expansionRadius = 3; 
+        visionRange = 8;         // Big vision for the end-game structure
+        autoScaleToFit = true;
+        verticalOffset = 10f;    // Lifts the rocket above ground in all 3 hologram/build states
+    }
+
+    private void Start()
+    {
+        AutoScaleToFitTiles();
+        transform.localScale *= 8.0f;
+
+        // Also apply the vertical lift directly on the built structure (Start fires after Initialize)
+        Vector3 pos = transform.position;
+        pos.y += verticalOffset;
+        transform.position = pos;
+    }
+
     public override void Initialize(List<HexTile> tiles, PlayerData player)
     {
-        tilesOccupied = 2; // Large specialized structure
-        expansionRadius = 3; 
         baseGoldCost = 500;
         base.Initialize(tiles, player);
     }

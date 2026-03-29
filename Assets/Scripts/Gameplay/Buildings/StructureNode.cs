@@ -17,6 +17,7 @@ public abstract class StructureNode : MonoBehaviour, IInfrastructure, IPowerable
     [Header("Size Settings")]
     public int   tilesOccupied  = 1;  // 1, 2, or 4 tiles 
     public bool  autoScaleToFit = true; // Automatically scale to fit the occupied tiles
+    public float verticalOffset = 0f;  // Extra Y lift for buildings whose pivot is off-center
 
     [Header("Expansion Settings")]
     public int expansionRadius     = 2; // claimed hexes when built

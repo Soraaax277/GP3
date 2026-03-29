@@ -16,20 +16,23 @@ public class GridTransitionManager : MonoBehaviour
     public float glitchOutDuration = 1.2f;  // Reveal animation (entering a scene)
     public float maxXOffset = 12f;           // Max horizontal glitch shift in pixels
 
-    [Header("Fallback Panel")]
+    [Header("Fallback Panel / Loading Screen")]
     [Tooltip("Assign the Image GameObject that sits behind the strips. Add a CanvasGroup to it manually.")]
     public Image fallbackPanel;
-    [Tooltip("Color of the fallback panel.")]
-    public Color fallbackColor = Color.black;
-    [Tooltip("Seconds of slow loading before the fallback panel fades in.")]
-    public float fallbackDelay = 1.5f;
+    [Tooltip("The 4 loading screen UI Images to cycle through.")]
+    public Image[] loadingImages;
+    [Tooltip("How fast to swap between loading images (in seconds).")]
+    public float imageCycleSpeed = 0.5f;
+
+    [Tooltip("Color of the fallback panel. Set to white if using sprites!")]
+    public Color fallbackColor = Color.white;
     [Tooltip("How long the fallback panel takes to gently fade in.")]
-    public float fallbackFadeInDuration = 0.6f;
+    public float fallbackFadeInDuration = 0.4f;
     [Tooltip("How long the fallback panel takes to fade out alongside the glitch-out.")]
     public float fallbackFadeOutDuration = 0.8f;
 
     private CanvasGroup      fallbackCanvasGroup;
-    private Coroutine        fallbackCoroutine;
+    private Coroutine        imageCycleCoroutine;
 
     private List<RectTransform> strips     = new List<RectTransform>();
     private List<CanvasGroup>   stripGroups = new List<CanvasGroup>();
@@ -74,18 +77,32 @@ public class GridTransitionManager : MonoBehaviour
         fallbackCanvasGroup = fallbackPanel.GetComponent<CanvasGroup>();
         if (fallbackCanvasGroup == null)
         {
-            Debug.LogWarning("GridTransitionManager: fallbackPanel has no CanvasGroup. Add one manually.");
-            fallbackCanvasGroup = null;
+            // Auto-add it if they forgot, so the fade math never breaks and traps the player
+            fallbackCanvasGroup = fallbackPanel.gameObject.AddComponent<CanvasGroup>();
         }
 
         if (fallbackCanvasGroup != null)
+        {
             fallbackCanvasGroup.alpha = 0f;
+            fallbackCanvasGroup.blocksRaycasts = false;
+            fallbackCanvasGroup.interactable = false;
+        }
+        
+        // Hide the entire panel immediately so it doesn't block UI or accidentally show up
+        fallbackPanel.gameObject.SetActive(false);
     }
 
     // ── Grid generation ────────────────────────────────────────────────────────
 
     IEnumerator GenerateGridRoutine()
     {
+        if (cellPrefab == null)
+        {
+            Debug.LogError("[GridTransitionManager] cellPrefab is missing in the Inspector! The glitch wipe cannot generate.");
+            isGridGenerated = false;
+            yield break;
+        }
+
         RectTransform rt = GetComponent<RectTransform>();
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
@@ -128,43 +145,32 @@ public class GridTransitionManager : MonoBehaviour
 
     public void LoadScene(string sceneName)
     {
-        if (!isGridGenerated)
-        {
-            Debug.LogWarning("Grid not ready yet, loading instantly.");
-            SceneManager.LoadScene(sceneName);
-            return;
-        }
-
-        AnimateGrid(true, () =>
-        {
-            StartCoroutine(LoadSceneWithFallback(sceneName));
-        });
+        // The new flow: We do NOT glitch in and block the screen with static bars while loading.
+        // We instantly bring up the custom animated loading screen.
+        // Once loading is finished, the glitch-out plays to dynamically reveal the game world!
+        StartCoroutine(LoadSceneWithFallback(sceneName));
     }
 
     // ── Scene loading with fallback ────────────────────────────────────────────
 
-    // Starts the async load and kicks off a countdown. If the scene takes
-    // longer than fallbackDelay, the fallback panel gently fades in to cover
-    // the gap. Once loading is done, AnimateGrid(false) and the panel fade-out
-    // both run in parallel.
+    // Starts the async load and instantly brings up the loading screen.
+    // The loading screen cycles through its images organically while waiting.
     private IEnumerator LoadSceneWithFallback(string sceneName)
     {
+        // Force the panel on just in case it was disabled
+        if (fallbackPanel != null) fallbackPanel.gameObject.SetActive(true);
+
+        // Start fading in the loading screen and kicking off the animation cycle immediately
+        FadeFallbackPanel(1f, fallbackFadeInDuration);
+        
+        if (imageCycleCoroutine != null) StopCoroutine(imageCycleCoroutine);
+        imageCycleCoroutine = StartCoroutine(CycleLoadingImages());
+
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
         asyncLoad.allowSceneActivation = false;   // Hold until we're ready
 
-        float elapsed       = 0f;
-        bool  panelShown    = false;
-
         while (asyncLoad.progress < 0.9f)          // 0.9 = fully loaded, waiting for activation
         {
-            elapsed += Time.unscaledDeltaTime;
-
-            if (!panelShown && elapsed >= fallbackDelay)
-            {
-                panelShown = true;
-                FadeFallbackPanel(1f, fallbackFadeInDuration);
-            }
-
             yield return null;
         }
 
@@ -172,20 +178,88 @@ public class GridTransitionManager : MonoBehaviour
         asyncLoad.allowSceneActivation = true;
         yield return asyncLoad;                    // Wait one frame for scene to fully activate
 
-        StartCoroutine(AnimateOutAfterLoad(panelShown));
+        // Give the new scene exactly one second to lay out its UI, then immediately drop the curtain!
+        if (sceneName.ToLower().Contains("game") || sceneName.ToLower().Contains("main"))
+        {
+            float maxWait = 1f; // Do NOT freeze for 5 Mississippi seconds.
+            float waited = 0f;
+            while (waited < maxWait)
+            {
+                // Drop the curtain the exact microsecond we spot the UI canvas or TurnManager.
+                GameObject eraCanvas = GameObject.Find("UI_EraCanvas");
+                if (eraCanvas == null) eraCanvas = GameObject.Find("EraCanvas");
+                
+                if (eraCanvas != null && eraCanvas.activeInHierarchy)
+                    break;
+                
+                yield return null;
+                waited += Time.unscaledDeltaTime;
+            }
+        }
+
+        StartCoroutine(AnimateOutAfterLoad());
+    }
+
+    private IEnumerator CycleLoadingImages()
+    {
+        if (loadingImages == null || loadingImages.Length == 0) yield break;
+
+        // Ensure all are aggressively disabled
+        for (int i = 0; i < loadingImages.Length; i++)
+        {
+            if (loadingImages[i] != null) loadingImages[i].gameObject.SetActive(false);
+        }
+
+        int index = 0;
+
+        while (true)
+        {
+            // 1. Turn on the current image
+            if (loadingImages[index] != null) 
+                loadingImages[index].gameObject.SetActive(true);
+
+            // 2. Wait exactly imageCycleSpeed seconds (0.5s by default)
+            yield return new WaitForSecondsRealtime(Mathf.Max(0.1f, imageCycleSpeed)); // Safety net
+
+            // 3. Turn off the current image
+            if (loadingImages[index] != null) 
+                loadingImages[index].gameObject.SetActive(false);
+
+            // 4. Move to the next element (0 -> 1 -> 2 -> 3)
+            index = (index + 1) % loadingImages.Length;
+        }
     }
 
     // ── Animate out + optional panel fade-out ─────────────────────────────────
 
-    private IEnumerator AnimateOutAfterLoad(bool hideFallbackPanel)
+    private IEnumerator AnimateOutAfterLoad()
     {
         yield return new WaitForSecondsRealtime(0.1f);
 
-        // Both the glitch-out and the panel fade-out fire at the same time
-        AnimateGrid(false, null);
+        // If the grid was generated successfully, use it to stylishly reveal the gameplay.
+        // AnimateGrid(false) instantly forces the glitch bars to 100% opacity over the entire screen,
+        // so we can instantly kill the loading screen safely behind them, then flicker open!
+        if (isGridGenerated && cellPrefab != null)
+        {
+            AnimateGrid(false, null);
+        }
 
-        if (hideFallbackPanel)
-            FadeFallbackPanel(0f, fallbackFadeOutDuration);
+        // Clean up the loading icons
+        if (imageCycleCoroutine != null) StopCoroutine(imageCycleCoroutine);
+        
+        if (loadingImages != null)
+        {
+            for (int i = 0; i < loadingImages.Length; i++)
+            {
+                if (loadingImages[i] != null) 
+                    loadingImages[i].gameObject.SetActive(false);
+            }
+        }
+
+        // The glitch bars are heavily populated right now, so we can hide the panel
+        // while it's safely obscured behind the animation.
+        FadeFallbackPanel(0f, fallbackFadeOutDuration);
+        yield return new WaitForSecondsRealtime(fallbackFadeOutDuration);
     }
 
     // ── Fallback panel tween helper ────────────────────────────────────────────
@@ -194,10 +268,19 @@ public class GridTransitionManager : MonoBehaviour
     {
         if (fallbackCanvasGroup == null) return;
 
+        if (targetAlpha > 0f) fallbackCanvasGroup.blocksRaycasts = true;
+
         DOTween.Kill(fallbackCanvasGroup);
         fallbackCanvasGroup
             .DOFade(targetAlpha, duration)
             .SetEase(targetAlpha > 0f ? Ease.OutQuad : Ease.InQuad)
+            .OnComplete(() => {
+                if (targetAlpha <= 0f)
+                {
+                    fallbackCanvasGroup.blocksRaycasts = false;
+                    if (fallbackPanel != null) fallbackPanel.gameObject.SetActive(false);
+                }
+            })
             .SetUpdate(true);
     }
 
