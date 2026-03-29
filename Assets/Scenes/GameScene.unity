@@ -92142,7 +92142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6eced287b3b099f42b3e73dc2ccc8f5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EventManager
-  eventSpawnChance: 1
+  eventSpawnChance: 0.2
   activeEvent: 0
   eventDurationLeft: 0
   rainParticlePrefab: {fileID: 7634290614099731919, guid: 18e3924cdb751f746b8b122978c2b13a, type: 3}
