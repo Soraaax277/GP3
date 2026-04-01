@@ -26,8 +26,26 @@ public class FeedbackController : MonoBehaviour
         beam.transform.localScale = new Vector3(0.1f, 5f, 0.1f);
         
         Renderer r = beam.GetComponent<Renderer>();
-        r.material = new Material(Shader.Find("Unlit/Transparent"));
-        r.material.color = new Color(technicianColor.r, technicianColor.g, technicianColor.b, 0.6f);
+        
+        // Fix for URP Build: Replace legend 'Unlit/Transparent' with URP Unlit
+        Shader beamShader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (beamShader == null) beamShader = Shader.Find("Unlit/Transparent");
+        
+        Material mat = new Material(beamShader);
+        Color color = new Color(technicianColor.r, technicianColor.g, technicianColor.b, 0.6f);
+        
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+        else mat.color = color;
+
+        // Force transparency properties for URP
+        mat.SetFloat("_Surface", 1);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        
+        r.material = mat;
         
         if (beam.TryGetComponent<Collider>(out Collider col)) Destroy(col);
         
@@ -44,8 +62,15 @@ public class FeedbackController : MonoBehaviour
             spark.transform.localScale = Vector3.one * 0.15f;
             
             Renderer r = spark.GetComponent<Renderer>();
-            r.material = new Material(Shader.Find("Unlit/Color"));
-            r.material.color = wireSpecialistColor;
+            
+            Shader sparkShader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (sparkShader == null) sparkShader = Shader.Find("Unlit/Color");
+            
+            Material mat = new Material(sparkShader);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", wireSpecialistColor);
+            else mat.color = wireSpecialistColor;
+            
+            r.material = mat;
             
             if (spark.TryGetComponent<Collider>(out Collider col)) Destroy(col);
             
@@ -65,8 +90,24 @@ public class FeedbackController : MonoBehaviour
         flash.transform.localScale = Vector3.one * 2f;
         
         Renderer r = flash.GetComponent<Renderer>();
-        r.material = new Material(Shader.Find("Unlit/Transparent"));
-        r.material.color = new Color(1f, 0f, 0f, 0.5f);
+        
+        Shader flashShader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (flashShader == null) flashShader = Shader.Find("Unlit/Transparent");
+        
+        Material mat = new Material(flashShader);
+        Color flashColor = new Color(1f, 0f, 0f, 0.5f);
+        
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", flashColor);
+        else mat.color = flashColor;
+
+        mat.SetFloat("_Surface", 1);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        
+        r.material = mat;
         
         if (flash.TryGetComponent<Collider>(out Collider col)) Destroy(col);
         StartCoroutine(FadeAndDestroy(flash, 0.5f));
@@ -85,8 +126,15 @@ public class FeedbackController : MonoBehaviour
             star.transform.localScale = Vector3.one * 0.25f;
             
             Renderer r = star.GetComponent<Renderer>();
-            r.material = new Material(Shader.Find("Unlit/Color"));
-            r.material.color = levelUpColor;
+            
+            Shader starShader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (starShader == null) starShader = Shader.Find("Unlit/Color");
+            
+            Material mat = new Material(starShader);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", levelUpColor);
+            else mat.color = levelUpColor;
+            
+            r.material = mat;
             
             if (star.TryGetComponent<Collider>(out Collider col)) Destroy(col);
             StartCoroutine(SparkRoutine(star, (ringPos + Vector3.up * 0.5f).normalized));
@@ -97,8 +145,24 @@ public class FeedbackController : MonoBehaviour
         beam.transform.position = position + Vector3.up * 3f;
         beam.transform.localScale = new Vector3(0.5f, 3f, 0.5f);
         Renderer beamR = beam.GetComponent<Renderer>();
-        beamR.material = new Material(Shader.Find("Unlit/Transparent"));
-        beamR.material.color = new Color(levelUpColor.r, levelUpColor.g, levelUpColor.b, 0.4f);
+        
+        Shader levelShader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (levelShader == null) levelShader = Shader.Find("Unlit/Transparent");
+        
+        Material matB = new Material(levelShader);
+        Color beamCol = new Color(levelUpColor.r, levelUpColor.g, levelUpColor.b, 0.4f);
+        
+        if (matB.HasProperty("_BaseColor")) matB.SetColor("_BaseColor", beamCol);
+        else matB.color = beamCol;
+
+        matB.SetFloat("_Surface", 1);
+        matB.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        matB.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        matB.SetInt("_ZWrite", 0);
+        matB.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        matB.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
+        beamR.material = matB;
         if (beam.TryGetComponent<Collider>(out Collider colB)) Destroy(colB);
         StartCoroutine(FadeAndDestroy(beam, 1.2f));
     }

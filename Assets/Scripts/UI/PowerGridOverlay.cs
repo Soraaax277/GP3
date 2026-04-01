@@ -40,8 +40,20 @@ public class PowerGridOverlay : MonoBehaviour
         meshFilter.mesh = mesh;
         
         // Use a simple material that supports vertex colors and scrolling
-        meshRenderer.material = new Material(Shader.Find("Unlit/Transparent"));
+        // Fix for URP Build: Replace legacy 'Unlit/Transparent' with URP Unlit
+        Shader overlayShader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (overlayShader == null) overlayShader = Shader.Find("Unlit/Transparent");
+        
+        meshRenderer.material = new Material(overlayShader);
         meshRenderer.material.color = Color.white;
+        
+        // Force transparency for URP
+        meshRenderer.material.SetFloat("_Surface", 1);
+        meshRenderer.material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        meshRenderer.material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        meshRenderer.material.SetInt("_ZWrite", 0);
+        meshRenderer.material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        meshRenderer.material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         
         // Hidden by default
         holder.SetActive(false);

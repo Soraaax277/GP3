@@ -97,9 +97,6 @@ public class Technician : Unit
 
         targetWire.IsTechnicianActivated = true;
         
-        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
-
         ActionLogUI.PostFiltered(owner, "Technician powered up the grid!", ActionLogUI.Colors.Unit);
 
         if (FeedbackController.Instance != null)

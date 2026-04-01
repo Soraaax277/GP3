@@ -93,6 +93,7 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
     {
         if (isDestroyed) return;
         
+        bool wasPoweredAlready = IsPowered;
         IsPowered = powered;
         
         if (visualRenderers != null)
@@ -119,6 +120,13 @@ public class WireNode : MonoBehaviour, IInfrastructure, IPowerable
             foreach (Renderer r in visualRenderers)
             {
                 if (r != null) r.material.color = targetColor;
+            }
+
+            // SFX: Play power-up sound when grid power reaches this wire segment
+            if (powered && !wasPoweredAlready && owner != null && !owner.isAI && 
+                AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
+            {
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
             }
         }
     }

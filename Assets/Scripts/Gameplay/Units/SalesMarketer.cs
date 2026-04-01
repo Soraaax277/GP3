@@ -206,8 +206,24 @@ public class SalesMarketer : Unit
         rangeIndicator.transform.localScale = new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
 
         Renderer rend = rangeIndicator.GetComponent<Renderer>();
-        rend.material = new Material(Shader.Find("Sprites/Default"));
-        rend.material.color = new Color(0.5f, 0f, 1f, 0.25f);
+        
+        Shader indicatorShader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (indicatorShader == null) indicatorShader = Shader.Find("Sprites/Default");
+        
+        Material mat = new Material(indicatorShader);
+        Color col = new Color(0.5f, 0f, 1f, 0.25f);
+        
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", col);
+        else mat.color = col;
+
+        mat.SetFloat("_Surface", 1);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        
+        rend.material = mat;
 
         Destroy(rangeIndicator.GetComponent<Collider>());
     }

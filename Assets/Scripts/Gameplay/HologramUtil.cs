@@ -93,8 +93,26 @@ public static class HologramUtil
             Material[] holoMats = new Material[r.sharedMaterials.Length];
             for (int i = 0; i < holoMats.Length; i++)
             {
-                Material mat = new Material(Shader.Find("Sprites/Default"));
-                mat.color = color;
+                // Replace legacy 'Sprites/Default' with URP Unlit for build compatibility
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (shader == null) shader = Shader.Find("Unlit/Transparent"); // Fallback
+                if (shader == null) shader = Shader.Find("Standard");
+
+                Material mat = new Material(shader);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+                else mat.color = color;
+
+                // Handle transparency for URP shaders
+                if (color.a < 1f)
+                {
+                    mat.SetFloat("_Surface", 1); // 1 = Transparent
+                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    mat.SetInt("_ZWrite", 0);
+                    mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                }
+                
                 holoMats[i] = mat;
             }
 

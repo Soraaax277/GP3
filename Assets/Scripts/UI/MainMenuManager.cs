@@ -111,15 +111,20 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         Instance = this;
 
-        // ── FRESH INSTALL CLEANUP ───────────────────────────────────────────
-        // Ensures that when a player first downloads/runs the game, they don't 
-        // find any "ghost" save data from previous builds or development leaks.
-        if (PlayerPrefs.GetInt("Initialized_Build_v1", 0) == 0)
+        // ── BUILD-SPECIFIC WIPE ─────────────────────────────────────────────
+        // Since Application.buildGuid is not available in your Unity version, 
+        // I've added a unique BUILD_ID. Whenever you prepare a NEW build 
+        // to share, simply changing this ID once will guarantee that every 
+        // player starts with a fresh slate, wiping all old local data.
+        string BUILD_ID = "2026-03-29-V1"; 
+        string buildKey = "CleanSlate_" + BUILD_ID;
+
+        if (PlayerPrefs.GetInt(buildKey, 0) == 0)
         {
             SaveSystem.DeleteSave();
-            PlayerPrefs.SetInt("Initialized_Build_v1", 1);
+            PlayerPrefs.SetInt(buildKey, 1);
             PlayerPrefs.Save();
-            Debug.Log("[MainMenuManager] First run detected. Wiping legacy save data.");
+            Debug.Log($"[MainMenuManager] Fresh Build Detected ({BUILD_ID}). Legacy saves wiped.");
         }
     }
 
@@ -155,7 +160,13 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         }
 
         if (loadGameButton != null)
-            loadGameButton.interactable = SaveSystem.HasSaveData();
+        {
+            // Instead of just graying it out, HIDE the button if no save exists 
+            // to ensure accidental clicks on ghost data are impossible.
+            bool hasSave = SaveSystem.HasSaveData();
+            loadGameButton.gameObject.SetActive(hasSave);
+            loadGameButton.interactable = hasSave;
+        }
 
         if (settingsPanel != null)
         {

@@ -102,8 +102,24 @@ public class WirePlacementManager : MonoBehaviour
             Destroy(hologram.GetComponent<Collider>());
             
             Renderer rend = hologram.GetComponent<Renderer>();
-            rend.material = new Material(Shader.Find("Sprites/Default"));
-            rend.material.color = new Color(1f, 1f, 0f, 0.4f);
+            
+            Shader fallbackShader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (fallbackShader == null) fallbackShader = Shader.Find("Sprites/Default");
+            
+            Material mat = new Material(fallbackShader);
+            Color holoColor = new Color(1f, 1f, 0f, 0.4f);
+            
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", holoColor);
+            else mat.color = holoColor;
+
+            mat.SetFloat("_Surface", 1);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            
+            rend.material = mat;
         }
     }
 
@@ -239,6 +255,9 @@ public class WirePlacementManager : MonoBehaviour
         if (wire == null) wire = wireObj.AddComponent<WireNode>();
         
         wire.Initialize(tile, owner);
+        
+        if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.layWireSFX != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.layWireSFX);
 
         // NOTE: TurnManager.RegisterWire() is now called inside WireNode.Initialize(),
         // so we no longer need to call it here. Left as a comment to avoid confusion

@@ -289,7 +289,19 @@ public class SignalNode : MonoBehaviour
         UpdateRangeVisuals();
 
         Renderer rend = rangeIndicator.GetComponent<Renderer>();
-        rend.material = new Material(Shader.Find("Sprites/Default"));
+        
+        Shader indicatorShader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (indicatorShader == null) indicatorShader = Shader.Find("Sprites/Default");
+        
+        Material mat = new Material(indicatorShader);
+        mat.SetFloat("_Surface", 1);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        
+        rend.material = mat;
 
         Destroy(rangeIndicator.GetComponent<Collider>());
     }
