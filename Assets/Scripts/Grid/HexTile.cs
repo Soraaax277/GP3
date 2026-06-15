@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class HexTile : MonoBehaviour
 {
-    public enum TileType { Land, Water }
+    public enum TileType { Land, Water, City, Road }
 
     public Vector3Int cubeCoords;
     public TileType type = TileType.Land;
@@ -74,7 +74,9 @@ public class HexTile : MonoBehaviour
 
     private void Update()
     {
-        if (rend != null)
+        // Custom shaders (HexRoad, HexConcrete) don't expose _Color — skip the
+        // FOW colour lerp for those tiles to avoid every-frame warning spam.
+        if (rend != null && rend.material.HasProperty("_Color"))
         {
             rend.material.color = Color.Lerp(rend.material.color, targetFowColor, Time.deltaTime * transitionSpeed);
         }
@@ -86,10 +88,23 @@ public class HexTile : MonoBehaviour
         
         // --- FOG OF WAR VISUALS ---
         Color baseTypeColor;
-        if (type == TileType.Water)
-            baseTypeColor = new Color(0.1f, 0.3f, 0.8f, 1f);
-        else
-            baseTypeColor = baseColor;
+        switch (type)
+        {
+            case TileType.Water:
+                baseTypeColor = new Color(0.1f, 0.3f, 0.8f, 1f);
+                break;
+            case TileType.City:
+                // Concrete gray — always uses material color set by GridManager
+                baseTypeColor = new Color(0.54f, 0.54f, 0.56f, 1f);
+                break;
+            case TileType.Road:
+                // Dark tarmac
+                baseTypeColor = new Color(0.35f, 0.33f, 0.30f, 1f);
+                break;
+            default: // Land (grass)
+                baseTypeColor = baseColor;
+                break;
+        }
 
         if (!isExplored)
         {
@@ -246,12 +261,16 @@ public class HexTile : MonoBehaviour
 
     public bool IsOccupied()
     {
-        return type == TileType.Water || placedNode != null || placedUnit != null || placedTower != null || placedStructure != null;
+        // Road and Water tiles can never host player-placed structures or units.
+        return type == TileType.Water || type == TileType.Road ||
+               placedNode != null || placedUnit != null || placedTower != null || placedStructure != null;
     }
 
     public bool IsBuildingBlocked()
     {
-        return type == TileType.Water || placedNode != null || placedTower != null || placedStructure != null;
+        // Road and Water tiles block all placement (env and player buildings alike).
+        return type == TileType.Water || type == TileType.Road ||
+               placedNode != null || placedTower != null || placedStructure != null;
     }
 
     public void ClearEnvironmentalStructures()

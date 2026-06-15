@@ -31,7 +31,7 @@ public class CelShadeFeature : ScriptableRendererFeature
         [Range(0f, 1f)]   public float normalThreshold    = 0.25f;
         [Tooltip("Outline color and opacity (alpha controls blend strength).")]
         [ColorUsage(false, false)]
-        public Color outlineColor = new Color(0.15f, 0.15f, 0.18f); // soft dark, not pure black
+        public Color outlineColor = new Color(0.15f, 0.15f, 0.18f);
         [Range(0f, 1f)]   public float outlineOpacity       = 0.70f;
 
         [Header("Depth Limits (stops halo around island edges)")]
@@ -68,8 +68,6 @@ public class CelShadeFeature : ScriptableRendererFeature
         }
 
         _pass = new CelShadePass(_mat);
-
-        // Runs BEFORE the era post-process features so they grade on top of the cel look
         _pass.renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
     }
 
@@ -77,7 +75,6 @@ public class CelShadeFeature : ScriptableRendererFeature
     {
         if (_mat == null) return;
 
-        // Pack outline color + opacity into a float4
         Color oc = settings.outlineColor;
         _mat.SetFloat(ID_PosterizeSteps,         settings.posterizeSteps);
         _mat.SetFloat(ID_PosterizeStrength,      settings.posterizeStrength);
@@ -96,7 +93,6 @@ public class CelShadeFeature : ScriptableRendererFeature
     class CelShadePass : ScriptableRenderPass
     {
         Material _mat;
-
         public CelShadePass(Material m) { _mat = m; }
 
         class PassData

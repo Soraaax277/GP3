@@ -20,6 +20,12 @@ public class FilmFilterFeature : ScriptableRendererFeature
         [Tooltip("1 = original, 0 = fully greyscale, values above 1 boost saturation.")]
         [Range(0f, 2f)]   public float saturation        = 1.0f;
 
+        [Header("Brightness")]
+        [Tooltip("Overall exposure multiplier. 1 = original, >1 brightens the scene.")]
+        [Range(0.5f, 2f)] public float brightness        = 1.0f;
+        [Tooltip("Extra lift applied only to bright areas. 0 = none, 1 = strong highlight push.")]
+        [Range(0f, 1f)]   public float highlightBoost    = 0.0f;
+
         [Header("Sepia")]
         [Tooltip("0 = no sepia, 1 = full classic sepia tone.")]
         [Range(0f, 1f)]   public float sepiaStrength     = 0.0f;
@@ -62,6 +68,24 @@ public class FilmFilterFeature : ScriptableRendererFeature
 
         [Header("Letterbox")]
         [Range(0f, 0.2f)] public float letterboxAmount    = 0.0f;
+
+        [Header("Square Warp")]
+        [Tooltip("Squishes the scene UVs toward a 1:1 square aspect ratio. " +
+                 "0 = original aspect, 1 = fully square. " +
+                 "The scene geometry is remapped — no black bars are added.")]
+        [Range(0f, 1f)]   public float squareAmount       = 0.0f;
+
+        [Header("Zoetrope")]
+        [Tooltip("Master blend. 0 = off, 1 = full zoetrope look.")]
+        [Range(0f, 1f)]   public float zoetropeStrength   = 0.0f;
+        [Tooltip("Number of slit openings spinning past the screen.")]
+        [Range(1f, 12f)]  public float slitCount          = 4f;
+        [Tooltip("Rotation speed of the drum.")]
+        [Range(0f, 4f)]   public float slitSpeed          = 1.5f;
+        [Tooltip("How wide each slit opening is relative to one drum wall period.")]
+        [Range(0.05f, 0.5f)] public float slitWidth       = 0.15f;
+        [Tooltip("Cylindrical warp — bends the image as if seen on the inner curved wall of the drum.")]
+        [Range(0f, 1f)]   public float cylinderCurve      = 0.30f;
     }
 
     public Settings settings = new Settings();
@@ -71,6 +95,8 @@ public class FilmFilterFeature : ScriptableRendererFeature
     static readonly int ID_ColorTint          = Shader.PropertyToID("_ColorTint");
     static readonly int ID_TintStrength       = Shader.PropertyToID("_TintStrength");
     static readonly int ID_Saturation         = Shader.PropertyToID("_Saturation");
+    static readonly int ID_Brightness         = Shader.PropertyToID("_Brightness");
+    static readonly int ID_HighlightBoost     = Shader.PropertyToID("_HighlightBoost");
     static readonly int ID_SepiaStrength      = Shader.PropertyToID("_SepiaStrength");
     static readonly int ID_FadeStrength       = Shader.PropertyToID("_FadeStrength");
     static readonly int ID_ScanlineIntensity  = Shader.PropertyToID("_ScanlineIntensity");
@@ -88,6 +114,12 @@ public class FilmFilterFeature : ScriptableRendererFeature
     static readonly int ID_ChromaticStrength  = Shader.PropertyToID("_ChromaticStrength");
     static readonly int ID_FlickerIntensity   = Shader.PropertyToID("_FlickerIntensity");
     static readonly int ID_LetterboxAmount    = Shader.PropertyToID("_LetterboxAmount");
+    static readonly int ID_SquareAmount       = Shader.PropertyToID("_SquareAmount");
+    static readonly int ID_ZoetropeStrength   = Shader.PropertyToID("_ZoetropeStrength");
+    static readonly int ID_SlitCount          = Shader.PropertyToID("_SlitCount");
+    static readonly int ID_SlitSpeed          = Shader.PropertyToID("_SlitSpeed");
+    static readonly int ID_SlitWidth          = Shader.PropertyToID("_SlitWidth");
+    static readonly int ID_CylinderCurve      = Shader.PropertyToID("_CylinderCurve");
 
     public override void Create()
     {
@@ -111,6 +143,8 @@ public class FilmFilterFeature : ScriptableRendererFeature
         _mat.SetColor(ID_ColorTint,          settings.colorTint);
         _mat.SetFloat(ID_TintStrength,       settings.tintStrength);
         _mat.SetFloat(ID_Saturation,         settings.saturation);
+        _mat.SetFloat(ID_Brightness,         settings.brightness);
+        _mat.SetFloat(ID_HighlightBoost,     settings.highlightBoost);
         _mat.SetFloat(ID_SepiaStrength,      settings.sepiaStrength);
         _mat.SetFloat(ID_FadeStrength,       settings.fadeStrength);
         _mat.SetFloat(ID_ScanlineIntensity,  settings.scanlineIntensity);
@@ -128,6 +162,12 @@ public class FilmFilterFeature : ScriptableRendererFeature
         _mat.SetFloat(ID_ChromaticStrength,  settings.chromaticStrength);
         _mat.SetFloat(ID_FlickerIntensity,   settings.flickerIntensity);
         _mat.SetFloat(ID_LetterboxAmount,    settings.letterboxAmount);
+        _mat.SetFloat(ID_SquareAmount,       settings.squareAmount);
+        _mat.SetFloat(ID_ZoetropeStrength,   settings.zoetropeStrength);
+        _mat.SetFloat(ID_SlitCount,          settings.slitCount);
+        _mat.SetFloat(ID_SlitSpeed,          settings.slitSpeed);
+        _mat.SetFloat(ID_SlitWidth,          settings.slitWidth);
+        _mat.SetFloat(ID_CylinderCurve,      settings.cylinderCurve);
 
         renderer.EnqueuePass(_pass);
     }

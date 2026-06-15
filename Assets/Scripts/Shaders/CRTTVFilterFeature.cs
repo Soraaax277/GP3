@@ -10,6 +10,9 @@ public class CRTTVFilterFeature : ScriptableRendererFeature
     {
         public Material material;
 
+        [Header("Screen Shape")]
+        [Range(0f, 1.5f)] public float barrelStrength     = 0.35f;  // 0 = flat, higher = more curved/rounded
+
         [Header("CRT Curvature")]
         [Range(0f, 0.5f)] public float curvatureStrength   = 0.02f;  // very subtle - raise to taste
 
@@ -59,6 +62,7 @@ public class CRTTVFilterFeature : ScriptableRendererFeature
     CRTTVFilterPass _pass;
 
     static readonly int ID_CurvatureStrength   = Shader.PropertyToID("_CurvatureStrength");
+    static readonly int ID_BarrelStrength      = Shader.PropertyToID("_BarrelStrength");
     static readonly int ID_ScanlineIntensity   = Shader.PropertyToID("_ScanlineIntensity");
     static readonly int ID_ScanlineThickness   = Shader.PropertyToID("_ScanlineThickness");
     static readonly int ID_PhosphorIntensity   = Shader.PropertyToID("_PhosphorIntensity");
@@ -96,6 +100,7 @@ public class CRTTVFilterFeature : ScriptableRendererFeature
         if (_mat == null) return;
 
         _mat.SetFloat(ID_CurvatureStrength,   settings.curvatureStrength);
+        _mat.SetFloat(ID_BarrelStrength,      settings.barrelStrength);
         _mat.SetFloat(ID_ScanlineIntensity,   settings.scanlineIntensity);
         _mat.SetFloat(ID_ScanlineThickness,   settings.scanlineThickness);
         _mat.SetFloat(ID_PhosphorIntensity,   settings.phosphorIntensity);

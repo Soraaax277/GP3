@@ -46,7 +46,7 @@ Shader "Custom/FogFadeQuad"
             fixed4 frag (v2f i) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i);
-                return _Color; // Pure color, alpha driven by DOTween via mat.color
+                return _Color;
             }
             ENDCG
         }

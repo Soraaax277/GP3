@@ -128,7 +128,7 @@ public class VictoryGridManager : MonoBehaviour
                 if (finalLandValue >= landThreshold)
                 {
                     Vector3Int cubeCoords = AxialToCube(q, r);
-                    GameObject tileObj = Instantiate(hexTilePrefab, worldPos, hexTilePrefab.transform.rotation, transform);
+                    GameObject tileObj = Instantiate(hexTilePrefab, worldPos - worldCenter, hexTilePrefab.transform.rotation, transform);
                     HexTile tile = tileObj.GetComponent<HexTile>();
                     tile.Initialize(cubeCoords);
                     tiles.Add(cubeCoords, tile);
@@ -412,7 +412,7 @@ public class VictoryGridManager : MonoBehaviour
         if (hexTilePrefab == null) return;
         GameObject sandObj = Instantiate(hexTilePrefab, waterTile.transform.position, waterTile.transform.rotation, waterTile.transform);
         sandObj.name = "SandBed";
-        sandObj.transform.localPosition = new Vector3(0f, 0f, 0.01f);
+        sandObj.transform.localPosition = new Vector3(0f, -sandBedDepth, 0f);
         sandObj.transform.localScale = Vector3.one * sandBedScale;
 
         HexTile sandTileScript = sandObj.GetComponent<HexTile>();

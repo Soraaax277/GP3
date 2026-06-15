@@ -15,26 +15,34 @@ MonoBehaviour:
   m_Active: 1
   settings:
     material: {fileID: 2100000, guid: fdf087a4c01a9794b8b10107b668831b, type: 2}
-    colorTint: {r: 1, g: 0.6793479, b: 0.16509432, a: 1}
-    tintStrength: 1
-    saturation: 0.45
-    sepiaStrength: 0.5
-    fadeStrength: 0
+    colorTint: {r: 1, g: 0.6150235, b: 0, a: 1}
+    tintStrength: 0.15
+    saturation: 0
+    brightness: 1.5
+    highlightBoost: 0.5
+    sepiaStrength: 0
+    fadeStrength: 0.15
     scanlineIntensity: 0.1
-    scanlineSpacing: 3
-    scanlineSpeed: 0
+    scanlineSpacing: 2.5
+    scanlineSpeed: 10
     grainIntensity: 0.025
     grainSize: 1
-    scratchIntensity: 0.12
-    overlayStrength: 0.085
+    scratchIntensity: 0.05
+    overlayStrength: 0.05
     creaseIntensity: 0.6
-    dustIntensity: 0.5
+    dustIntensity: 1
     edgeBurn: 0.7
-    vignetteIntensity: 0.35
-    vignetteSmoothness: 0.5
-    chromaticStrength: 1.2
-    flickerIntensity: 0.35
+    vignetteIntensity: 1
+    vignetteSmoothness: 0.75
+    chromaticStrength: 3.5
+    flickerIntensity: 0.5
     letterboxAmount: 0
+    squareAmount: 0
+    zoetropeStrength: 0.05
+    slitCount: 12
+    slitSpeed: 2
+    slitWidth: 0.2
+    cylinderCurve: 0.085
 --- !u!114 &-1881060190609008539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50,15 +58,15 @@ MonoBehaviour:
   m_Active: 1
   settings:
     material: {fileID: 2100000, guid: e4b3569b7ab801b40bf90dcfe050a2be, type: 2}
-    posterizeSteps: 4
+    posterizeSteps: 4.05
     posterizeStrength: 0.75
-    saturationBoost: 0.25
-    outlineThickness: 0
-    depthThreshold: 0.2
+    saturationBoost: 1
+    outlineThickness: 3.25
+    depthThreshold: 0.232
     depthScale: 8
     normalThreshold: 0.25
-    outlineColor: {r: 0.12273052, g: 0.12273052, b: 0.13207549, a: 1}
-    outlineOpacity: 0.7
+    outlineColor: {r: 0.025498405, g: 0.025498405, b: 0.028301895, a: 1}
+    outlineOpacity: 0
     outlineMaxDepth: 0
     outlineMaxDepthDelta: 0
 --- !u!114 &11400000
@@ -138,28 +146,40 @@ MonoBehaviour:
   m_Active: 0
   settings:
     material: {fileID: 2100000, guid: f5d4bd0514cdef34786c514f118621a5, type: 2}
-    exposure: 1.445
-    contrast: 1.55
-    blackCrush: 0
-    tealShadows: 0.05
-    tealMidtones: 0.5
-    neonThreshold: 0.52
+    exposure: 1.25
+    contrast: 1
+    blackCrush: 1
+    minLuminance: 0.04
+    shadowLift: 0.05
+    tealShadows: 1.45
+    neonThreshold: 0.3
     neonBloom: 2
     neonSaturation: 1.8
     neonHuePush: 1.2
-    fogDensity: 0.65
+    neonFlickerAmt: 0.12
+    fogDensity: 2
     chromaticStrength: 0.05
-    sharpness: 0.8
+    caOscillation: 0.3
+    barrelDistort: 0
+    heatHazeStrength: 0.06
+    focusBreathAmt: 0.003
+    sharpness: 1
     grainIntensity: 0.05
-    grainSize: 1
-    vignetteIntensity: 0
-    outlineIntensity: 0.25
-    outlineThickness: 3
+    grainSize: 4
+    vignetteIntensity: 0.75
+    outlineIntensity: 0.5
+    outlineThickness: 2
     outlineColor: {r: 0, g: 0.6603774, b: 0.6085831, a: 1}
-    hexOpacity: 0.3
-    hexPanelWidth: 0.1
-    hexGridScale: 25
-    hexColor: {r: 0, g: 0.82, b: 1, a: 1}
+    scanlineIntensity: 0.06
+    scanlineDensity: 600
+    scanDriftSpeed: 0.4
+    interlaceStrength: 0.22
+    glitchFrequency: 0.15
+    glitchIntensity: 0.6
+    reticleOpacity: 0.5
+    reticleColor: {r: 0, g: 0.9, b: 0.8, a: 1}
+    dataBarOpacity: 1
+    dataBarColor: {r: 0, g: 0.82, b: 1, a: 1}
 --- !u!114 &6936548948182107727
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -204,19 +224,20 @@ MonoBehaviour:
   settings:
     material: {fileID: 2100000, guid: da1d5dc0d51d63c45b512713acb7a8e9, type: 2}
     exposure: 1.5
-    contrast: 1.35
+    contrast: 1.15
     blackCrush: 1
-    saturation: 1.25
-    greenTint: 1.25
-    greenShadowLift: 0.85
-    redDrain: 0.6
-    blueShift: 1
-    highlightBlow: 0.3
+    highlightRolloff: 0.4
+    saturation: 1.5
+    shadowTealStrength: 2
+    shadowLift: 0.3
+    midtoneBalance: 2
+    highlightWarmth: 0.9
+    chromaSmear: 1
     sharpness: 1.2
-    grainIntensity: 0.055
-    grainSize: 1.2
-    vignetteIntensity: 0.2
-    letterboxAmount: 0.07
+    noiseIntensity: 0.04
+    noiseSize: 1.5
+    vignetteIntensity: 0.75
+    letterboxAmount: 0.15
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -258,13 +279,14 @@ MonoBehaviour:
   m_Active: 0
   settings:
     material: {fileID: 2100000, guid: 5d075ee6626788a4a86f8709b5e954a7, type: 2}
+    barrelStrength: 0.15
     curvatureStrength: 0.15
     scanlineIntensity: 0.15
     scanlineThickness: 0.6
     phosphorIntensity: 0.25
     colorBleedStrength: 4
     staticIntensity: 0.03
-    syncWobble: 1
+    syncWobble: 3
     signalRollIntensity: 0.05
     signalRollSpeed: 1
     chromaticStrength: 3
@@ -273,6 +295,6 @@ MonoBehaviour:
     flickerIntensity: 0.15
     saturation: 0.85
     blackLift: 0.05
-    vibrance: 1
+    vibrance: 1.3
     phosphorTint: {r: 0.8026178, g: 1.05, b: 0.8902376, a: 1}
     phosphorTintAmount: 0.25

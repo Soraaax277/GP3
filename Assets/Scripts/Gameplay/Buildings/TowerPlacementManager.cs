@@ -167,8 +167,9 @@ public class TowerPlacementManager : MonoBehaviour
         int cost = GetCurrentTowerCost();
         bool canAfford = owner == null || owner.resources >= cost;
 
-        // Block placement on water. Environmental structures are now clearable.
-        bool environmentBlocked = tile.type == HexTile.TileType.Water;
+        // Block placement on water and road tiles. Environmental structures are now clearable.
+        bool environmentBlocked = tile.type == HexTile.TileType.Water
+                                || tile.type == HexTile.TileType.Road;
 
         canPlace = !occupied && !isBusinessTile && inRange && canAfford && !environmentBlocked;
 

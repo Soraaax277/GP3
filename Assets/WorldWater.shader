@@ -33,6 +33,13 @@ Shader "Custom/URP/WorldWater"
         _SparkleColor    ("Sparkle Color",         Color)            = (1.00, 0.97, 0.88, 1)
         _SparkleIntensity("Sparkle Intensity",     Range(0.0, 3.0))  = 1.6
         _SparklePow      ("Sparkle Tightness",     Range(8.0, 200.0))= 55.0
+
+        [Header(Boat Wake)]
+        _WakeStrength    ("Wake Strength",         Range(0.0, 3.0))  = 1.2
+        _WakeFrequency   ("Wake Frequency",        Range(0.5, 8.0))  = 3.0
+        _WakeSpeed       ("Wake Speed",            Range(0.0, 6.0))  = 2.5
+        _WakeFalloff     ("Wake Falloff",          Range(0.5, 8.0))  = 2.5
+        _WakeWidth       ("Wake Cone Width",       Range(0.0, 1.0))  = 0.55
     }
 
     SubShader
@@ -78,7 +85,22 @@ Shader "Custom/URP/WorldWater"
                 float4 _SparkleColor;
                 float  _SparkleIntensity;
                 float  _SparklePow;
+                float  _WakeStrength;
+                float  _WakeFrequency;
+                float  _WakeSpeed;
+                float  _WakeFalloff;
+                float  _WakeWidth;
             CBUFFER_END
+
+            // Boat wake data — declared at global scope (NOT inside CBUFFER)
+            // so BoatManager can push them via Material.SetVectorArray /
+            // Material.SetInt each frame without being blocked by the SRP Batcher.
+            //   _BoatPositions[i].xyz = world-space boat position
+            //   _BoatForwards[i].xyz  = world-space normalised boat forward direction
+            #define MAX_BOATS 16
+            float4 _BoatPositions[MAX_BOATS];
+            float4 _BoatForwards[MAX_BOATS];
+            int    _BoatCount;
 
             struct Attributes
             {
@@ -176,6 +198,63 @@ Shader "Custom/URP/WorldWater"
             }
 
             // ----------------------------------------------------------
+            // Boat Wake
+            // Computes a V-shaped ripple normal contribution from all
+            // active boats. Each boat generates rings that radiate outward
+            // behind it in a cone, fading with distance.
+            // ----------------------------------------------------------
+            float3 WakeNormal(float2 xz)
+            {
+                float3 wakeN = float3(0, 0, 0);
+                float  t     = _Time.y;
+
+                for (int b = 0; b < _BoatCount && b < MAX_BOATS; b++)
+                {
+                    float2 boatXZ   = _BoatPositions[b].xz;
+                    float2 fwdXZ    = _BoatForwards[b].xz;   // already normalised from C#
+
+                    float2 toFrag   = xz - boatXZ;
+                    float  dist     = length(toFrag);
+
+                    // Skip fragments too far away — avoids divide-by-zero and
+                    // keeps the loop cheap for distant water.
+                    if (dist < 0.001 || dist > 30.0) continue;
+
+                    float2 toFragN  = toFrag / dist;
+
+                    // V-cone mask — dot with NEGATIVE forward (wake is behind the boat).
+                    // _WakeWidth = 0 → narrow V, 1 → full circle.
+                    float alignment = dot(toFragN, -fwdXZ);
+                    float coneMask  = smoothstep(_WakeWidth - 0.35, _WakeWidth + 0.35, alignment);
+
+                    // Radial sine ring that travels outward over time.
+                    float ring = sin(dist * _WakeFrequency - t * _WakeSpeed);
+
+                    // Distance falloff — ripple fades naturally as it spreads.
+                    float falloff = exp(-dist / _WakeFalloff);
+
+                    // Convert ring amplitude to a surface gradient (XZ slope).
+                    // We nudge the sample point and finite-difference the ring.
+                    float  e      = 0.15;
+                    float2 dxDir  = float2(e, 0);
+                    float2 dzDir  = float2(0, e);
+
+                    float ringDX = sin(length(toFrag - dxDir) * _WakeFrequency - t * _WakeSpeed)
+                                   * exp(-length(toFrag - dxDir) / _WakeFalloff);
+                    float ringDZ = sin(length(toFrag - dzDir) * _WakeFrequency - t * _WakeSpeed)
+                                   * exp(-length(toFrag - dzDir) / _WakeFalloff);
+
+                    float slopeX = (ring - ringDX) / e;
+                    float slopeZ = (ring - ringDZ) / e;
+
+                    float strength = _WakeStrength * falloff * coneMask;
+                    wakeN += float3(slopeX, 0, slopeZ) * strength;
+                }
+
+                return wakeN;
+            }
+
+            // ----------------------------------------------------------
             // Vertex
             // ----------------------------------------------------------
             Varyings vert(Attributes IN)
@@ -200,6 +279,14 @@ Shader "Custom/URP/WorldWater"
             {
                 float  t       = _Time.y;
                 float3 normal  = WaveNormal(IN.worldPos.xz, t);
+
+                // Blend boat wake ripples on top of the base wave normal.
+                // WakeNormal returns a world-space XZ gradient; we add it
+                // directly and renormalise so it perturbs the existing waves
+                // rather than replacing them.
+                float3 wake = WakeNormal(IN.worldPos.xz);
+                normal = normalize(normal + float3(wake.x, 0, wake.z));
+
                 float3 viewDir = normalize(GetCameraPositionWS() - IN.worldPos);
 
                 // Base water color (deep → shallow by normal angle)

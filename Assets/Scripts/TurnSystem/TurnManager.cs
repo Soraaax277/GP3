@@ -468,6 +468,7 @@ public class TurnManager : MonoBehaviour
             foreach (var structNode in GetAllStructures())
                 structNode?.UpdateEraVisuals();
             if (GridManager.Instance != null) GridManager.Instance.RefreshEraBuildings(currentEra);
+            BoatManager.Instance?.RefreshEraBoats(currentEra);
 
             if (FeedbackController.Instance != null)
                 FeedbackController.Instance.PlayEraTransition(currentEra.ToString());

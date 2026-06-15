@@ -38,12 +38,9 @@ Shader "Custom/URP/WorldSky"
         [Header(Water)]
         _WaterDeepColor     ("Water Deep Color",        Color)  = (0.08, 0.28, 0.58, 1)
         _WaterShallowColor  ("Water Shallow Color",     Color)  = (0.25, 0.58, 0.82, 1)
-        // How much of the blurred sky reflection shows everywhere (base amount)
         _ReflectBase        ("Reflection Base",         Range(0.0, 1.0))  = 0.55
-        // Extra reflection boost at grazing angles
         _ReflectGrazing     ("Reflection Grazing Boost",Range(0.0, 1.0))  = 0.90
         _WaterFresnel       ("Fresnel Sharpness",       Range(0.5, 5.0))  = 1.8
-        // How faded/desaturated the reflection is (0=full color, 1=very faded)
         _ReflectFade        ("Reflection Fade",         Range(0.0, 1.0))  = 0.30
         _ReflectBlurSize    ("Reflection Blur",         Range(0.0, 0.30)) = 0.10
 
@@ -56,6 +53,13 @@ Shader "Custom/URP/WorldSky"
         _SparkleIntensity   ("Sun Sparkle",             Range(0.0, 2.0))  = 1.0
         _WaterFogColor      ("Water Mist Color",        Color)  = (0.70, 0.88, 0.97, 1)
         _WaterFogDensity    ("Water Mist Density",      Range(0.0, 1.0))  = 0.30
+
+        // ── Day/Night cycle override (driven by DayNightCycle.cs) ──────────
+        [Header(Day Night Override)]
+        // Set _UseSunOverride = 1 to replace the shader's built-in sun orbit
+        // with the direction supplied by _SunDirOverride (world-space, toward sun).
+        _UseSunOverride     ("Use External Sun Dir",    Range(0,1)) = 0
+        _SunDirOverride     ("Sun Dir Override",        Vector) = (0, 1, 0, 0)
     }
 
     SubShader
@@ -122,6 +126,9 @@ Shader "Custom/URP/WorldSky"
                 half   _SparkleIntensity;
                 half4  _WaterFogColor;
                 half   _WaterFogDensity;
+                // Day/Night override
+                float  _UseSunOverride;
+                float4 _SunDirOverride;     // xyz = world-space direction toward sun
             CBUFFER_END
 
             struct Attributes
@@ -184,9 +191,14 @@ Shader "Custom/URP/WorldSky"
 
             // ---------------------------------------------------------------
             // Sun direction
+            // Normally driven by the shader's internal orbit (_SunSpeed).
+            // When _UseSunOverride == 1, uses the direction fed from C# instead.
             // ---------------------------------------------------------------
             float3 GetSunDir(float time)
             {
+                if (_UseSunOverride > 0.5)
+                    return normalize(_SunDirOverride.xyz);
+
                 float a = time * _SunSpeed;
                 return normalize(float3(cos(a), _SunOrbitTilt + sin(a) * 0.25, sin(a)));
             }
@@ -266,16 +278,14 @@ Shader "Custom/URP/WorldSky"
             }
 
             // ---------------------------------------------------------------
-            // Blurred reflection — 6 fixed samples in a cone, averaged
+            // Blurred reflection
             // ---------------------------------------------------------------
             half3 BlurredReflection(float3 reflDir, float3 sunDir, float time, float blur)
             {
-                // Tangent frame around reflDir
                 float3 up    = abs(reflDir.y) < 0.98 ? float3(0,1,0) : float3(1,0,0);
                 float3 right = normalize(cross(up, reflDir));
                 float3 fwd   = normalize(cross(reflDir, right));
 
-                // 6 fixed offsets (Fibonacci spiral)
                 float3 d0 = reflDir;
                 float3 d1 = normalize(reflDir + ( right              ) * blur);
                 float3 d2 = normalize(reflDir + ( right * 0.31 + fwd * 0.95) * blur);
@@ -283,7 +293,6 @@ Shader "Custom/URP/WorldSky"
                 float3 d4 = normalize(reflDir + (-right * 0.81 - fwd * 0.59) * blur);
                 float3 d5 = normalize(reflDir + ( right * 0.31 - fwd * 0.95) * blur);
 
-                // Clamp Y so samples don't dip below horizon
                 d0.y = max(d0.y, 0.001); d1.y = max(d1.y, 0.001);
                 d2.y = max(d2.y, 0.001); d3.y = max(d3.y, 0.001);
                 d4.y = max(d4.y, 0.001); d5.y = max(d5.y, 0.001);
@@ -312,7 +321,6 @@ Shader "Custom/URP/WorldSky"
                 return normalize(float3((hC-hR)*_WaveHeight, 1.0, (hC-hU)*_WaveHeight));
             }
 
-            // Ripple crest bright lines
             float RippleMask(float2 xz, float time)
             {
                 float t  = time * _WaveSpeed;
@@ -350,58 +358,43 @@ Shader "Custom/URP/WorldSky"
                 half3 skyCol = EvaluateSky(dir, sunDir, time);
 
                 // ===== WATER =====
-                float  depth  = abs(dir.y);               // 0 = horizon, 1 = straight down
+                float  depth  = abs(dir.y);
                 float2 surfXZ = dir.xz / max(depth, 0.01);
 
-                // Wave normal
                 float3 waveN = WaveNormal(surfXZ * 0.1, time);
 
-                // Reflect upward — wave normal tilts the mirror
                 float3 pertN   = normalize(float3(waveN.x * _WaveHeight * 0.5, 1.0, waveN.z * _WaveHeight * 0.5));
                 float3 reflDir = normalize(float3(dir.x + pertN.x * 0.06, abs(dir.y), dir.z + pertN.z * 0.06));
 
-                // Blur grows with depth (shallow/distant water = more blur due to wave accumulation)
                 float blurRadius = _ReflectBlurSize * (1.0 + (1.0 - saturate(depth * 2.0)) * 1.2);
                 half3 blurRefl   = BlurredReflection(reflDir, sunDir, time, blurRadius);
 
-                // Fade the reflection (desaturate + tint toward water color)
                 float reflLum  = dot(blurRefl, half3(0.299, 0.587, 0.114));
                 half3 fadedRefl= lerp(blurRefl, reflLum * _WaterShallowColor.rgb * 1.15, _ReflectFade);
 
-                // Fresnel: physically depth=0 (horizon) = full mirror, depth=1 (nadir) = less
-                // Using a gentle pow so reflection is visible across the WHOLE surface
                 float fresnel = pow(1.0 - saturate(depth), _WaterFresnel);
 
-                // Final reflection amount = base everywhere + grazing boost
                 float reflAmount = lerp(_ReflectBase, _ReflectGrazing, fresnel);
 
-                // Water base (deep dark → lighter at horizon)
                 half3 waterBase = lerp(_WaterDeepColor.rgb, _WaterShallowColor.rgb, fresnel * 0.75);
+                half3 waterCol  = lerp(waterBase, fadedRefl, reflAmount);
 
-                // Blend reflection over base — visible across whole surface
-                half3 waterCol = lerp(waterBase, fadedRefl, reflAmount);
-
-                // Visible ripple crests (bright lines on the surface)
                 float ripFade = smoothstep(0.0, 0.06, depth) * (1.0 - smoothstep(0.40, 0.60, depth));
                 float ripMask = RippleMask(surfXZ * 0.08, time);
                 waterCol = lerp(waterCol, _RippleColor.rgb, ripMask * _RippleIntensity * ripFade);
 
-                // Sun sparkle (tight glint that follows sun position)
                 float3 sunRefl = reflect(-sunDir, waveN);
                 float  sparkle = pow(saturate(dot(normalize(-dir), normalize(sunRefl))), 140.0);
                 waterCol += _SunColor.rgb * sparkle * _SparkleIntensity * fresnel;
 
-                // Thin mist layer on water (strongest near horizon)
                 float mistT = (1.0 - smoothstep(0.0, 0.35, depth)) * _WaterFogDensity;
                 waterCol = lerp(waterCol, _WaterFogColor.rgb, mistT);
 
-                // Darken nadir so bottom of sphere isn't the same as horizon
                 waterCol = lerp(waterCol, waterCol * 0.5, saturate((depth - 0.25) * 2.0));
 
                 // ===== COMBINE =====
                 half3 final = lerp(waterCol, skyCol, skyMask);
 
-                // Horizon fog seam
                 float horizFogT = 1.0 - smoothstep(0.0, _FogEnd * 0.5, abs(dir.y));
                 final = lerp(final, _FogColor.rgb, horizFogT * _FogDensity * 0.5);
 

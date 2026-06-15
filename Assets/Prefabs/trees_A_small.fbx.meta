@@ -3,7 +3,12 @@ guid: 8dc00f0bec1666d478f76ab9d54378ce
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: hexagons_medieval
+    second: {fileID: 2100000, guid: 80c8d7b44dbde7a40a50fe549c3008db, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

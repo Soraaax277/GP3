@@ -1,147 +1,89 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 using DG.Tweening;
 using System.Collections;
 
-// Controls the fullscreen era transition announcement.
-// Uses EraBokehPanel shader on the EraPanel Image to blur + darken + bokeh
-// everything underneath — works in Screen Space Overlay.
+// Coordinates era transition cutscenes.
 //
-// HIERARCHY SETUP:
-//   [EraAnnouncementController GO]   ← this script
-//   [Canvas - Screen Space Overlay, sort order 999]
-//     └── EraPanel (Image)           ← assign eraPanelImage + eraPanelCanvasGroup
-//           ├── EraLabel             ← assign eraLabel  (TMP)
-//           └── FlavorLabel          ← assign flavorLabel (TMP)
+// GLITCH + CAMERA SWAP SEQUENCE:
 //
-// PANEL SETUP:
-//   - EraPanel Image: full stretch, material = Mat_EraBokeh
-//   - Mat_EraBokeh uses Custom/URP/EraBokehPanel shader
-//   - EraPanel also has a CanvasGroup component
-//   - In URP Pipeline Asset: tick "Opaque Texture" (required for _CameraOpaqueTexture)
+//   IN:
+//     1. Enable glitch feature, ramp 0 → 0.5  (game scene still fully visible)
+//     2. Load EraCutsceneScene additively      (hidden behind peak glitch)
+//     3. At peak: disable game camera + canvas + objects
+//                 activate cutscene era camera
+//                 call EraCutsceneController.SignalCameraReady()
+//     4. Ramp 0.5 → 1                          (glitch clears into cutscene)
+//     5. EraRendererController.ForceSync()
+//
+//   OUT (after cutscene signals complete):
+//     1. Reset glitch to 0, ramp 0 → 0.5      (cutscene still fully visible)
+//     2. At peak: deactivate cutscene era camera
+//                 re-enable game camera + canvas + objects
+//     3. Ramp 0.5 → 1                          (glitch clears back into game)
+//     4. Disable glitch feature
+//     5. Unload EraCutsceneScene
+//     6. HUD pulse
 public class EraAnnouncementController : MonoBehaviour
 {
     public static EraAnnouncementController Instance;
 
-    [Header("UI References")]
-    [Tooltip("The fullscreen Canvas GO (sort order 999). Starts inactive, activated on Start.")]
-    public GameObject      announcementCanvas;
-    [Tooltip("CanvasGroup on the EraPanel for overall alpha control.")]
-    public CanvasGroup     eraPanelCanvasGroup;
-    [Tooltip("The Image component on EraPanel using Mat_EraBokeh material.")]
-    public Image           eraPanelImage;
-    [Tooltip("Large TMP showing era name.")]
-    public TextMeshProUGUI eraLabel;
-    [Tooltip("Smaller TMP for flavor text.")]
-    public TextMeshProUGUI flavorLabel;
+    [Header("Cutscene Scene")]
+    [Tooltip("Exact name of the scene to load additively (must be in Build Settings).")]
+    public string cutsceneSceneName = "EraCutsceneScene";
+
+    [Header("Glitch Transition")]
+    [Tooltip("The SignalGlitchFeature on your URP Renderer asset.")]
+    public SignalGlitchFeature glitchFeature;
+    [Tooltip("Time in seconds to ramp from 0→0.5 (build up) or 0.5→1 (clear). Keep short, e.g. 0.35.")]
+    public float glitchRampDuration = 0.35f;
+
+    [Header("Main Scene References")]
+    [Tooltip("Your main game Canvas (HUD). Disabled at peak glitch when entering cutscene.")]
+    public Canvas mainGameCanvas;
+    [Tooltip("Your main game Camera. Disabled at peak glitch; re-enabled at peak glitch on exit.")]
+    public Camera mainGameCamera;
+    [Tooltip("Any game scene root objects to hide during cutscene (grid, terrain, buildings, etc.).")]
+    public GameObject[] gameSceneObjectsToHide;
 
     [Header("HUD Era Text")]
-    [Tooltip("GameStatusUI.eraText — gets a color pulse after announcement.")]
+    [Tooltip("GameStatusUI.eraText — gets a color pulse after the cutscene ends.")]
     public TextMeshProUGUI hudEraText;
 
     [Header("Timing")]
-    [Tooltip("One-time delay before the very first announcement, so the GridTransitionManager fade-in can finish.")]
+    [Tooltip("One-time delay before the very first announcement so scene fade-in can finish.")]
     public float startupDelay     = 1.5f;
-    public float blurFadeDuration = 0.7f;
-    public float textFadeInTime   = 0.5f;
-    public float holdDuration     = 2.5f;
-    public float textFadeOutTime  = 0.4f;
-    public float panelFadeOutTime = 0.6f;
     public float hudPunchDuration = 0.4f;
 
-    [Header("Bokeh Settings")]
-    public float maxBlurSize     = 3f;
-    public float maxDarkness     = 0.45f;
-    public float maxTintStrength = 0.08f;
-
-    // Shader property IDs — cached for performance
-    private static readonly int ID_BlurSize     = Shader.PropertyToID("_BlurSize");
-    private static readonly int ID_Darkness     = Shader.PropertyToID("_Darkness");
-    private static readonly int ID_TintColor    = Shader.PropertyToID("_TintColor");
-    private static readonly int ID_TintStrength = Shader.PropertyToID("_TintStrength");
-
-    private Material _panelMat;     // instance material so we don't modify the shared asset
-    private bool     _isPlaying     = false;
-    private bool     _hasPlayedOnce = false; // guards the one-time startup delay
-
-    // ── Per-era data ──────────────────────────────────────────────────────────
-
-    private struct EraData
+    [Header("HUD Accent Colors")]
+    [Tooltip("One color per era (index matches TurnManager.GameEra).")]
+    public Color[] eraAccentColors = new Color[]
     {
-        public string displayName;
-        public string flavorText;
-        public Color  accentColor;
-    }
-
-    private static readonly EraData[] EraTable = new EraData[]
-    {
-        new EraData
-        {
-            displayName = "Industrial Era",
-            flavorText  = "The age of steel and steam — build your foundation.",
-            accentColor = new Color(0.85f, 0.72f, 0.45f)
-        },
-        new EraData
-        {
-            displayName = "Early 80's",
-            flavorText  = "Neon lights and early silicon — the digital race begins.",
-            accentColor = new Color(0.30f, 0.90f, 1.00f)
-        },
-        new EraData
-        {
-            displayName = "Retro Era",
-            flavorText  = "Networks grow, screens glow — information is power.",
-            accentColor = new Color(0.20f, 0.90f, 0.35f)  // green
-        },
-        new EraData
-        {
-            displayName = "Futuristic Era",
-            flavorText  = "Beyond the horizon — whoever adapts, dominates.",
-            accentColor = new Color(0.15f, 0.50f, 1.00f)  // deep electric blue
-        },
+        new Color(0.85f, 0.72f, 0.45f),   // Industrial
+        new Color(0.30f, 0.90f, 1.00f),   // EarlyEighties
+        new Color(0.20f, 0.90f, 0.35f),   // Retro
+        new Color(0.15f, 0.50f, 1.00f),   // Futuristic
     };
 
-    // -------------------------------------------------------------------------
+    // Read by EraCutsceneController in Awake().
+    public TurnManager.GameEra currentEra { get; private set; }
+
+    private bool _isPlaying     = false;
+    private bool _hasPlayedOnce = false;
+    private bool _cutsceneDone  = false;
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     private void Awake()
     {
         Instance = this;
 
-        if (announcementCanvas != null)
-            announcementCanvas.SetActive(false);
-
-        // Create a material instance so we never modify the shared asset
-        if (eraPanelImage != null && eraPanelImage.material != null)
-        {
-            _panelMat = new Material(eraPanelImage.material);
-            eraPanelImage.material = _panelMat;
-        }
-
-        // Start with zero blur/darkness
-        SetPanelValues(0f, 0f, Color.black, 0f);
-
-        if (eraPanelCanvasGroup != null)
-        {
-            eraPanelCanvasGroup.alpha          = 0f;
-            eraPanelCanvasGroup.blocksRaycasts = false;
-            eraPanelCanvasGroup.interactable   = false;
-        }
-
-        if (eraLabel    != null) eraLabel.alpha    = 0f;
-        if (flavorLabel != null) flavorLabel.alpha = 0f;
+        // Glitch feature starts disabled — enabled only during transitions.
+        if (glitchFeature != null) glitchFeature.SetActive(false);
     }
 
-    private void Start()
-    {
-        if (announcementCanvas != null)
-            announcementCanvas.SetActive(true);
-
-        // Do NOT self-trigger here. TurnManager.StartGame() calls
-        // TriggerAnnouncement when the game begins — let it be the single source.
-    }
-
-    // -------------------------------------------------------------------------
+    // ── Public API ────────────────────────────────────────────────────────────
 
     public void TriggerAnnouncement(TurnManager.GameEra era)
     {
@@ -149,134 +91,140 @@ public class EraAnnouncementController : MonoBehaviour
         StartCoroutine(PlayAnnouncement(era));
     }
 
-    // -------------------------------------------------------------------------
-
-    // Same as TriggerAnnouncement but stops any in-progress sequence first.
-    // Called by DebugCheatManager so the cheat always shows the announcement
-    // even if one is already playing.
     public void ForceTriggerAnnouncement(TurnManager.GameEra era)
     {
         StopAllCoroutines();
+        _isPlaying    = false;
+        _cutsceneDone = false;
 
-        // Reset all visual state instantly so the new sequence starts clean
-        SetPanelValues(0f, 0f, Color.black, 0f);
+        if (SceneManager.GetSceneByName(cutsceneSceneName).isLoaded)
+            SceneManager.UnloadSceneAsync(cutsceneSceneName);
 
-        if (eraPanelCanvasGroup != null)
+        // Safety restore in case we interrupted mid-transition.
+        SetGameSceneVisible(true);
+        if (glitchFeature != null)
         {
-            eraPanelCanvasGroup.alpha          = 0f;
-            eraPanelCanvasGroup.blocksRaycasts = false;
-            eraPanelCanvasGroup.interactable   = false;
+            glitchFeature.SetProgress(0f);
+            glitchFeature.SetActive(false);
         }
-
-        if (eraLabel    != null) { eraLabel.alpha    = 0f; }
-        if (flavorLabel != null) { flavorLabel.alpha = 0f; }
-
-        _isPlaying = false;
 
         StartCoroutine(PlayAnnouncement(era));
     }
 
+    // Called by EraCutsceneController when its sequence finishes.
+    public void OnCutsceneComplete()
+    {
+        _cutsceneDone = true;
+    }
+
+    // ── Core sequence ─────────────────────────────────────────────────────────
+
     private IEnumerator PlayAnnouncement(TurnManager.GameEra era)
     {
-        _isPlaying = true;
+        _isPlaying    = true;
+        _cutsceneDone = false;
 
-        // First-ever announcement: wait for the GridTransitionManager to finish.
         if (!_hasPlayedOnce)
         {
             _hasPlayedOnce = true;
             yield return new WaitForSeconds(startupDelay);
         }
 
-        if (announcementCanvas != null)
-            announcementCanvas.SetActive(true);
+        currentEra = era;
 
-        EraData data = EraTable[Mathf.Clamp((int)era, 0, EraTable.Length - 1)];
-
-        // Set text
-        if (eraLabel != null)
+        // ── IN: Build glitch with game scene still fully visible ───────────────
+        if (glitchFeature != null)
         {
-            eraLabel.text  = data.displayName;
-            eraLabel.color = new Color(data.accentColor.r, data.accentColor.g, data.accentColor.b, 0f);
+            glitchFeature.SetActive(true);
+            glitchFeature.SetProgress(0f);
         }
-        if (flavorLabel != null)
+        yield return StartCoroutine(RampGlitch(0f, 0.5f, glitchRampDuration));
+
+        // ── Load cutscene scene behind peak glitch ────────────────────────────
+        yield return SceneManager.LoadSceneAsync(cutsceneSceneName, LoadSceneMode.Additive);
+
+        // ── Peak: hide game scene, then activate cutscene camera ──────────────
+        //
+        // FIX 1: SetGameSceneVisible(false) must come BEFORE the camera null-check.
+        // Previously it lived after the null-check, so a missing camera would bail
+        // via yield break and leave the game scene and glitch transition both stuck
+        // in their mid-transition state with no recovery path.
+        SetGameSceneVisible(false);
+
+        int eraIndex = Mathf.Clamp((int)era, 0, 3);
+
+        // FIX 2: Use FindFirstObjectOfType as a fallback alongside the static
+        // Instance. After an additive load, Awake() has run and set Instance, but
+        // defensive fallback guards against any edge case where it hasn't resolved.
+        EraCutsceneController cutsceneController = EraCutsceneController.Instance;
+        if (cutsceneController == null)
+            cutsceneController = FindObjectOfType<EraCutsceneController>();
+
+        Camera cutsceneCam = cutsceneController != null
+            ? cutsceneController.GetEraCamera(eraIndex)
+            : null;
+
+        if (cutsceneCam == null)
         {
-            flavorLabel.text  = data.flavorText;
-            flavorLabel.color = new Color(1f, 1f, 1f, 0f);
-        }
-
-        // Unblock panel
-        if (eraPanelCanvasGroup != null)
-        {
-            eraPanelCanvasGroup.blocksRaycasts = true;
-            eraPanelCanvasGroup.interactable   = true;
-        }
-
-        // ── Fade in bokeh + darkness ──────────────────────────────────────────
-        float elapsed = 0f;
-        while (elapsed < blurFadeDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.SmoothStep(0f, 1f, elapsed / blurFadeDuration);
-            if (eraPanelCanvasGroup != null) eraPanelCanvasGroup.alpha = t;
-            SetPanelValues(
-                Mathf.Lerp(0f, maxBlurSize,     t),
-                Mathf.Lerp(0f, maxDarkness,     t),
-                data.accentColor,
-                Mathf.Lerp(0f, maxTintStrength, t));
-            yield return null;
-        }
-        if (eraPanelCanvasGroup != null) eraPanelCanvasGroup.alpha = 1f;
-        SetPanelValues(maxBlurSize, maxDarkness, data.accentColor, maxTintStrength);
-
-        // ── Fade in text ──────────────────────────────────────────────────────
-        if (eraLabel != null)
-        {
-            eraLabel.DOFade(1f, textFadeInTime).SetEase(Ease.OutCubic);
-            eraLabel.transform.DOScale(Vector3.one, textFadeInTime)
-                .From(Vector3.one * 0.88f).SetEase(Ease.OutBack);
-        }
-        if (flavorLabel != null)
-            flavorLabel.DOFade(1f, textFadeInTime).SetDelay(0.15f).SetEase(Ease.OutCubic);
-
-        yield return new WaitForSeconds(textFadeInTime + holdDuration);
-
-        // ── Fade out text ─────────────────────────────────────────────────────
-        if (eraLabel    != null) eraLabel.DOFade(0f,    textFadeOutTime).SetEase(Ease.InCubic);
-        if (flavorLabel != null) flavorLabel.DOFade(0f, textFadeOutTime).SetEase(Ease.InCubic);
-
-        yield return new WaitForSeconds(textFadeOutTime);
-
-        // ── Fade out bokeh ────────────────────────────────────────────────────
-        elapsed = 0f;
-        while (elapsed < panelFadeOutTime)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.SmoothStep(0f, 1f, elapsed / panelFadeOutTime);
-            if (eraPanelCanvasGroup != null) eraPanelCanvasGroup.alpha = 1f - t;
-            SetPanelValues(
-                Mathf.Lerp(maxBlurSize,     0f, t),
-                Mathf.Lerp(maxDarkness,     0f, t),
-                data.accentColor,
-                Mathf.Lerp(maxTintStrength, 0f, t));
-            yield return null;
+            Debug.LogError("[EraAnnouncementController] Could not find cutscene era camera. " +
+                           "Check that EraCutsceneController is in EraCutsceneScene and era slots are assigned.");
+            // Safety restore — game scene was already hidden above, so put it back.
+            SetGameSceneVisible(true);
+            if (glitchFeature != null) glitchFeature.SetActive(false);
+            yield return SceneManager.UnloadSceneAsync(cutsceneSceneName);
+            _isPlaying = false;
+            yield break;
         }
 
-        SetPanelValues(0f, 0f, Color.black, 0f);
-        if (eraPanelCanvasGroup != null)
+        cutsceneCam.gameObject.SetActive(true);
+
+        // Swap renderer feature at peak glitch — same frame as the camera swap.
+        // Pass era directly; TurnManager.currentEra hasn't advanced yet at this
+        // point, so the parameterless ForceSync() would apply the wrong feature.
+        if (EraRendererController.Instance != null)
+            EraRendererController.Instance.ForceSync(era);
+
+        // Signal EraCutsceneController that the camera is live — starts movement + wobble.
+        cutsceneController.SignalCameraReady();
+
+        // ── Clear glitch into cutscene ────────────────────────────────────────
+        yield return StartCoroutine(RampGlitch(0.5f, 1f, glitchRampDuration));
+
+        if (glitchFeature != null) glitchFeature.SetActive(false);
+
+        // ── Wait for cutscene to finish ───────────────────────────────────────
+        yield return new WaitUntil(() => _cutsceneDone);
+
+        // ── OUT: Build glitch with cutscene still fully visible ───────────────
+        if (glitchFeature != null)
         {
-            eraPanelCanvasGroup.alpha          = 0f;
-            eraPanelCanvasGroup.blocksRaycasts = false;
-            eraPanelCanvasGroup.interactable   = false;
+            glitchFeature.SetActive(true);
+            glitchFeature.SetProgress(0f);
+        }
+        yield return StartCoroutine(RampGlitch(0f, 0.5f, glitchRampDuration));
+
+        // ── Peak: deactivate cutscene camera, restore game scene ──────────────
+        if (cutsceneCam != null) cutsceneCam.gameObject.SetActive(false);
+        SetGameSceneVisible(true);
+
+        // ── Clear glitch back into game ───────────────────────────────────────
+        yield return StartCoroutine(RampGlitch(0.5f, 1f, glitchRampDuration));
+
+        if (glitchFeature != null)
+        {
+            glitchFeature.SetProgress(0f);
+            glitchFeature.SetActive(false);
         }
 
-        if (announcementCanvas != null)
-            announcementCanvas.SetActive(false);
+        // ── Unload cutscene scene ─────────────────────────────────────────────
+        yield return SceneManager.UnloadSceneAsync(cutsceneSceneName);
 
-        // ── Pulse HUD era text ────────────────────────────────────────────────
+        // ── HUD pulse ─────────────────────────────────────────────────────────
         if (hudEraText != null)
         {
-            Color orig = hudEraText.color;
-            hudEraText.DOColor(data.accentColor, hudPunchDuration * 0.5f)
+            Color accent = eraAccentColors[Mathf.Clamp((int)era, 0, eraAccentColors.Length - 1)];
+            Color orig   = hudEraText.color;
+            hudEraText.DOColor(accent, hudPunchDuration * 0.5f)
                 .SetEase(Ease.OutCubic)
                 .OnComplete(() => hudEraText.DOColor(orig, hudPunchDuration * 0.5f).SetEase(Ease.InCubic));
             hudEraText.transform.DOPunchScale(Vector3.one * 0.15f, hudPunchDuration, 2, 0.5f);
@@ -285,13 +233,31 @@ public class EraAnnouncementController : MonoBehaviour
         _isPlaying = false;
     }
 
-    // ── Sets all four shader properties at once ───────────────────────────────
-    private void SetPanelValues(float blurSize, float darkness, Color tint, float tintStrength)
+    // ── Glitch ramp ───────────────────────────────────────────────────────────
+
+    private IEnumerator RampGlitch(float from, float to, float duration)
     {
-        if (_panelMat == null) return;
-        _panelMat.SetFloat(ID_BlurSize,     blurSize);
-        _panelMat.SetFloat(ID_Darkness,     darkness);
-        _panelMat.SetColor(ID_TintColor,    tint);
-        _panelMat.SetFloat(ID_TintStrength, tintStrength);
+        if (glitchFeature == null) yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t  = Mathf.Clamp01(elapsed / duration);
+            glitchFeature.SetProgress(Mathf.Lerp(from, to, t));
+            yield return null;
+        }
+        glitchFeature.SetProgress(to);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void SetGameSceneVisible(bool visible)
+    {
+        if (mainGameCanvas != null) mainGameCanvas.gameObject.SetActive(visible);
+        if (mainGameCamera != null) mainGameCamera.gameObject.SetActive(visible);
+        if (gameSceneObjectsToHide != null)
+            foreach (GameObject go in gameSceneObjectsToHide)
+                if (go != null) go.SetActive(visible);
     }
 }

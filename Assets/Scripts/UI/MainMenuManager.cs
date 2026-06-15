@@ -44,6 +44,23 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public GameObject sceneObject2;
     public GameObject sceneObject4;
 
+    [Header("Radio Signals")]
+    [Tooltip("Empty GO parented under sceneObject1 — origin of the pulse rings.")]
+    public GameObject radioSignal1;
+    [Tooltip("Empty GO parented under sceneObject2 — origin of the pulse rings.")]
+    public GameObject radioSignal2;
+    [Tooltip("Empty GO parented under sceneObject3 — origin of the pulse rings.")]
+    public GameObject radioSignal3;
+    [Tooltip("Empty GO parented under sceneObject4 — origin of the pulse rings.")]
+    public GameObject radioSignal4;
+
+    [Range(0.5f,  20f)]  public float radioMaxRadius     = 4f;
+    [Range(0.5f,  10f)]  public float radioPulseDuration = 2f;
+    [Range(0.01f, 0.2f)] public float radioLineWidth     = 0.05f;
+    public Color radioColor = Color.white;
+    [Range(2, 6)]    public int radioRingCount = 3;
+    [Range(16, 128)] public int radioSegments  = 64;
+
     [Header("Rotation Thresholds")]
     [Tooltip("Silent GO swap for slot A (GO1↔GO3). No glitch, just SetActive.")]
     public float goSwapThreshold1  = 130f;
@@ -100,6 +117,14 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private bool _glitchPlaying = false;
 
+    // ── Radio signal state ───────────────────────────────────────────────────
+    // [signalIndex][ringIndex] — built once in Start, animated every Update
+    private LineRenderer[][] _radioRenderers;
+    private float            _radioTime;
+    // Cycles 0→1→2→3→0 on every glitch fire — which radioSignal GO is currently visible
+    private int              _activeSignalIndex = 0;
+    private GameObject[]     _radioSignals;
+
     // Found automatically — no drag needed
     private SignalGlitchFeature _glitch;
 
@@ -136,6 +161,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
             if (newGameButton.gameObject.GetComponent<UIButtonSounds>() == null)
                 newGameButton.gameObject.AddComponent<UIButtonSounds>();
             newGameButton.onClick.AddListener(OnNewGame);
+            RegisterHighlightHover(newGameButton);
         }
 
         if (loadGameButton != null)
@@ -143,6 +169,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
             if (loadGameButton.gameObject.GetComponent<UIButtonSounds>() == null)
                 loadGameButton.gameObject.AddComponent<UIButtonSounds>();
             loadGameButton.onClick.AddListener(OnLoadGame);
+            RegisterHighlightHover(loadGameButton);
         }
 
         if (settingsButton != null)
@@ -150,6 +177,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
             if (settingsButton.gameObject.GetComponent<UIButtonSounds>() == null)
                 settingsButton.gameObject.AddComponent<UIButtonSounds>();
             settingsButton.onClick.AddListener(OnSettings);
+            RegisterHighlightHover(settingsButton);
         }
 
         if (exitButton != null)
@@ -157,6 +185,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
             if (exitButton.gameObject.GetComponent<UIButtonSounds>() == null)
                 exitButton.gameObject.AddComponent<UIButtonSounds>();
             exitButton.onClick.AddListener(OnExit);
+            RegisterHighlightHover(exitButton);
         }
 
         if (loadGameButton != null)
@@ -206,6 +235,15 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         SetActive(sceneObject3, false);
         SetActive(sceneObject4, false);
 
+        // Signal 1 is active by default. Signals 2-4 are inactive.
+        // The glitch advances the index each time it fires: 1→2→3→4→1→...
+        _radioSignals      = new GameObject[] { radioSignal1, radioSignal2, radioSignal3, radioSignal4 };
+        _activeSignalIndex = 0;
+        SetActive(radioSignal1, true);
+        SetActive(radioSignal2, false);
+        SetActive(radioSignal3, false);
+        SetActive(radioSignal4, false);
+
         // Only filter 0 (filterForSlot1) active at start
         for (int i = 0; i < _filters.Length; i++)
             SetFeature(_filters[i], i == 0);
@@ -225,6 +263,9 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         _nextGlitch1   = glitchThreshold1;
         _nextGoSwap2   = goSwapThreshold2;
         _nextGlitch2   = glitchThreshold2;
+
+        // ── Radio signals ─────────────────────────────────────────────────────
+        InitRadioSignals();
     }
 
     private void Update()
@@ -235,6 +276,7 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
         UpdateSway();
         UpdateCamera();
+        UpdateRadioSignals();
         if (!_glitchPlaying) CheckThresholds();
     }
 
@@ -286,6 +328,9 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         _slotAShowingGO3 = !_slotAShowingGO3;
         SetActive(sceneObject1, !_slotAShowingGO3);
         SetActive(sceneObject3,  _slotAShowingGO3);
+        // Signal must not bleed through before the glitch fires — force both inactive.
+        SetActive(radioSignal1, false);
+        SetActive(radioSignal3, false);
     }
 
     private void DoGoSwapB()
@@ -293,6 +338,9 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         _slotBShowingGO4 = !_slotBShowingGO4;
         SetActive(sceneObject2, !_slotBShowingGO4);
         SetActive(sceneObject4,  _slotBShowingGO4);
+        // Signal must not bleed through before the glitch fires — force both inactive.
+        SetActive(radioSignal2, false);
+        SetActive(radioSignal4, false);
     }
 
     // ── Glitch coroutine — only handles the filter cycle ─────────────────────
@@ -330,6 +378,12 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         _glitch?.SetProgress(1f);
         SetFeature(_glitch, false);
         DirtyRenderer();
+
+        // Advance the signal cycle: deactivate current, move to next, activate it.
+        // Every glitch fire (threshold 1 or 2) steps: 1→2→3→4→1→...
+        SetActive(_radioSignals[_activeSignalIndex], false);
+        _activeSignalIndex = (_activeSignalIndex + 1) % _radioSignals.Length;
+        SetActive(_radioSignals[_activeSignalIndex], true);
 
         _glitchPlaying = false;
     }
@@ -459,5 +513,142 @@ public class MainMenuManager : MonoBehaviour, IPointerEnterHandler, IPointerExit
         #else
         Application.Quit();
         #endif
+    }
+
+    // ── Button highlight hover ────────────────────────────────────────────────
+    // Finds the "Highlight" child on a button and registers PointerEnter/Exit
+    // events via EventTrigger to set its Image alpha to 1 or 0.
+    private void RegisterHighlightHover(Button btn)
+    {
+        Transform highlight = btn.transform.Find("Highlight");
+        if (highlight == null)
+        {
+            Debug.LogWarning($"[MainMenuManager] No 'Highlight' child found on {btn.name}.");
+            return;
+        }
+
+        Image highlightImage = highlight.GetComponent<Image>();
+        if (highlightImage == null)
+        {
+            Debug.LogWarning($"[MainMenuManager] 'Highlight' on {btn.name} has no Image component.");
+            return;
+        }
+
+        // Ensure alpha starts at 0
+        SetHighlight(highlightImage, 0f);
+
+        EventTrigger trigger = btn.gameObject.GetComponent<EventTrigger>()
+                            ?? btn.gameObject.AddComponent<EventTrigger>();
+
+        EventTrigger.Entry enterEntry = new EventTrigger.Entry
+            { eventID = EventTriggerType.PointerEnter };
+        enterEntry.callback.AddListener(_ => SetHighlight(highlightImage, 0.35f));
+        trigger.triggers.Add(enterEntry);
+
+        EventTrigger.Entry exitEntry = new EventTrigger.Entry
+            { eventID = EventTriggerType.PointerExit };
+        exitEntry.callback.AddListener(_ => SetHighlight(highlightImage, 0f));
+        trigger.triggers.Add(exitEntry);
+    }
+
+    private static void SetHighlight(Image img, float alpha)
+    {
+        Color c = img.color;
+        c.a     = alpha;
+        img.color = c;
+    }
+
+    // ── Radio signal emitter ──────────────────────────────────────────────────
+    // Builds one LineRenderer child per ring per signal GO in Start(),
+    // then drives radius + alpha every Update() via a shared timer.
+    private void InitRadioSignals()
+    {
+        GameObject[] signals = { radioSignal1, radioSignal2, radioSignal3, radioSignal4 };
+        _radioRenderers = new LineRenderer[signals.Length][];
+
+        for (int s = 0; s < signals.Length; s++)
+        {
+            if (signals[s] == null)
+            {
+                _radioRenderers[s] = new LineRenderer[0];
+                continue;
+            }
+
+            _radioRenderers[s] = new LineRenderer[radioRingCount];
+
+            for (int r = 0; r < radioRingCount; r++)
+            {
+                // One child GO per ring so each has its own LineRenderer
+                GameObject ringGO = new GameObject($"RadioRing_{s}_{r}");
+                ringGO.transform.SetParent(signals[s].transform, false);
+                ringGO.transform.localPosition = Vector3.zero;
+
+                LineRenderer lr = ringGO.AddComponent<LineRenderer>();
+                lr.useWorldSpace    = false;           // positions are local to the ring GO
+                lr.loop             = true;
+                lr.positionCount    = radioSegments;
+                lr.startWidth       = radioLineWidth;
+                lr.endWidth         = radioLineWidth;
+                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                lr.receiveShadows   = false;
+
+                // Use an unlit material so color/alpha are respected without lighting
+                lr.material = new Material(Shader.Find("Sprites/Default"));
+
+                Color c = radioColor;
+                c.a = 0f;
+                lr.startColor = c;
+                lr.endColor   = c;
+
+                _radioRenderers[s][r] = lr;
+            }
+        }
+
+        _radioTime = 0f;
+
+        // Pre-position every ring at its correct staggered radius/alpha so there
+        // is no flash-frame of all rings sitting at Vector3.zero on the first render.
+        UpdateRadioSignals();
+    }
+
+    private void UpdateRadioSignals()
+    {
+        if (_radioRenderers == null) return;
+
+        _radioTime += Time.deltaTime;
+
+        for (int s = 0; s < _radioRenderers.Length; s++)
+        {
+            if (_radioRenderers[s] == null) continue;
+
+            for (int r = 0; r < _radioRenderers[s].Length; r++)
+            {
+                LineRenderer lr = _radioRenderers[s][r];
+                if (lr == null) continue;
+
+                // Each ring is offset in phase so rings are always staggered
+                float phase  = (float)r / radioRingCount;
+                float t      = ((_radioTime / radioPulseDuration) + phase) % 1f;
+
+                float radius = t * radioMaxRadius;
+                float alpha  = 1f - t;  // born opaque, fades as it expands
+
+                // Write circle points on the XZ plane (flat horizontal ring)
+                for (int i = 0; i < radioSegments; i++)
+                {
+                    float angle = (float)i / radioSegments * Mathf.PI * 2f;
+                    lr.SetPosition(i, new Vector3(
+                        Mathf.Cos(angle) * radius,
+                        0f,
+                        Mathf.Sin(angle) * radius
+                    ));
+                }
+
+                Color c = radioColor;
+                c.a = alpha;
+                lr.startColor = c;
+                lr.endColor   = c;
+            }
+        }
     }
 }

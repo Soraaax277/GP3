@@ -28,8 +28,8 @@ Shader "Custom/URP/CelShadeFilter"
             float  _OutlineDepthThreshold;
             float  _OutlineNormalThreshold;
             float  _OutlineDepthScale;
-            float  _OutlineMaxDepth;      // NEW: ignore edges beyond this scene depth
-            float  _OutlineMaxDepthDelta; // NEW: ignore edges where depth gap is too large
+            float  _OutlineMaxDepth;
+            float  _OutlineMaxDepthDelta;
             float4 _OutlineColor;
             float  _SaturationBoost;
 
@@ -40,7 +40,6 @@ Shader "Custom/URP/CelShadeFilter"
                 return floor(v * steps + 0.5) / steps;
             }
 
-            // Only posterize colourful pixels - flat/grey/dark tiles are fully skipped
             float3 PosterizeColor(float3 col, float steps, float strength)
             {
                 float3 posterized;
@@ -53,12 +52,8 @@ Shader "Custom/URP/CelShadeFilter"
                 float chroma = maxC - minC;
                 float luma   = Luma(col);
 
-                // Gate 1: must be colourful enough (kills grey/blue water and fog)
                 float chromaMask = smoothstep(0.08, 0.25, chroma);
-
-                // Gate 2: must not be too dark (kills the grey-to-black snapping on hex tiles)
-                // Pixels below luma 0.25 are left completely untouched
-                float lumaMask = smoothstep(0.15, 0.35, luma);
+                float lumaMask   = smoothstep(0.15, 0.35, luma);
 
                 return lerp(col, posterized, strength * chromaMask * lumaMask);
             }
@@ -83,10 +78,7 @@ Shader "Custom/URP/CelShadeFilter"
             {
                 float2 tx = _BlitTexture_TexelSize.xy * thickness;
 
-                float dC  = SampleDepth(uv);
-
-                // Skip outlines on pixels that are too far away (water, sky, far terrain)
-                // This kills the island-silhouette halo entirely
+                float dC = SampleDepth(uv);
                 if (dC < _OutlineMaxDepth) return 0.0;
 
                 float d00 = SampleDepth(uv + float2(-tx.x,  tx.y));
@@ -98,18 +90,15 @@ Shader "Custom/URP/CelShadeFilter"
                 float d12 = SampleDepth(uv + float2(    0, -tx.y));
                 float d22 = SampleDepth(uv + float2( tx.x, -tx.y));
 
-                // If ANY neighbour is far away (water/sky), this is a silhouette edge - skip it
                 float minNeighbour = min(min(min(d00, d10), min(d20, d01)),
                                         min(min(d21, d02), min(d12, d22)));
                 if ((dC - minNeighbour) > _OutlineMaxDepthDelta) return 0.0;
 
-                // Sobel on depth
                 float sobelX = -d00 - 2.0*d01 - d02 + d20 + 2.0*d21 + d22;
                 float sobelY = -d00 - 2.0*d10 - d20 + d02 + 2.0*d12 + d22;
                 float depthEdge   = sqrt(sobelX*sobelX + sobelY*sobelY);
                 float depthResult = step(_OutlineDepthThreshold * 0.0001, depthEdge * _OutlineDepthScale);
 
-                // Sobel on normals
                 float3 n00 = SampleNormal(uv + float2(-tx.x,  tx.y));
                 float3 n10 = SampleNormal(uv + float2(    0,  tx.y));
                 float3 n20 = SampleNormal(uv + float2( tx.x,  tx.y));
@@ -132,14 +121,11 @@ Shader "Custom/URP/CelShadeFilter"
                 float2 uv  = IN.texcoord;
                 float3 col = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv).rgb;
 
-                // 1. Posterize only vivid pixels - water/fog/sky are untouched
                 col = PosterizeColor(col, _PosterizeSteps, _PosterizeStrength);
 
-                // 2. Saturation boost
                 if (_SaturationBoost > 0.001)
                     col = BoostSaturation(col, _SaturationBoost);
 
-                // 3. Outline - only draws on close geometry, never on silhouettes vs water/sky
                 if (_OutlineThickness > 0.001)
                 {
                     float edge     = DetectEdge(uv, _OutlineThickness);

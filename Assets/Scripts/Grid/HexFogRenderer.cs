@@ -80,6 +80,17 @@ public class HexFogRenderer : MonoBehaviour
         foreach (HexTile tile in GridManager.Instance.GetAllTiles())
             tileRestingY[tile] = tile.transform.position.y;
 
+        // Safety net: if any tiles are already explored at this point (e.g. pre-marked
+        // by a save system), reveal them immediately so they start with correct materials.
+        if (HexTileReveal.Instance != null)
+        {
+            foreach (HexTile tile in GridManager.Instance.GetAllTiles())
+            {
+                if (tile.isExplored)
+                    HexTileReveal.Instance.RevealTile(tile);
+            }
+        }
+
         UpdateFog();
     }
 
@@ -206,6 +217,10 @@ public class HexFogRenderer : MonoBehaviour
         //    animate every tile as newly-revealed the next time it runs normally.
         previouslyUnexplored.Clear();
 
+        // Reveal all tile materials and re-activate all child objects instantly.
+        if (HexTileReveal.Instance != null)
+            HexTileReveal.Instance.RevealAllTiles();
+
         Debug.Log("[HexFogRenderer] RevealAllInstant: fog mesh, particles, and fade quads cleared.");
     }
 
@@ -230,12 +245,16 @@ public class HexFogRenderer : MonoBehaviour
             // Stagger delay grows with distance from centroid, capped at maxRippleDelay
             float stagger = Mathf.Min(dist * rippleDelayPerUnit, maxRippleDelay);
 
-            // 1. Fade quad dissolve — starts slightly after stagger so tile is already
-            //    beginning to rise before the fog above it clears
+            // 1. Fade quad dissolve
             SpawnFadeQuad(tile, stagger);
 
-            // 2. Tile rise — snap tile below ground, then tween up to resting Y
+            // 2. Tile rise
             AnimateTileRise(tile, stagger);
+
+            // 3. Swap material ToonLit_Hidden → ToonLit and re-activate all
+            //    child objects (buildings, nature props) that were hidden at spawn.
+            if (HexTileReveal.Instance != null)
+                HexTileReveal.Instance.RevealTile(tile);
         }
     }
 

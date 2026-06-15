@@ -52,6 +52,13 @@ public class MinimapController : MonoBehaviour, IPointerClickHandler, IDragHandl
     public Color32 hqColor           = new Color32(255, 240, 80,  255);
     public Color32 towerColor        = new Color32(180, 220, 255, 255);
 
+    [Header("Shape")]
+    [Tooltip("Number of sides for the minimap polygon mask.\n"
+           + "Higher = rounder. 16 gives a low-poly circle look.\n"
+           + "Set to 0 to use a perfect circle instead.")]
+    [Range(3, 64)]
+    public int polygonSides = 16;
+
     [Header("Visual Style")]
     [Tooltip("Alpha 0..1 of scanline overlay — adds a CRT/tactical-screen feel.")]
     [Range(0f, 0.4f)]
@@ -676,12 +683,13 @@ public class MinimapController : MonoBehaviour, IPointerClickHandler, IDragHandl
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 myRect, e.position, e.pressEventCamera, out local)) return;
 
-        // ignore clicks outside the circular minimap
+        // Ignore clicks outside the polygon minimap boundary.
+        // normX/normY are in [-1, 1] space — pass radius=1 to IsInsidePolygon.
         float halfW = myRect.rect.width  * 0.5f;
         float halfH = myRect.rect.height * 0.5f;
         float normX = local.x / halfW;
         float normY = local.y / halfH;
-        if (normX * normX + normY * normY > 1f) return;
+        if (!IsInsidePolygon(normX, normY, 1f, polygonSides)) return;
 
         float nx = (local.x - myRect.rect.xMin) / myRect.rect.width;
         float nz = (local.y - myRect.rect.yMin) / myRect.rect.height;
@@ -751,8 +759,49 @@ public class MinimapController : MonoBehaviour, IPointerClickHandler, IDragHandl
         float cx = textureSize * 0.5f;
         float cy = textureSize * 0.5f;
         float dx = x - cx, dy = y - cy;
-        if (dx * dx + dy * dy > cx * cx) return;
+        float radius = cx; // use half the texture size as the bounding radius
+
+        if (!IsInsidePolygon(dx, dy, radius, polygonSides)) return;
         pixels[y * textureSize + x] = col;
+    }
+
+    /// <summary>
+    /// Returns true if point (dx, dy) — relative to the polygon centre — lies
+    /// inside a regular N-sided polygon with the given circumradius.
+    ///
+    /// The polygon is oriented so one flat edge sits at the top (vertices are
+    /// offset by half a sector so no vertex points straight up/down).
+    ///
+    /// When sides &lt;= 0 the test falls back to a perfect circle.
+    /// </summary>
+    private static bool IsInsidePolygon(float dx, float dy, float radius, int sides)
+    {
+        if (sides <= 0)
+        {
+            // Fallback: perfect circle
+            return dx * dx + dy * dy <= radius * radius;
+        }
+
+        float dist  = Mathf.Sqrt(dx * dx + dy * dy);
+        if (dist <= 0.0001f) return true; // centre point always inside
+
+        // Angle of this pixel from the centre, offset by half a sector so the
+        // polygon sits flat-edge-up rather than vertex-up.
+        float sectorAngle = Mathf.PI * 2f / sides;
+        float halfSector  = sectorAngle * 0.5f;
+        float angle       = Mathf.Atan2(dy, dx) + halfSector;
+
+        // Normalise angle into the range [0, sectorAngle) to find position
+        // within the current sector.
+        float sectorFrac     = angle / sectorAngle;
+        float angleInSector  = (sectorFrac - Mathf.Floor(sectorFrac) - 0.5f) * sectorAngle;
+
+        // Distance from centre to the polygon edge at this angle.
+        // Derived from the apothem (inradius): apothem = radius * cos(π/N)
+        // At angle θ within a sector the edge distance is apothem / cos(θ).
+        float edgeDist = radius * Mathf.Cos(halfSector) / Mathf.Cos(angleInSector);
+
+        return dist <= edgeDist;
     }
 
     private static Color32 LerpColor32(Color32 a, Color32 b, float t)

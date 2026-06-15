@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_IndustrialGlass
+  m_Shader: {fileID: 4800000, guid: 68f2ec6124e4f0445a232e636debeac5, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _AmbientStrength: 0.2
+    - _CrossBarThick: 0.04
+    - _CrossBarV: 0.5
+    - _FrameThick: 0.022
+    - _FresnelPower: 2.5
+    - _FresnelThresh: 0.4
+    - _GrimeAmount: 0.55
+    - _GrimeVariation: 1
+    - _PaneHeight: 0.32
+    - _PaneWidth: 0.28
+    - _ReflectStrength: 0.55
+    - _ShadowDark: 0.25
+    - _ShadowThresh: 0.5
+    - _SpecPower: 10
+    - _SpecStrength: 1
+    - _SpecThresh: 0.7
+    - _TopThreshold: 0.7
+    m_Colors:
+    - _FrameColor: {r: 0.13999996, g: 0.14999998, b: 0.15999997, a: 1}
+    - _GlassColor: {r: 0.4528302, g: 0.40007234, b: 0.29690284, a: 1}
+    - _GrimeColor: {r: 0.17999998, g: 0.15999997, b: 0.11999995, a: 1}
+    - _InteriorColor: {r: 0.04, g: 0.049999982, b: 0.059999965, a: 1}
+    - _ReflectColor: {r: 0.34999996, g: 0.5, b: 0.6, a: 1}
+    - _SpecColor: {r: 0.65, g: 0.78, b: 0.9, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

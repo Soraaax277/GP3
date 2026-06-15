@@ -81,8 +81,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HexTile
   cubeCoords: {x: 0, y: 0, z: 0}
+  type: 0
+  hasStructure: 0
   placedNode: {fileID: 0}
+  placedSignalNode: {fileID: 0}
   placedTower: {fileID: 0}
+  placedWire: {fileID: 0}
+  placedStructure: {fileID: 0}
+  placedUnit: {fileID: 0}
+  isHyperinflated: 0
+  baseInfluence: 0
+  influenceSuppression: 0
+  hazardImpact: 0
+  isExplored: 0
+  isVisible: 0
+  transitionSpeed: 2
 --- !u!65 &1651996498612662125
 BoxCollider:
   m_ObjectHideFlags: 0

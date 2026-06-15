@@ -11,10 +11,16 @@ public class GameManager : MonoBehaviour
     [Header("References")]
     public BusinessSpawner businessSpawner;
 
+    // Prevents Start() from running on a duplicate that was Destroy()d in Awake().
+    // Destroy() only schedules destruction — Start() still fires in the same frame
+    // without this guard, which would launch a second SetupGame() coroutine.
+    private bool _isDuplicate = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
+            _isDuplicate = true;
             Destroy(gameObject);
             return;
         }
@@ -45,6 +51,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        if (_isDuplicate) return;
         StartCoroutine(SetupGame());
     }
 
@@ -54,6 +61,13 @@ public class GameManager : MonoBehaviour
             yield return null;
 
         CreatePlayers();
+
+        // BUG FIX: TurnManager.Instance can be null if its Awake/Start hasn't run yet.
+        // A missing null-guard here throws a NullReferenceException that silently kills
+        // the coroutine in Unity, so SpawnInitialBusinesses() never gets called.
+        while (TurnManager.Instance == null)
+            yield return null;
+
         TurnManager.Instance.players = this.players;
 
         if (SaveSystem.HasSaveData())
@@ -62,9 +76,24 @@ public class GameManager : MonoBehaviour
             bool success = SaveSystem.LoadGame();
             if (success)
             {
-                yield break;
+                // BUG FIX: Validate that the save actually contains player bases.
+                // Stale/corrupt saves from a prior broken run can "load successfully"
+                // while having no nodes, causing yield break to skip SpawnInitialBusinesses().
+                bool basesLoaded = players.Count > 0
+                    && players[0].ownedNodes != null
+                    && players[0].ownedNodes.Count > 0;
+
+                if (basesLoaded)
+                {
+                    yield break;
+                }
+
+                Debug.LogWarning("GameManager: Save loaded but no player bases found — discarding save and spawning fresh.");
             }
-            Debug.LogWarning("GameManager: Load failed, starting new game.");
+            else
+            {
+                Debug.LogWarning("GameManager: Load failed, starting new game.");
+            }
         }
 
         SpawnInitialBusinesses();

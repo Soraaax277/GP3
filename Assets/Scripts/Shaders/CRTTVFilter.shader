@@ -18,6 +18,7 @@ Shader "Custom/URP/CRTTVFilter"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
             float  _CurvatureStrength;
+            float  _BarrelStrength;
             float  _ScanlineIntensity;
             float  _ScanlineThickness;
             float  _PhosphorIntensity;
@@ -37,6 +38,14 @@ Shader "Custom/URP/CRTTVFilter"
 
             float hash1(float n)  { return frac(sin(n) * 43758.5453); }
             float hash2(float2 p) { return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
+
+            // Hard barrel distortion - corners go black, center bulges forward
+            float2 BarrelDistort(float2 uv, float k)
+            {
+                float2 cc = uv - 0.5;
+                float  r2 = dot(cc, cc);
+                return uv + cc * (r2 * k);
+            }
 
             // Barrel distortion - safe, never pushes UVs outside [0,1]
             float2 Barrel(float2 uv, float strength)
@@ -118,6 +127,14 @@ Shader "Custom/URP/CRTTVFilter"
             {
                 float2 uv   = IN.texcoord;
                 float  time = _Time.y;
+
+                // 0. Hard barrel / lens warp - corners rendered black
+                if (_BarrelStrength > 0.001)
+                {
+                    uv = BarrelDistort(uv, _BarrelStrength);
+                    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
+                        return float4(0.0, 0.0, 0.0, 1.0);
+                }
 
                 // 1. Subtle barrel distortion - stays inside [0,1], never black
                 float2 distUV = (_CurvatureStrength > 0.001)

@@ -7,6 +7,19 @@ public class CameraController : MonoBehaviour
 {
     public static CameraController Instance;
 
+    public enum CameraState { Idle, Panning, Rotating }
+    private CameraState currentState = CameraState.Idle;
+
+    [Header("Cursor Settings")]
+    [Tooltip("Leave empty to use the system default cursor, or assign a custom idle pointer.")]
+    public Texture2D defaultCursor;
+    [Tooltip("Cursor to show when holding Left Mouse Button to pan.")]
+    public Texture2D dragCursor;
+    [Tooltip("Cursor to show when holding Right Mouse Button to rotate.")]
+    public Texture2D rotateCursor;
+    [Tooltip("The pixel coordinate of the cursor's click point. Default is (0,0) top-left.")]
+    public Vector2 cursorHotspot = Vector2.zero;
+
     [Header("UI Blocking")]
     [Tooltip("Drag your UnitActionPanel and BuildUIManager Panel here. If any are active, movement is blocked.")]
     public List<GameObject> blockingPanels = new List<GameObject>();
@@ -22,6 +35,14 @@ public class CameraController : MonoBehaviour
     public float minY = 8f; 
     public float maxY = 35f; 
 
+    [Header("Smoothing Settings")]
+    [Tooltip("Enable or disable camera smoothing.")]
+    public bool enableSmoothing = true;
+    [Tooltip("Higher values make the camera position catch up faster.")]
+    public float positionSmoothSpeed = 10f;
+    [Tooltip("Higher values make the camera rotation catch up faster.")]
+    public float rotationSmoothSpeed = 15f;
+
     [Header("Build Mode (Focus) Settings")]
     public float buildHeight = 25f;     
     public float buildDistance = 20f;  
@@ -34,7 +55,6 @@ public class CameraController : MonoBehaviour
 
     // Cutscene Mode flag
     [Header("Cutscene Settings")]
-    // Exposed in the Inspector via the backing field; use the property in code.
     [SerializeField] private bool _cutsceneMode = false;
 
     /// <summary>
@@ -59,13 +79,17 @@ public class CameraController : MonoBehaviour
                     activeRoutine = null;
                 }
                 isTransitioning = false;
-
-                // Sync rotation state so HandleMovement won't snap when control returns.
-                rotationEuler = transform.eulerAngles;
+                SyncTargets();
+            }
+            else
+            {
+                // Sync state so HandleMovement won't snap when control returns from an external system.
+                SyncTargets();
             }
         }
     }
 
+    private Vector3 targetPosition;
     private Vector3 leftDragOrigin;
     private Vector3 rightDragOrigin;
     private Vector3 rotationEuler;
@@ -81,18 +105,19 @@ public class CameraController : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        SyncTargets();
     }
 
     private IEnumerator Start()
     {
+        // Set the initial cursor
+        SetCameraState(CameraState.Idle);
+
         // Wait for GridManager to finish generating the world continent.
         while (GridManager.Instance == null || !GridManager.Instance.IsReady)
             yield return null;
 
         // ── CALCULATE DYNAMIC WORLD LIMITS ──────────────────────────────────
-        // Instead of hard-coded multipliers, we scan all active tiles to find
-        // the EXACT world-space footprint of the generated continent. This
-        // creates a "box" boundary that keeps the player inside the map.
         if (GridManager.Instance != null && GridManager.Instance.tiles != null)
         {
             float minX = float.MaxValue, maxX = float.MinValue;
@@ -112,16 +137,13 @@ public class CameraController : MonoBehaviour
 
             if (foundTiles)
             {
-                // Add a small buffer (5 units) so the player can look at the 
-                // very edge of the map clearly.
                 float buffer = 5f;
                 panLimitX = new Vector2(minX - buffer, maxX + buffer);
                 panLimitZ = new Vector2(minZ - buffer, maxZ + buffer);
             }
         }
         
-        // Initialize rotation state
-        rotationEuler = transform.eulerAngles;
+        SyncTargets();
 
         // Lock camera for the grid-out + era announcement window
         if (startupLockDuration > 0f)
@@ -133,14 +155,24 @@ public class CameraController : MonoBehaviour
         _startupLocked = true;
         yield return new WaitForSecondsRealtime(startupLockDuration);
         _startupLocked = false;
+        SyncTargets();
+    }
+
+    private void SyncTargets()
+    {
+        targetPosition = transform.position;
+        rotationEuler = transform.eulerAngles;
     }
 
     private void LateUpdate()
     {
         // THE LOCK
-        // If any UI panel is active or we are animating, block inputs.
-        if (IsBlockedByUI()) return;
-        if (PauseMenuUI.GameIsPaused) return;
+        if (IsBlockedByUI())
+        {
+            // Ensure cursor resets to normal if UI opens while dragging
+            SetCameraState(CameraState.Idle); 
+            return;
+        }
 
         // 2. Normal Movement
         HandleMovement();
@@ -148,17 +180,13 @@ public class CameraController : MonoBehaviour
 
     private bool IsBlockedByUI()
     {
-        // Block input if in cutscene mode (AI Turn / Victory sequence)
         if (_cutsceneMode) return true;
-
-        // Block input during the opening grid-transition + era announcement
         if (_startupLocked) return true;
 
         if (blockingPanels != null)
         {
             foreach (var panel in blockingPanels)
             {
-                // Ensure the panel is actually active before blocking
                 if (panel != null && panel.activeInHierarchy) return true;
             }
         }
@@ -168,21 +196,14 @@ public class CameraController : MonoBehaviour
         return false;
     }
 
-    // Returns true if the mouse cursor is currently inside any of the
-    // hoverBlockingPanels RectTransforms. Used to suppress scroll and
-    // left-drag when the player is interacting with a UI scroll rect.
     private bool IsMouseOverHoverPanel()
     {
         if (hoverBlockingPanels == null || hoverBlockingPanels.Count == 0) return false;
 
-        // We need the camera that renders the UI Canvas. For Screen Space Overlay
-        // canvases the camera argument is null; for Screen Space Camera or World
-        // Space canvases pass the canvas camera. Null works for Overlay mode.
         foreach (var rect in hoverBlockingPanels)
         {
             if (rect == null || !rect.gameObject.activeInHierarchy) continue;
 
-            // Determine the canvas camera for this panel (null = Overlay canvas).
             Canvas canvas = rect.GetComponentInParent<Canvas>();
             Camera canvasCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
                 ? canvas.worldCamera
@@ -197,12 +218,16 @@ public class CameraController : MonoBehaviour
     private void HandleMovement()
     {
         if (UnityEngine.EventSystems.EventSystem.current != null && 
-            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) 
+        {
+            SetCameraState(CameraState.Idle);
+            return;
+        }
 
-        Vector3 pos = transform.position;
+        // Default state for this frame
+        CameraState intendedState = CameraState.Idle;
 
-        // WASD — never blocked by hover panels; only affects pan, not scroll.
-        // Skip entirely while a text field (e.g. company rename) has keyboard focus.
+        // WASD
         if (!IsTyping)
         {
             var kb = Keyboard.current;
@@ -214,28 +239,29 @@ public class CameraController : MonoBehaviour
                 if (kb.wKey.isPressed || kb.upArrowKey.isPressed)    v += 1f;
                 if (kb.sKey.isPressed || kb.downArrowKey.isPressed)  v -= 1f;
             }
-            pos += transform.right   * h * panSpeed * Time.deltaTime;
-            pos += transform.forward * v * panSpeed * Time.deltaTime;
+            
+            targetPosition += transform.right   * h * panSpeed * Time.deltaTime;
+            targetPosition += transform.forward * v * panSpeed * Time.deltaTime;
         }
 
         bool hoverBlocked = IsMouseOverHoverPanel();
 
-        // Mouse Drag (Left) — suppressed while hovering a UI scroll panel.
+        // Mouse Drag (Left)
         if (!hoverBlocked)
         {
             if (Mouse.current.leftButton.wasPressedThisFrame) leftDragOrigin = Mouse.current.position.ReadValue();
             if (Mouse.current.leftButton.isPressed)
             {
+                intendedState = CameraState.Panning; // Set intent to Pan
+
                 Vector3 difference = (Vector3)Mouse.current.position.ReadValue() - leftDragOrigin;
                 Vector3 move = new Vector3(-difference.x, 0f, -difference.y) * panSpeed * Time.deltaTime * 0.1f;
-                pos += transform.TransformDirection(move);
+                targetPosition += transform.TransformDirection(move);
                 leftDragOrigin = Mouse.current.position.ReadValue();
             }
         }
         else
         {
-            // Keep the drag origin in sync so releasing over the panel and then
-            // dragging elsewhere doesn't cause a sudden camera jump.
             leftDragOrigin = Mouse.current.position.ReadValue();
         }
 
@@ -243,43 +269,74 @@ public class CameraController : MonoBehaviour
         if (Mouse.current.rightButton.wasPressedThisFrame)
         {
             rightDragOrigin = Mouse.current.position.ReadValue();
-            // Sync state just in case
-            rotationEuler = transform.eulerAngles;
+            rotationEuler = transform.eulerAngles; 
         }
         if (Mouse.current.rightButton.isPressed)
         {
+            intendedState = CameraState.Rotating; // Overrides Pan intent if both are held
+
             Vector3 difference = (Vector3)Mouse.current.position.ReadValue() - rightDragOrigin;
             rotationEuler.y += difference.x * 0.2f;
             rotationEuler.x -= difference.y * 0.2f;
             rotationEuler.x = Mathf.Clamp(rotationEuler.x, 10f, 80f); 
-            transform.rotation = Quaternion.Euler(rotationEuler);
             rightDragOrigin = Mouse.current.position.ReadValue();
         }
 
-        // Zoom — suppressed while hovering a UI scroll panel so the
-        // ScrollRect can consume the scroll wheel event instead.
+        // Apply calculated cursor state
+        SetCameraState(intendedState);
+
+        // Zoom 
         float scroll = hoverBlocked ? 0f : Mouse.current.scroll.ReadValue().y * 0.1f;
-        pos.y -= scroll * scrollSpeed * 100f * Time.deltaTime;
+        targetPosition.y -= scroll * scrollSpeed * 100f * Time.deltaTime;
         
-        // Clamping
-        pos.y = Mathf.Clamp(pos.y, minY, maxY);
+        // Clamping Targets
+        targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
         if (panLimitX != Vector2.zero)
         {
-            pos.x = Mathf.Clamp(pos.x, panLimitX.x, panLimitX.y);
-            pos.z = Mathf.Clamp(pos.z, panLimitZ.x, panLimitZ.y);
+            targetPosition.x = Mathf.Clamp(targetPosition.x, panLimitX.x, panLimitX.y);
+            targetPosition.z = Mathf.Clamp(targetPosition.z, panLimitZ.x, panLimitZ.y);
         }
 
-        transform.position = pos;
+        // Apply Smoothing
+        if (enableSmoothing)
+        {
+            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * positionSmoothSpeed);
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(rotationEuler), Time.deltaTime * rotationSmoothSpeed);
+        }
+        else
+        {
+            transform.position = targetPosition;
+            transform.rotation = Quaternion.Euler(rotationEuler);
+        }
     }
 
-    // This allows GameManager to call FocusOnPosition with 4 arguments, 
-    // but we ignore the extra numbers to enforce Inspector settings for consistency.
+    /// <summary>
+    /// Changes the hardware cursor based on the current action, only updating when the state changes.
+    /// </summary>
+    private void SetCameraState(CameraState newState)
+    {
+        if (currentState == newState) return;
+        currentState = newState;
+
+        switch (currentState)
+        {
+            case CameraState.Idle:
+                Cursor.SetCursor(defaultCursor, cursorHotspot, CursorMode.Auto);
+                break;
+            case CameraState.Panning:
+                Cursor.SetCursor(dragCursor, cursorHotspot, CursorMode.Auto);
+                break;
+            case CameraState.Rotating:
+                Cursor.SetCursor(rotateCursor, cursorHotspot, CursorMode.Auto);
+                break;
+        }
+    }
+
     public void FocusOnPosition(Vector3 target, float h, float d, float s)
     {
         FocusOnPosition(target);
     }
 
-    // MAIN FOCUS METHOD
     public void FocusOnPosition(Vector3 target)
     {
         SetBuildModeLock(true, target);
@@ -296,28 +353,24 @@ public class CameraController : MonoBehaviour
         {
             if (activeRoutine != null) StopCoroutine(activeRoutine);
             isTransitioning = false;
-            
-            // Sync state so we don't snap back when moving mouse
-            rotationEuler = transform.eulerAngles;
+            SyncTargets();
         }
     }
 
     private IEnumerator TransitionToLockedView(Vector3 target)
     {
         isTransitioning = true;
+        SetCameraState(CameraState.Idle); // Clear cursor during automated transit
         
         Vector3 startPos = transform.position;
         Quaternion startRot = transform.rotation;
 
-        // Calculate direction: flattening Y ensures we don't dive into the ground
         Vector3 currentDir = transform.forward;
         currentDir.y = 0; 
         currentDir.Normalize();
         
-        // Fallback if looking straight down/up to avoid zero vector errors
         if (currentDir.sqrMagnitude < 0.01f) currentDir = Vector3.forward;
 
-        // Calculate ideal position
         Vector3 offset = (currentDir * -buildDistance) + (Vector3.up * buildHeight);
         Vector3 desiredPos = target + offset;
         Quaternion desiredRot = Quaternion.LookRotation(target - desiredPos);
@@ -325,16 +378,15 @@ public class CameraController : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < lockTransitionTime)
         {
-            // Yield immediately if cutscene mode was activated mid-transition
-            // (e.g. victory fires while we are still panning to a build target).
             if (_cutsceneMode)
             {
                 isTransitioning = false;
+                SyncTargets();
                 yield break;
             }
 
             float t = elapsed / lockTransitionTime;
-            t = t * t * (3f - 2f * t); // SmoothStep
+            t = t * t * (3f - 2f * t);
 
             transform.position = Vector3.Lerp(startPos, desiredPos, t);
             transform.rotation = Quaternion.Slerp(startRot, desiredRot, t);
@@ -343,15 +395,10 @@ public class CameraController : MonoBehaviour
             yield return null;
         }
 
-        // Finalize position and rotation
         transform.position = desiredPos;
-        // Use desiredRot explicitly to match the end of the Slerp
         transform.rotation = desiredRot; 
         
-        // Update the internal rotation variable.
-        // If we don't do this, the next time HandleMovement() runs, 
-        // it will snap the camera back to the old rotationEuler value.
-        rotationEuler = transform.eulerAngles;
+        SyncTargets();
         
         isTransitioning = false;
     }

@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_IndustrialBuilding
+  m_Shader: {fileID: 4800000, guid: daa657144b284ba49993788d0f5c9b9d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _AmbientStrength: 0.3
+    - _BrickHeight: 0.1
+    - _BrickVariation: 0.65
+    - _BrickWidth: 0.25
+    - _MortarThick: 0.015
+    - _RimPower: 4
+    - _RimStrength: 0.25
+    - _ShadeLevelDark: 0.2
+    - _ShadeLevelMid: 0.55
+    - _ShadeThreshLow: 0
+    - _ShadeThreshMid: 0.45
+    - _ShadowDark: 0.3
+    - _ShadowThresh: 0.5
+    - _TopThreshold: 0.7
+    - _TrimBandHeight: 0.08
+    - _TrimBandY: 0
+    m_Colors:
+    - _BrickColorA: {r: 0.7075472, g: 0.43133926, b: 0.34376115, a: 1}
+    - _BrickColorB: {r: 0.39999998, g: 0.14999998, b: 0.079999976, a: 1}
+    - _MetalTrimColor: {r: 0.17999998, g: 0.19999996, b: 0.21999997, a: 1}
+    - _MortarColor: {r: 0.21999997, g: 0.20999995, b: 0.19999996, a: 1}
+    - _RimColor: {r: 0.85, g: 0.45, b: 0.09999997, a: 1}
+    - _RoofColor: {r: 0.26415092, g: 0.23006023, b: 0.22303309, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

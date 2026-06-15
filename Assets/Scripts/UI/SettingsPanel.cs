@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 public class SettingsPanel : MonoBehaviour
 {
@@ -27,6 +28,7 @@ public class SettingsPanel : MonoBehaviour
             if (backButton.gameObject.GetComponent<UIButtonSounds>() == null)
                 backButton.gameObject.AddComponent<UIButtonSounds>();
             backButton.onClick.AddListener(OnClose);
+            RegisterHighlightHover(backButton);
         }
     }
 
@@ -139,5 +141,49 @@ public class SettingsPanel : MonoBehaviour
         {
             MainMenuManager.Instance.ShowMainContent(true);
         }
+    }
+
+    // ── Button highlight hover ────────────────────────────────────────────────
+    // Mirrors the same logic used by MainMenuManager.RegisterHighlightHover.
+    // Finds the "Highlight" child on a button and registers PointerEnter/Exit
+    // events via EventTrigger to set its Image alpha to 0.35 or 0.
+    private void RegisterHighlightHover(Button btn)
+    {
+        Transform highlight = btn.transform.Find("Highlight");
+        if (highlight == null)
+        {
+            Debug.LogWarning($"[SettingsPanel] No 'Highlight' child found on {btn.name}.");
+            return;
+        }
+
+        Image highlightImage = highlight.GetComponent<Image>();
+        if (highlightImage == null)
+        {
+            Debug.LogWarning($"[SettingsPanel] 'Highlight' on {btn.name} has no Image component.");
+            return;
+        }
+
+        // Ensure alpha starts at 0
+        SetHighlight(highlightImage, 0f);
+
+        EventTrigger trigger = btn.gameObject.GetComponent<EventTrigger>()
+                            ?? btn.gameObject.AddComponent<EventTrigger>();
+
+        EventTrigger.Entry enterEntry = new EventTrigger.Entry
+            { eventID = EventTriggerType.PointerEnter };
+        enterEntry.callback.AddListener(_ => SetHighlight(highlightImage, 0.35f));
+        trigger.triggers.Add(enterEntry);
+
+        EventTrigger.Entry exitEntry = new EventTrigger.Entry
+            { eventID = EventTriggerType.PointerExit };
+        exitEntry.callback.AddListener(_ => SetHighlight(highlightImage, 0f));
+        trigger.triggers.Add(exitEntry);
+    }
+
+    private static void SetHighlight(Image img, float alpha)
+    {
+        Color c = img.color;
+        c.a     = alpha;
+        img.color = c;
     }
 }

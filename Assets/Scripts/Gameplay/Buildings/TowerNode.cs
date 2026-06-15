@@ -5,34 +5,28 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public HexTile ParentTile => tile;
     public bool isBuilderFinished;
     public bool IsPowered { get; set; }
-    
-    public bool IsTechnicianActivated 
-    { 
-        get => false; // Towers are no longer activated by technicians, only wires.
-        set { } 
+
+    public bool IsTechnicianActivated
+    {
+        get => false;
+        set { }
     }
 
-    public enum TowerState
-    {
-        Hologram,       // Just placed — digital ghost
-        Constructed,    // Built by a Builder, but no grid power yet
-        Powered,        // Builder built + Grid power arrives — 100% Signal & Solid Gray
-        Destroyed       // Needs repair
-    }
+    public enum TowerState { Hologram, Constructed, Powered, Destroyed }
 
     public PlayerData owner      { get; private set; }
     public SignalNode parentNode { get; private set; }
     public HexTile    tile;
-    
+
     [Header("Stats")]
-    public int   baseRange      = 1; // 7-tile cluster (center + neighbors)
-    public int   baseRevenue    = 10; 
+    public int   baseRange      = 1;
+    public int   baseRevenue    = 10;
     public float baseDurability = 100f;
     public int   visionRange    = 3;
 
     [Header("Upkeep")]
     public int goldUpkeep = 25;
-    
+
     private bool isRecruited = false;
     public float receivedSignalStrength { get; set; } = 0f;
 
@@ -41,14 +35,11 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         get
         {
             if (TechManager.Instance == null) return baseRange;
-            float bonus = TechManager.Instance.GetInfraFlatBonus(owner, "TowerRange");
+            float bonus      = TechManager.Instance.GetInfraFlatBonus(owner, "TowerRange");
             float multiplier = TechManager.Instance.GetInfraMultiplier(owner, "TowerRange");
             if (multiplier <= 0) multiplier = 1f;
-
-            // CAPPED for balance: Prevent a single tower from taking over the map via tech stacking.
-            int maxAllowedRange = 3;
             int calculated = Mathf.RoundToInt((baseRange + bonus) * multiplier);
-            return Mathf.Clamp(calculated, 1, maxAllowedRange);
+            return Mathf.Clamp(calculated, 1, 3);
         }
     }
 
@@ -62,7 +53,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
             return Mathf.RoundToInt(baseRevenue * multiplier);
         }
     }
-    
+
     public float currentDurability;
 
     [Header("Era Visuals")]
@@ -70,45 +61,40 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public GameObject early80sVisual;
     public GameObject retroVisual;
     public GameObject futuristicVisual;
-    private GameObject currentVisualObj;
+
     public void UpdateEraVisuals()
     {
         if (TurnManager.Instance == null) return;
         TurnManager.GameEra era = TurnManager.Instance.GetCurrentEra();
 
-        // 1. Turn OFF all visuals
         if (industrialVisual != null) industrialVisual.SetActive(false);
-        if (early80sVisual != null) early80sVisual.SetActive(false);
-        if (retroVisual != null) retroVisual.SetActive(false);
+        if (early80sVisual   != null) early80sVisual.SetActive(false);
+        if (retroVisual      != null) retroVisual.SetActive(false);
         if (futuristicVisual != null) futuristicVisual.SetActive(false);
 
-        // 2. Turn ON the matching era visual
         GameObject activeVisual = industrialVisual;
         if (era == TurnManager.GameEra.EarlyEighties && early80sVisual != null) activeVisual = early80sVisual;
-        else if (era == TurnManager.GameEra.Retro && retroVisual != null) activeVisual = retroVisual;
+        else if (era == TurnManager.GameEra.Retro     && retroVisual    != null) activeVisual = retroVisual;
         else if (era == TurnManager.GameEra.Futuristic && futuristicVisual != null) activeVisual = futuristicVisual;
 
-        if (activeVisual != null) 
+        if (activeVisual != null)
         {
             activeVisual.SetActive(true);
             foreach (var col in activeVisual.GetComponentsInChildren<Collider>())
                 Destroy(col);
         }
 
-        // 3. Apply hologram/solid state to everything currently active
         if (state == TowerState.Hologram)
-
             HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
         else
             HologramUtil.MakeSolid(gameObject);
     }
 
-    private TowerState _stateCache;
     public TowerState state { get; private set; }
     private GameObject rangeIndicator;
     private Renderer[] _cachedRenderers;
 
-    void IInfrastructure.Initialize(HexTile hexTile, PlayerData player) 
+    void IInfrastructure.Initialize(HexTile hexTile, PlayerData player)
         => Initialize(hexTile, player, null);
 
     public void Initialize(HexTile hexTile, PlayerData player, SignalNode parent = null)
@@ -116,7 +102,7 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         tile       = hexTile;
         owner      = player;
         parentNode = parent;
-        tile.placedTower = this;
+        tile.placedTower  = this;
         currentDurability = baseDurability;
 
         if (parentNode != null) parentNode.towersPlacedCount++;
@@ -131,6 +117,15 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         ShowRange(false);
 
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
+
+        // Do NOT call ApplyIdle here — tower is hologram, baseline would be wrong.
+        // ApplyIdle is called when transitioning to Constructed or Powered state.
+    }
+
+    private void OnDestroy()
+    {
+        BuildingSelectionManager.Instance?.NotifyDestroyed(gameObject);
+        HighlightUtil.Remove(gameObject);
     }
 
     private void CacheRenderers()
@@ -142,11 +137,17 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public void Build()
     {
         if (isBuilderFinished || state == TowerState.Destroyed) return;
-
         isBuilderFinished = true;
-        Debug.Log($"[Tower {name}] Builder finished construction. Awaiting power from wires to solidify.");
-
+        Debug.Log($"[Tower {name}] Builder finished. Awaiting power.");
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
+    }
+
+    private Color GetOwnerGlowColor()
+    {
+        PlayerData current = TurnManager.Instance?.currentPlayer;
+        return (owner == null || owner == current)
+            ? new Color(0.2f, 0.6f, 1f)
+            : new Color(1f, 0.2f, 0.2f);
     }
 
     public void UpdatePowerState(bool powered)
@@ -157,9 +158,9 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         TowerState newState = state;
         if (state != TowerState.Destroyed)
         {
-            if (isBuilderFinished && powered) newState = TowerState.Powered;
-            else if (isBuilderFinished) newState = TowerState.Constructed;
-            else newState = TowerState.Hologram;
+            if (isBuilderFinished && powered)  newState = TowerState.Powered;
+            else if (isBuilderFinished)         newState = TowerState.Constructed;
+            else                                newState = TowerState.Hologram;
         }
 
         if (newState != state)
@@ -171,51 +172,36 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
             if (state == TowerState.Powered)
             {
                 if (owner != null && !owner.isAI && AudioManager.Instance != null && AudioManager.Instance.powerSFX != null)
-                     AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
+                    AudioManager.Instance.PlaySFX(AudioManager.Instance.powerSFX);
 
+                HighlightUtil.Remove(gameObject);
                 HologramUtil.MakeSolid(gameObject);
-                SetRangeColor(new Color(0f, 1f, 0f, 0.4f)); 
+                HighlightUtil.ApplyIdle(gameObject, GetOwnerGlowColor());
+                SetRangeColor(new Color(0f, 1f, 0f, 0.4f));
             }
             else if (state == TowerState.Constructed)
             {
-                // Built but unpowered: Solid grey/white, but not the green pulse
+                HighlightUtil.Remove(gameObject);
                 HologramUtil.MakeSolid(gameObject);
+                HighlightUtil.ApplyIdle(gameObject, GetOwnerGlowColor());
                 SetRangeColor(new Color(0.5f, 0.5f, 0.5f, 0.25f));
             }
             else if (state == TowerState.Destroyed)
             {
-                // Red/Broken visual handled by DestroyTower() usually, but for safety:
                 SetRangeColor(new Color(1f, 0f, 0f, 0.25f));
             }
             else // Hologram
             {
+                HighlightUtil.Remove(gameObject);
                 HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
                 SetRangeColor(new Color(0f, 0.5f, 1f, 0.15f));
             }
         }
     }
 
-    public int GetCurrentUpkeep()
-    {
-        return state == TowerState.Destroyed ? 0 : goldUpkeep;
-    }
-
-    public void Power() { } // Unused for towers in this new mechanic
-
-    private float GetStateInfluenceMultiplier()
-    {
-        switch (state)
-        {
-            case TowerState.Hologram:    return 0.05f;
-            case TowerState.Constructed: return 0.20f;
-            case TowerState.Powered:     return 1.00f;
-            default:                     return 0f;
-        }
-    }
-
     void ApplyInfluence()
     {
-        if (state == TowerState.Destroyed) return;
+        if (state == TowerState.Hologram || state == TowerState.Destroyed) return;
         float stateMultiplier = GetStateInfluenceMultiplier();
         if (stateMultiplier <= 0f) return;
 
@@ -226,13 +212,11 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         var tilesInRange = GridManager.Instance.GetTilesInRange(tile, CurrentRange);
         foreach (HexTile t in tilesInRange)
         {
-            float influenceAmount = (state == TowerState.Powered && receivedSignalStrength > 0f) 
+            float amount = (state == TowerState.Powered && receivedSignalStrength > 0f)
                 ? receivedSignalStrength * stateMultiplier * eraMultiplier
                 : t.baseInfluence * stateMultiplier * eraMultiplier;
-
-            t.AddInfluence(owner, Mathf.RoundToInt(influenceAmount));
+            t.AddInfluence(owner, Mathf.RoundToInt(amount));
         }
-
         if (TurnManager.Instance != null) TurnManager.Instance.NotifyStatusChanged();
     }
 
@@ -252,7 +236,6 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
             float amountToRemove = (state == TowerState.Powered && receivedSignalStrength > 0f)
                 ? receivedSignalStrength * stateMultiplier * eraMultiplier
                 : t.baseInfluence * stateMultiplier * eraMultiplier;
-
             t.RemoveInfluence(owner, Mathf.RoundToInt(amountToRemove));
         }
         if (TurnManager.Instance != null) TurnManager.Instance.NotifyStatusChanged();
@@ -271,24 +254,27 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         float decayPercent = 0.50f;
         if (TechManager.Instance != null)
             decayPercent -= TechManager.Instance.GetInfraFlatBonus(owner, "WireDegradation");
-
         decayPercent = Mathf.Max(0.05f, decayPercent);
+
         float resistance = 1.0f;
         if (TechManager.Instance != null)
             resistance = TechManager.Instance.GetInfraMultiplier(owner, "TowerDurability");
-
         if (resistance < 1.0f) resistance = 1.0f;
-        currentDurability -= (baseDurability * decayPercent) / resistance;
 
+        currentDurability -= (baseDurability * decayPercent) / resistance;
         if (currentDurability <= 0) DestroyTower();
     }
 
     public void Repair(float efficiencyMultiplier = 1.0f)
     {
         if (state != TowerState.Destroyed) return;
-        isBuilderFinished = true; // Repaired implies built
+        isBuilderFinished = true;
         state = TowerState.Constructed;
+
+        HighlightUtil.Remove(gameObject);
         HologramUtil.MakeSolid(gameObject);
+        HighlightUtil.ApplyIdle(gameObject, GetOwnerGlowColor());
+
         currentDurability = Mathf.Min(baseDurability * efficiencyMultiplier, baseDurability);
         ApplyInfluence();
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
@@ -296,66 +282,62 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
 
     void DestroyTower()
     {
-        state = TowerState.Destroyed;
+        state     = TowerState.Destroyed;
         IsPowered = false;
-        
-        // ── LIQUIDATION TRACKING ────────────────────────────────────
-        // If destroyed during another player's turn, it was an enemy attack (Saboteur).
-        // If destroyed during our turn, it was passive decay and does NOT count.
+
         if (VictoryManager.Instance != null && TurnManager.Instance != null)
         {
             PlayerData activePlayer = TurnManager.Instance.currentPlayer;
             if (activePlayer != null && activePlayer != owner)
                 VictoryManager.Instance.RecordDenial(activePlayer);
         }
-        
-        // JUICE (Phase 2)
+
         if (FeedbackController.Instance != null)
             FeedbackController.Instance.PlayTowerDestroyed(transform.position);
 
+        HighlightUtil.Remove(gameObject);
         ShowRange(false);
         SetRangeColor(new Color(1f, 0f, 0f, 0.25f));
     }
 
-    public void SetBuilt() { isBuilderFinished = true; state = TowerState.Constructed; }
-    public bool IsBuilt() => isBuilderFinished || state == TowerState.Powered;
-    public bool IsDestroyed() => state == TowerState.Destroyed;
+    float GetStateInfluenceMultiplier() => state switch
+    {
+        TowerState.Powered     => 1.0f,
+        TowerState.Constructed => 0.5f,
+        _                      => 0f
+    };
 
-    // Reverts this tower to Hologram/blueprint state.
-    // Called by EnemyAI.PlaceBlueprint() after PlaceTowerDirect() — which
-    // initialises towers as solid/built — so Builder units can still find it
-    // via GetUnbuiltTowers() and physically construct it next turn.
-    // Mirrors exactly what Initialize() sets up for a fresh hologram.
+    public int  GetCurrentUpkeep()  => goldUpkeep;
+    public void SetBuilt()          { isBuilderFinished = true; state = TowerState.Constructed; }
+    public bool IsBuilt()           => isBuilderFinished || state == TowerState.Powered;
+    public bool IsDestroyed()       => state == TowerState.Destroyed;
+
     public void SetHologramState()
     {
         isBuilderFinished = false;
-        state              = TowerState.Hologram;
-        IsPowered          = false;
+        state             = TowerState.Hologram;
+        IsPowered         = false;
+        HighlightUtil.Remove(gameObject);
         HologramUtil.MakeHologram(gameObject, new Color(0f, 0.5f, 1f, 0.35f));
         SetRangeColor(new Color(0f, 0.5f, 1f, 0.15f));
         ShowRange(false);
         if (PowerGridManager.Instance != null) PowerGridManager.Instance.RefreshGrid();
     }
-    //  RANGE INDICATOR HELPERS
+
     public void CreatePreview()
     {
-        // Set state first so UpdateEraVisuals knows to tint as hologram
         state = TowerState.Hologram;
-        // Spawn the correct era visual and tint it as a hologram
         UpdateEraVisuals();
         CreateRangeIndicator();
         ShowRange(true);
     }
 
     public void SetRangeColor(Color color) { if (rangeIndicator != null) rangeIndicator.GetComponent<Renderer>().material.color = color; }
-    public void ShowRange(bool show) { if (rangeIndicator != null) { if (show) UpdateRangeVisuals(); rangeIndicator.SetActive(show); } }
+    public void ShowRange(bool show)       { if (rangeIndicator != null) { if (show) UpdateRangeVisuals(); rangeIndicator.SetActive(show); } }
 
-    // Snaps the range indicator's Y to just above the given tile's surface.
-    // Call every frame during placement preview so the circle stays on the ground.
     public void SetRangeIndicatorToSurface(HexTile targetTile)
     {
         if (rangeIndicator == null || targetTile == null) return;
-
         BoxCollider box = targetTile.GetComponent<BoxCollider>();
         float surfaceY  = targetTile.transform.position.y;
         if (box != null)
@@ -364,12 +346,11 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
             float centerY    = box.center.y * targetTile.transform.lossyScale.y;
             surfaceY         = targetTile.transform.position.y + centerY + halfHeight + 0.05f;
         }
-
         Vector3 pos = rangeIndicator.transform.position;
         pos.y = surfaceY;
         rangeIndicator.transform.position = pos;
     }
-    
+
     void CreateRangeIndicator()
     {
         if (rangeIndicator != null) return;
@@ -377,19 +358,16 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         rangeIndicator.transform.SetParent(transform);
         rangeIndicator.transform.localRotation = Quaternion.identity;
 
-        // Place the indicator at the tile's surface rather than relative to the
-        // tower pivot (which may be at the tip). Tile BoxCollider gives us the
-        // exact world Y of the top face; we convert that to the tower's local Y.
         float worldSurfaceY = GetTileSurfaceY();
         float localY = transform.InverseTransformPoint(0f, worldSurfaceY + 0.05f, 0f).y;
         rangeIndicator.transform.localPosition = new Vector3(0f, localY, 0f);
 
         UpdateRangeVisuals();
         Renderer rend = rangeIndicator.GetComponent<Renderer>();
-        
+
         Shader indicatorShader = Shader.Find("Universal Render Pipeline/Unlit");
         if (indicatorShader == null) indicatorShader = Shader.Find("Sprites/Default");
-        
+
         Material mat = new Material(indicatorShader);
         mat.SetFloat("_Surface", 1);
         mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
@@ -397,8 +375,8 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
         mat.SetInt("_ZWrite", 0);
         mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-        
         rend.material = mat;
+
         Destroy(rangeIndicator.GetComponent<Collider>());
     }
 
@@ -411,24 +389,27 @@ public class TowerNode : MonoBehaviour, IInfrastructure, IPowerable
     public void UpdateRangeVisuals()
     {
         if (rangeIndicator == null) return;
-        float hexSpacing = GridManager.Instance.hexSize * 1.732f;
+        float hexSpacing   = GridManager.Instance.hexSize * 1.732f;
         float visualRadius = CurrentRange * hexSpacing;
         rangeIndicator.transform.localScale = new Vector3(visualRadius * 2f, 0.01f, visualRadius * 2f);
     }
 
+    // FIX: Select fires for all, UI only opens for current player's own buildings.
     private void OnMouseDown()
     {
         if (UnityEngine.EventSystems.EventSystem.current != null &&
             UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
         if (PauseMenuUI.GameIsPaused) return;
+
+        BuildingSelectionManager.Instance?.Select(gameObject, owner);
+
         if (owner == null) return;
         if (TurnManager.Instance != null && owner != TurnManager.Instance.currentPlayer) return;
         if (owner.isAI) return;
-        
         BuildingUIManager.Instance?.Open(this);
     }
 
     private void OnMouseEnter() => ShowRange(true);
-    private void OnMouseExit() => ShowRange(false);
+    private void OnMouseExit()  => ShowRange(false);
     public void Recruit(PlayerData newOwner) { if (!isRecruited) owner = newOwner; isRecruited = true; }
 }

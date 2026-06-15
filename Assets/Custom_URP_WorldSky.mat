@@ -47,6 +47,7 @@ Material:
     - _SunOrbitTilt: 0.55
     - _SunSize: 0.0055
     - _SunSpeed: 0.018
+    - _UseSunOverride: 1
     - _WaterFogDensity: 0.38
     - _WaterFresnel: 2.2
     - _WaterReflectBlend: 0.82
@@ -54,17 +55,18 @@ Material:
     - _WaveScale: 10
     - _WaveSpeed: 0.4
     m_Colors:
-    - _CloudColorLight: {r: 1, g: 1, b: 1, a: 1}
-    - _CloudColorMid: {r: 0.85, g: 0.93, b: 1, a: 1}
-    - _CloudColorShadow: {r: 0.52, g: 0.68, b: 0.88, a: 1}
+    - _CloudColorLight: {r: 0.08, g: 0.1, b: 0.18, a: 1}
+    - _CloudColorMid: {r: 0.05, g: 0.06, b: 0.14, a: 1}
+    - _CloudColorShadow: {r: 0.02, g: 0.03, b: 0.09, a: 1}
     - _CloudLayerOffset: {r: 3.7, g: 0, b: 5.1, a: 0}
-    - _FogColor: {r: 0.78, g: 0.92, b: 1, a: 1}
+    - _FogColor: {r: 0.02, g: 0.04, b: 0.12, a: 1}
     - _RippleColor: {r: 0.78, g: 0.94, b: 1, a: 1}
-    - _SkyColorHorizon: {r: 0.58, g: 0.86, b: 1, a: 1}
-    - _SkyColorLow: {r: 0.8, g: 0.96, b: 1, a: 1}
-    - _SkyColorMid: {r: 0.21999997, g: 0.6, b: 0.96, a: 1}
-    - _SkyColorZenith: {r: 0.079999976, g: 0.29999998, b: 0.82, a: 1}
-    - _SunColor: {r: 1, g: 0.95071524, b: 0.3066038, a: 1}
+    - _SkyColorHorizon: {r: 0.02, g: 0.04, b: 0.14, a: 1}
+    - _SkyColorLow: {r: 0.01, g: 0.02, b: 0.08, a: 1}
+    - _SkyColorMid: {r: 0.01, g: 0.02, b: 0.1, a: 1}
+    - _SkyColorZenith: {r: 0, g: 0.01, b: 0.06, a: 1}
+    - _SunColor: {r: 0.17567694, g: 0.052703086, b: 0.008783847, a: 1}
+    - _SunDirOverride: {r: 0.4924049, g: -0.17364846, b: -0.8528679, a: 0}
     - _WaterDeepColor: {r: 0.079999976, g: 0.27999997, b: 0.58, a: 1}
     - _WaterFogColor: {r: 0.7, g: 0.88, b: 0.96999997, a: 1}
     - _WaterShallowColor: {r: 0.24999997, g: 0.58, b: 0.82, a: 1}

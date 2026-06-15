@@ -96,4 +96,14 @@ public class EraRendererController : MonoBehaviour
         _lastEra = (TurnManager.GameEra)(-1); // reset so ApplyEra always fires
         ApplyEra(TurnManager.Instance.currentEra);
     }
+
+    // Overload used by EraAnnouncementController at peak glitch.
+    // Bypasses TurnManager.currentEra entirely — the turn manager hasn't
+    // advanced to the new era yet at the moment the cutscene fires, so
+    // reading it would apply the OLD era's feature and produce a visible delay.
+    public void ForceSync(TurnManager.GameEra era)
+    {
+        _lastEra = (TurnManager.GameEra)(-1); // reset so ApplyEra always fires
+        ApplyEra(era);
+    }
 }

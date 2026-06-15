@@ -169,8 +169,9 @@ public class StructurePlacementManager : MonoBehaviour
 
         foreach (var t in targets)
         {
-            // Explicitly block placement on water
+            // Explicitly block placement on water and road tiles
             if (t.type == HexTile.TileType.Water) return false;
+            if (t.type == HexTile.TileType.Road)  return false;
             if (t.IsOccupied()) return false;
         }
 

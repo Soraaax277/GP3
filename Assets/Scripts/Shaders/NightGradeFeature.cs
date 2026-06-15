@@ -11,54 +11,60 @@ public class NightGradeFeature : ScriptableRendererFeature
         public Material material;
 
         [Header("Exposure & Contrast")]
-        [Range(0.5f, 2f)]  public float exposure          = 1.10f;  // slightly hot like a prosumer cam
-        [Range(0.5f, 2f)]  public float contrast          = 1.30f;  // punchy mids
-        [Range(0f, 1f)]    public float blackCrush        = 0.20f;  // not too deep - 2000s had lifted blacks
+        [Range(0.5f, 2f)]   public float exposure           = 1.00f;
+        [Range(0.5f, 2f)]   public float contrast           = 1.25f;
+        [Range(0f, 1f)]     public float blackCrush         = 0.12f;
+        [Range(0f, 1f)]     public float highlightRolloff   = 0.35f;
 
         [Header("Saturation")]
-        [Range(0f, 3f)]    public float saturation        = 1.70f;  // over-saturated video look
+        [Range(0f, 2f)]     public float saturation         = 1.15f;
 
-        [Header("Green Tint")]
-        [Range(0f, 2f)]    public float greenTint         = 1.00f;  // pump the greens
-        [Range(0f, 2f)]    public float greenShadowLift   = 1.20f;  // greens in the darks
-        [Range(0f, 2f)]    public float redDrain          = 0.60f;  // slight red pulldown
-        [Range(0f, 2f)]    public float blueShift         = 0.40f;  // slight cyan push
+        [Header("Teal-Green Grade")]
+        [Tooltip("How strongly shadows push toward teal/green-cyan. Shader now uses equal R-drain + G-push so this is genuinely teal, not blue.")]
+        [Range(0f, 2f)]     public float shadowTealStrength = 1.10f;
+        [Tooltip("Raises the black floor. Also auto-floors extremely dark pixels so scenes never collapse.")]
+        [Range(0f, 1f)]     public float shadowLift         = 0.30f;
+        [Tooltip("Midtone temperature. 1 = neutral, >1 = warm, <1 = cool.")]
+        [Range(0f, 2f)]     public float midtoneBalance     = 1.08f;
+        [Tooltip("How strongly highlights push toward orange/amber. 0 = no push, 1 = strong.")]
+        [Range(0f, 2f)]     public float highlightWarmth    = 0.85f;
 
-        [Header("Highlights")]
-        [Range(0f, 1f)]    public float highlightBlow     = 0.30f;  // slightly clipped whites
+        [Header("H.264 Chroma Smear")]
+        [Range(0f, 1f)]     public float chromaSmear        = 0.25f;
 
         [Header("Sharpness")]
-        [Range(0f, 4f)]    public float sharpness         = 1.20f;  // over-sharpened DV look
+        [Range(0f, 2f)]     public float sharpness          = 0.45f;
 
-        [Header("Film Grain")]
-        [Range(0f, 0.3f)]  public float grainIntensity    = 0.055f;
-        [Range(1f, 4f)]    public float grainSize         = 1.2f;
+        [Header("Digital Noise")]
+        [Range(0f, 0.2f)]   public float noiseIntensity     = 0.04f;
+        [Range(1f, 6f)]     public float noiseSize          = 1.5f;
 
         [Header("Vignette")]
-        [Range(0f, 1f)]    public float vignetteIntensity = 0.20f;  // very subtle
+        [Range(0f, 1f)]     public float vignetteIntensity  = 0.28f;
 
         [Header("Letterbox")]
-        [Range(0f, 0.2f)]  public float letterboxAmount   = 0.07f;  // 2.35:1 style black bars
+        [Range(0f, 0.2f)]   public float letterboxAmount    = 0.07f;
     }
 
     public Settings settings = new Settings();
     Material _mat;
     NightGradePass _pass;
 
-    static readonly int ID_Exposure          = Shader.PropertyToID("_Exposure");
-    static readonly int ID_Contrast          = Shader.PropertyToID("_Contrast");
-    static readonly int ID_BlackCrush        = Shader.PropertyToID("_BlackCrush");
-    static readonly int ID_Saturation        = Shader.PropertyToID("_Saturation");
-    static readonly int ID_GreenTint         = Shader.PropertyToID("_GreenTint");
-    static readonly int ID_GreenShadowLift   = Shader.PropertyToID("_GreenShadowLift");
-    static readonly int ID_RedDrain          = Shader.PropertyToID("_RedDrain");
-    static readonly int ID_BlueShift         = Shader.PropertyToID("_BlueShift");
-    static readonly int ID_HighlightBlow     = Shader.PropertyToID("_HighlightBlow");
-    static readonly int ID_Sharpness         = Shader.PropertyToID("_Sharpness");
-    static readonly int ID_GrainIntensity    = Shader.PropertyToID("_GrainIntensity");
-    static readonly int ID_GrainSize         = Shader.PropertyToID("_GrainSize");
-    static readonly int ID_VignetteIntensity = Shader.PropertyToID("_VignetteIntensity");
-    static readonly int ID_LetterboxAmount   = Shader.PropertyToID("_LetterboxAmount");
+    static readonly int ID_Exposure            = Shader.PropertyToID("_Exposure");
+    static readonly int ID_Contrast            = Shader.PropertyToID("_Contrast");
+    static readonly int ID_BlackCrush          = Shader.PropertyToID("_BlackCrush");
+    static readonly int ID_HighlightRolloff    = Shader.PropertyToID("_HighlightRolloff");
+    static readonly int ID_Saturation          = Shader.PropertyToID("_Saturation");
+    static readonly int ID_ShadowTealStrength  = Shader.PropertyToID("_ShadowTealStrength");
+    static readonly int ID_ShadowLift          = Shader.PropertyToID("_ShadowLift");
+    static readonly int ID_MidtoneBalance      = Shader.PropertyToID("_MidtoneBalance");
+    static readonly int ID_HighlightWarmth     = Shader.PropertyToID("_HighlightWarmth");
+    static readonly int ID_ChromaSmear         = Shader.PropertyToID("_ChromaSmear");
+    static readonly int ID_Sharpness           = Shader.PropertyToID("_Sharpness");
+    static readonly int ID_NoiseIntensity      = Shader.PropertyToID("_NoiseIntensity");
+    static readonly int ID_NoiseSize           = Shader.PropertyToID("_NoiseSize");
+    static readonly int ID_VignetteIntensity   = Shader.PropertyToID("_VignetteIntensity");
+    static readonly int ID_LetterboxAmount     = Shader.PropertyToID("_LetterboxAmount");
 
     public override void Create()
     {
@@ -79,24 +85,26 @@ public class NightGradeFeature : ScriptableRendererFeature
     {
         if (_mat == null) return;
 
-        _mat.SetFloat(ID_Exposure,          settings.exposure);
-        _mat.SetFloat(ID_Contrast,          settings.contrast);
-        _mat.SetFloat(ID_BlackCrush,        settings.blackCrush);
-        _mat.SetFloat(ID_Saturation,        settings.saturation);
-        _mat.SetFloat(ID_GreenTint,         settings.greenTint);
-        _mat.SetFloat(ID_GreenShadowLift,   settings.greenShadowLift);
-        _mat.SetFloat(ID_RedDrain,          settings.redDrain);
-        _mat.SetFloat(ID_BlueShift,         settings.blueShift);
-        _mat.SetFloat(ID_HighlightBlow,     settings.highlightBlow);
-        _mat.SetFloat(ID_Sharpness,         settings.sharpness);
-        _mat.SetFloat(ID_GrainIntensity,    settings.grainIntensity);
-        _mat.SetFloat(ID_GrainSize,         settings.grainSize);
-        _mat.SetFloat(ID_VignetteIntensity, settings.vignetteIntensity);
-        _mat.SetFloat(ID_LetterboxAmount,   settings.letterboxAmount);
+        _mat.SetFloat(ID_Exposure,           settings.exposure);
+        _mat.SetFloat(ID_Contrast,           settings.contrast);
+        _mat.SetFloat(ID_BlackCrush,         settings.blackCrush);
+        _mat.SetFloat(ID_HighlightRolloff,   settings.highlightRolloff);
+        _mat.SetFloat(ID_Saturation,         settings.saturation);
+        _mat.SetFloat(ID_ShadowTealStrength, settings.shadowTealStrength);
+        _mat.SetFloat(ID_ShadowLift,         settings.shadowLift);
+        _mat.SetFloat(ID_MidtoneBalance,     settings.midtoneBalance);
+        _mat.SetFloat(ID_HighlightWarmth,    settings.highlightWarmth);
+        _mat.SetFloat(ID_ChromaSmear,        settings.chromaSmear);
+        _mat.SetFloat(ID_Sharpness,          settings.sharpness);
+        _mat.SetFloat(ID_NoiseIntensity,     settings.noiseIntensity);
+        _mat.SetFloat(ID_NoiseSize,          settings.noiseSize);
+        _mat.SetFloat(ID_VignetteIntensity,  settings.vignetteIntensity);
+        _mat.SetFloat(ID_LetterboxAmount,    settings.letterboxAmount);
 
         renderer.EnqueuePass(_pass);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
     class NightGradePass : ScriptableRenderPass
     {
         Material _mat;
@@ -119,6 +127,7 @@ public class NightGradeFeature : ScriptableRendererFeature
             desc.clearBuffer = false;
             var temp = rg.CreateTexture(desc);
 
+            // Pass 1 — apply grade into temp
             using (var builder = rg.AddRasterRenderPass<PassData>("NightGradeFilter", out var data))
             {
                 data.src = resourceData.activeColorTexture;
@@ -130,6 +139,7 @@ public class NightGradeFeature : ScriptableRendererFeature
                     Blitter.BlitTexture(c.cmd, d.src, new Vector4(1, 1, 0, 0), d.mat, 0));
             }
 
+            // Pass 2 — copy back to active color
             using (var builder = rg.AddRasterRenderPass<PassData>("NightGradeFilter CopyBack", out var data))
             {
                 data.src = temp;

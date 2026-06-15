@@ -1,0 +1,42 @@
+# Blender 5.0.1 MTL File: 'None'
+# www.blender.org
+
+newmtl grass.001
+Ns 96.078453
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 1
+map_Kd obj/E:/Ninjutsu/Assets/Voxel [FREE]/Buildings_2/exports/2.png
+
+newmtl objects.001
+Ns 96.078453
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 1
+map_Kd obj/E:/Ninjutsu/Assets/Voxel [FREE]/Buildings_2/exports/2.png
+
+newmtl wall.001
+Ns 96.078453
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 1
+map_Kd obj/E:/Ninjutsu/Assets/Voxel [FREE]/Buildings_2/exports/2.png
+
+newmtl windows.001
+Ns 96.078453
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 1
+map_Kd obj/E:/Ninjutsu/Assets/Voxel [FREE]/Buildings_2/exports/2.png
